@@ -28,11 +28,11 @@ def test_dropout_outlinable():
 
         for i in range(layers):
             w = builder.addInitializedInputTensor(
-                weight_data, debugContext="weight_%d" % i
+                weight_data, debugContext=f"weight_{i}"
             )
-            x = builder.aiOnnx.matmul([x, w], debugContext="matmul_%d" % i)
+            x = builder.aiOnnx.matmul([x, w], debugContext=f"matmul_{i}")
             [x] = builder.aiOnnx.dropout(
-                [x], debugContext="dropout_%d" % i, num_outputs=1, ratio=dropoutRatio
+                [x], debugContext=f"dropout_{i}", num_outputs=1, ratio=dropoutRatio
             )
 
         loss = builder.aiGraphcore.l1loss([x], 0.1, debugContext="loss")

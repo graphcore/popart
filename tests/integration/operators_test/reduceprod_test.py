@@ -20,14 +20,14 @@ def test_reduceprod(op_tester):
                 out = builder.aiOnnx.reduceprod(
                     [tensor],
                     keepdims=keepdims,
-                    debugContext="test_reduceprod_default_{0}".format(keepdims),
+                    debugContext=f"test_reduceprod_default_{keepdims}",
                 )
             else:
                 out = builder.aiOnnx.reduceprod(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugContext="test_reduceprod_{0}_{1}".format(axes, keepdims),
+                    debugContext=f"test_reduceprod_{axes}_{keepdims}",
                 )
             builder.addOutputTensor(out)
             result.append(out)
@@ -65,14 +65,14 @@ def test_reduceprod_training(op_tester):
                 out = builder.aiOnnx.reduceprod(
                     [tensor],
                     keepdims=keepdims,
-                    debugContext="test_reduceprod_default_{0}".format(keepdims),
+                    debugContext=f"test_reduceprod_default_{keepdims}",
                 )
             else:
                 out = builder.aiOnnx.reduceprod(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugContext="test_reduceprod_{0}_{1}".format(axes, keepdims),
+                    debugContext=f"test_reduceprod_{axes}_{keepdims}",
                 )
             result.append(out)
             result.append(popart.reservedGradientPrefix() + tensor)

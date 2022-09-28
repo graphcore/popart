@@ -7,16 +7,18 @@ import popart._internal.ir as _ir
 
 def check_graph_inputs(graph, graph_inputs):
     """Helper function, graph inputs are what we expect."""
-    assert (
-        graph.getInputIds() == graph_inputs
-    ), f"Expected Graph {graph.getGraphString()} to have inputs {graph_inputs}, got {graph.getInputIds()}"
+    assert graph.getInputIds() == graph_inputs, (
+        f"Expected Graph {graph.getGraphString()} to have inputs {graph_inputs}, got"
+        f" {graph.getInputIds()}"
+    )
 
 
 def check_graph_outputs(graph, graph_outputs):
     """Helper function, graph outputs are what we expect."""
-    assert (
-        graph.getOutputIds() == graph_outputs
-    ), f"Expected Graph {graph.getGraphString()} to have outputs {graph_outputs}, got {graph.getOutputIds()}"
+    assert graph.getOutputIds() == graph_outputs, (
+        f"Expected Graph {graph.getGraphString()} to have outputs {graph_outputs}, got"
+        f" {graph.getOutputIds()}"
+    )
 
 
 def test_graph_construction():

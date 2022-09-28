@@ -20,14 +20,14 @@ def test_reducemin(op_tester):
                 out = builder.aiOnnx.reducemin(
                     [tensor],
                     keepdims=keepdims,
-                    debugContext="test_reducemin_default_{0}".format(keepdims),
+                    debugContext=f"test_reducemin_default_{keepdims}",
                 )
             else:
                 out = builder.aiOnnx.reducemin(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugContext="test_reducemin_{0}_{1}".format(axes, keepdims),
+                    debugContext=f"test_reducemin_{axes}_{keepdims}",
                 )
             builder.addOutputTensor(out)
             result.append(out)
@@ -63,14 +63,14 @@ def test_reducemin_training(op_tester):
                 out = builder.aiOnnx.reducemin(
                     [tensor],
                     keepdims=keepdims,
-                    debugContext="test_reducemin_default_{0}".format(keepdims),
+                    debugContext=f"test_reducemin_default_{keepdims}",
                 )
             else:
                 out = builder.aiOnnx.reducemin(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugContext="test_reducemin_{0}_{1}".format(axes, keepdims),
+                    debugContext=f"test_reducemin_{axes}_{keepdims}",
                 )
             result.append(out)
             result.append(popart.reservedGradientPrefix() + tensor)
@@ -150,14 +150,14 @@ def test_reducemin_training_negative_axis(op_tester):
                 out = builder.aiOnnx.reducemin(
                     [tensor],
                     keepdims=keepdims,
-                    debugContext="test_reducemin_default_{0}".format(keepdims),
+                    debugContext=f"test_reducemin_default_{keepdims}",
                 )
             else:
                 out = builder.aiOnnx.reducemin(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugContext="test_reducemin_{0}_{1}".format(axes, keepdims),
+                    debugContext=f"test_reducemin_{axes}_{keepdims}",
                 )
             result.append(out)
             result.append(popart.reservedGradientPrefix() + tensor)

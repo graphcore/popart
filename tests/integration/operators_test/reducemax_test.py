@@ -20,14 +20,14 @@ def test_reducemax(op_tester):
                 out = builder.aiOnnx.reducemax(
                     [tensor],
                     keepdims=keepdims,
-                    debugContext="test_reducemax_default_{0}".format(keepdims),
+                    debugContext=f"test_reducemax_default_{keepdims}",
                 )
             else:
                 out = builder.aiOnnx.reducemax(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugContext="test_reducemax_{0}_{1}".format(axes, keepdims),
+                    debugContext=f"test_reducemax_{axes}_{keepdims}",
                 )
             builder.addOutputTensor(out)
             result.append(out)
@@ -63,14 +63,14 @@ def test_reducemax_training(op_tester):
                 out = builder.aiOnnx.reducemax(
                     [tensor],
                     keepdims=keepdims,
-                    debugContext="test_reducemax_default_{0}".format(keepdims),
+                    debugContext=f"test_reducemax_default_{keepdims}",
                 )
             else:
                 out = builder.aiOnnx.reducemax(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugContext="test_reducemax_{0}_{1}".format(axes, keepdims),
+                    debugContext=f"test_reducemax_{axes}_{keepdims}",
                 )
             result.append(out)
             result.append(popart.reservedGradientPrefix() + tensor)

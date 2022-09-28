@@ -41,7 +41,7 @@ leaky_relu = builder.customOp(
 )[0]
 
 # This shows the ONNX shape inference is working.
-print("Shape of {}: {}".format(leaky_relu, builder.getTensorShape(leaky_relu)))
+print(f"Shape of {leaky_relu}: {builder.getTensorShape(leaky_relu)}")
 
 # Let's create a known tensor, but with an undefined shape
 y = builder.aiOnnx.conv(

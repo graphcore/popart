@@ -36,7 +36,7 @@ class Graph:
         self._ir: "Ir"
 
         raise TypeError(
-            f"Cannot create {self.__module__}.Graph instances " "using the constructor."
+            f"Cannot create {self.__module__}.Graph instances using the constructor."
         )
 
     @classmethod

@@ -373,16 +373,16 @@ def check_models(model_init, modelA_fn, modelB_fn):
 
             relative_error = l1AB / (l1AC)
             print(
-                f"{weightA.name}: l1AB = %.2e,  l1AC = %.2e, l1BC = %.2e, relative error = %.2e"
-                % (l1AB, l1AC, l1BC, relative_error)
+                f"{weightA.name}: l1AB = {l1AB:.2e},  l1AC = {l1AC:.2e}, l1BC ="
+                f" {l1BC:.2e}, relative error = {relative_error:.2e}"
             )
 
             # check that the weights have moved enough for this to be a valid
-            assert l1AC > 1e-3, "change since start of A = %.5f" % (l1AC,)
-            assert l1BC > 1e-3, "change since start of B = %.5f" % (l1BC,)
+            assert l1AC > 1e-3, f"change since start of A = {l1AC:.5f}"
+            assert l1BC > 1e-3, f"change since start of B = {l1BC:.5f}"
 
             # relative error assertion
-            assert 1e-5 > relative_error, "Relative error {}".format(relative_error)
+            assert 1e-5 > relative_error, f"Relative error {relative_error}"
 
 
 @tu.requires_ipu_model

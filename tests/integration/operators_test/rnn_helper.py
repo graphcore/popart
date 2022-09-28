@@ -40,7 +40,7 @@ class RNN_Helper:
 
         required_inputs = [X, W, R]
         for i in required_inputs:
-            assert i in params, "Missing Required Input: {0}".format(i)
+            assert i in params, f"Missing Required Input: {i}"
 
         self.num_directions = params[str(W)].shape[0]
 
@@ -105,7 +105,7 @@ class GRU_Helper:
 
         required_inputs = [X, W, R]
         for i in required_inputs:
-            assert i in params, "Missing Required Input: {0}".format(i)
+            assert i in params, f"Missing Required Input: {i}"
 
         self.num_directions = params[W].shape[0]
 
@@ -193,7 +193,7 @@ class LSTM_Helper:
 
         required_inputs = [X, W, R]
         for i in required_inputs:
-            assert i in params, "Missing Required Input: {0}".format(i)
+            assert i in params, f"Missing Required Input: {i}"
 
         self.num_directions = params[W].shape[0]
 

@@ -56,9 +56,9 @@ def test_X_training(op_tester, X="mean"):
         i4 = builder.addInputTensor(d4)
         i5 = builder.addInputTensor(d5)
         if X == "mean":
-            o = builder.aiOnnx.mean([i1, i2, i3, i4, i5], "test_%s" % (X,))
+            o = builder.aiOnnx.mean([i1, i2, i3, i4, i5], f"test_{X}")
         elif X == "sum":
-            o = builder.aiOnnx.sum([i1, i2, i3, i4, i5], "test_%s" % (X,))
+            o = builder.aiOnnx.sum([i1, i2, i3, i4, i5], f"test_{X}")
         else:
             raise RuntimeError(
                 "Unexpected type X in test_X_training, should be mean or sum"

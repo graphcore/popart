@@ -20,14 +20,14 @@ def test_reducel1(op_tester):
                 out = builder.aiOnnx.reducel1(
                     [tensor],
                     keepdims=keepdims,
-                    debugContext="test_reducesum_default_{0}".format(keepdims),
+                    debugContext=f"test_reducesum_default_{keepdims}",
                 )
             else:
                 out = builder.aiOnnx.reducel1(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugContext="test_reducesum_{0}_{1}".format(axes, keepdims),
+                    debugContext=f"test_reducesum_{axes}_{keepdims}",
                 )
             builder.addOutputTensor(out)
             result.append(out)
@@ -63,14 +63,14 @@ def test_reducel1_training(op_tester):
                 out = builder.aiOnnx.reducesum(
                     [tensor],
                     keepdims=keepdims,
-                    debugContext="test_reducesum_default_{0}".format(keepdims),
+                    debugContext=f"test_reducesum_default_{keepdims}",
                 )
             else:
                 out = builder.aiOnnx.reducesum(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugContext="test_reducesum_{0}_{1}".format(axes, keepdims),
+                    debugContext=f"test_reducesum_{axes}_{keepdims}",
                 )
             result.append(out)
             result.append(popart.reservedGradientPrefix() + tensor)

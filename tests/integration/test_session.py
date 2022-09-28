@@ -156,9 +156,7 @@ class _Builder:
             if not v.flags["C_CONTIGUOUS"]:
                 # need to call np.ascontiguousarray
                 # `x = np.ascontiguousarray(x)`
-                raise Exception(
-                    'Input "{}" to popart.PyStepIO is not C_CONTIGUOS'.format(k)
-                )
+                raise Exception(f'Input "{k}" to popart.PyStepIO is not C_CONTIGUOUS')
 
     def _get_inputs(self):
         return {k: v for k, v in self._input_map.items()}

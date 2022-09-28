@@ -170,7 +170,7 @@ class dtype:
                 pass
 
         raise ValueError(
-            f"There is not a `popxl.dtype` that is compatible"
+            "There is not a `popxl.dtype` that is compatible"
             f" with value: {type_value}, type: {type(type_value)}."
         )
 
@@ -189,7 +189,7 @@ class dtype:
             return self._np_type
         else:
             raise TypeError(
-                f"`popxl.{self._name}` does not have a " f"corresponding NumPy dtype."
+                f"`popxl.{self._name}` does not have a corresponding NumPy dtype."
             )
 
     def as_torch(self) -> np.dtype:
@@ -211,7 +211,7 @@ class dtype:
             return self._pt_type
         else:
             raise TypeError(
-                f"`popxl.{self._name}` does not have a " f"corresponding PyTorch dtype."
+                f"`popxl.{self._name}` does not have a corresponding PyTorch dtype."
             )
 
     def __repr__(self) -> str:

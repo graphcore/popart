@@ -401,7 +401,7 @@ class Operation:
         return self.name + "_" + str(self.version)
 
     def fullName(self):
-        return "{}.{}:{}".format(self.opset.domain.name, self.name, self.version)
+        return f"{self.opset.domain.name}.{self.name}:{self.version}"
 
     def verifyInput(self):
 
@@ -467,27 +467,12 @@ def parseDefinitions():
     for k, v in schema.domains.items():
         for op in v.operations:
             print(
-                "{}:{}:{} i:{}-{} o:{}-{}".format(
-                    k,
-                    op.name,
-                    op.version,
-                    op.min_input,
-                    op.max_input,
-                    op.min_output,
-                    op.max_output,
-                )
+                f"{k}:{op.name}:{op.version} i:{op.min_input}-{op.max_input} o:{op.min_output}-{op.max_output}"
             )
             if op.attributes is not None:
                 for a in sorted(op.attributes, key=lambda x: x.hasDefault()):
                     print(
-                        "- {} {} V:{}={} R:{} D:{}".format(
-                            a.name,
-                            a.type,
-                            a.hasDefaultValue(),
-                            a.DefaultValue(),
-                            a.required,
-                            a.isDeprecated(),
-                        )
+                        f"- {a.name} {a.type} V:{a.hasDefaultValue()}={a.DefaultValue()} R:{a.required} D:{a.isDeprecated()}"
                     )
                     if op.fullName() in overrideOP:
                         if a.isRequired() is not None:
@@ -554,24 +539,22 @@ class ConstVoidData;
                 else:
                     baseclass = v.CppName() + "Opset" + str(int(opset_version) - 1)
 
-                f.write("class {} : private {} {{\n".format(classname, baseclass))
+                f.write(f"class {classname} : private {baseclass} {{\n")
                 f.write("\n")
                 f.write("  protected:\n")
-                f.write("    using {}::impl;\n".format(baseclass))
+                f.write(f"    using {baseclass}::impl;\n")
 
                 f.write("  public:\n")
                 f.write(
-                    "    {}(std::unique_ptr<BuilderImpl>& impl_) : {}(impl_) {{}} \n".format(
-                        classname, baseclass
-                    )
+                    f"    {classname}(std::unique_ptr<BuilderImpl>& impl_) :"
+                    f" {baseclass}(impl_) {{}} \n"
                 )
                 f.write("\n")
 
                 f.write("    // return the opset version\n")
                 f.write(
-                    "    int getOpsetVersion() const override {{ return {};}} \n".format(
-                        opset_version
-                    )
+                    "    int getOpsetVersion() const override { return"
+                    f" {opset_version};}} \n"
                 )
                 f.write("\n")
 
@@ -585,7 +568,7 @@ class ConstVoidData;
                         and int(opset_version) > 6
                         and op.name not in seen
                     ):
-                        f.write("    using {}::{};\n".format(baseclass, op.CppName()))
+                        f.write(f"    using {baseclass}::{op.CppName()};\n")
                         seen.append(op.name)
                 # Add a newline after the using statements.
                 if len(seen) > 0:
@@ -593,20 +576,16 @@ class ConstVoidData;
 
                 for op in sorted(opset.operators, key=lambda x: x.name):
                     f.write("    /**\n")
-                    f.write("     * Add the '{}' to the model\n".format(op.name))
+                    f.write(f"     * Add the '{op.name}' to the model\n")
                     f.write("     *\n")
 
                     if v.isLatestOpVersion(op):
                         f.write(
-                            "     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#{}\n".format(
-                                op.name
-                            )
+                            f"     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#{op.name}\n"
                         )
                     else:
                         f.write(
-                            "     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#{}-{}\n".format(
-                                op.name, op.version
-                            )
+                            f"     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#{op.name}-{op.version}\n"
                         )
 
                     f.write("     *\n")
@@ -634,10 +613,8 @@ class ConstVoidData;
                         for a in sorted(op.attributes, key=lambda x: x.hasDefault()):
                             if not a.isDeprecated():
                                 f.write(
-                                    r"     * \param {} The '{}' attribute".format(
-                                        a.name, a.name
-                                    )
-                                    + "\n"
+                                    f"     * \\param {a.name} The '{a.name}'"
+                                    " attribute\n"
                                 )
                     f.write(
                         r"     * \param name Optional identifier for the operation"
@@ -671,16 +648,15 @@ class ConstVoidData;
                         else:
                             f.write("    std::vector<TensorId>\n")
 
-                        f.write("    {}(".format(op.CppName()))
+                        f.write(f"    {op.CppName()}(")
                         if op.inputs > 0:
                             f.write("const std::vector<TensorId>& args,\n")
 
                         # In the case of a variable number outputs, set the number of ouputs
                         if op.min_output != op.max_output:
                             f.write(
-                                "     {}unsigned num_outputs,\n".format(
-                                    spaces(len(op.CppName()))
-                                )
+                                f"     {spaces(len(op.CppName()))}unsigned"
+                                " num_outputs,\n"
                             )
 
                         for a in sorted(
@@ -689,17 +665,14 @@ class ConstVoidData;
                         ):
                             if not a.isDeprecated():
                                 f.write(
-                                    "     {}{} {}".format(
-                                        spaces(len(op.CppName())), a.CppType(), a.name
-                                    )
+                                    f"     {spaces(len(op.CppName()))}{a.CppType()} {a.name}"
                                 )
                                 if a.hasDefaultValue():
-                                    f.write(" = {}".format(a.DefaultValue()))
+                                    f.write(f" = {a.DefaultValue()}")
                                 f.write(",\n")
                         f.write(
-                            "     {}const popart::DebugContext& debugContext = {});\n".format(
-                                spaces(len(op.CppName())), "{}"
-                            )
+                            f"     {spaces(len(op.CppName()))}const"
+                            " popart::DebugContext& debugContext = {});\n"
                         )
                         f.write("\n")
                 f.write("};\n")
@@ -794,7 +767,7 @@ class ConstVoidData;
                     else:
                         f.write("std::vector<TensorId>\n")
 
-                    f.write("{}::{}(".format(classname, op.CppName()))
+                    f.write(f"{classname}::{op.CppName()}(")
 
                     if op.inputs > 0:
                         f.write("const std::vector<TensorId>& args,\n")
@@ -802,9 +775,8 @@ class ConstVoidData;
                     # In the case of a variable number outputs, set the number of ouputs
                     if op.min_output != op.max_output:
                         f.write(
-                            "{}  {} unsigned num_outputs,\n".format(
-                                spaces(len(classname)), spaces(len(op.CppName()))
-                            )
+                            f"{spaces(len(classname))} "
+                            f" {spaces(len(op.CppName()))} unsigned num_outputs,\n"
                         )
 
                     for a in sorted(
@@ -812,17 +784,12 @@ class ConstVoidData;
                     ):
                         if not a.isDeprecated():
                             f.write(
-                                "{}  {} {} {},\n".format(
-                                    spaces(len(classname)),
-                                    spaces(len(op.CppName())),
-                                    a.CppType(),
-                                    a.name,
-                                )
+                                f"{spaces(len(classname))} "
+                                f" {spaces(len(op.CppName()))} {a.CppType()} {a.name},\n"
                             )
                     f.write(
-                        "{}  {} const popart::DebugContext& debugContext) {{\n".format(
-                            spaces(len(classname)), spaces(len(op.CppName()))
-                        )
+                        f"{spaces(len(classname))}  {spaces(len(op.CppName()))} const"
+                        " popart::DebugContext& debugContext) {\n"
                     )
 
                     f.write("  std::map<std::string, popart::any> attributes;\n")
@@ -844,42 +811,31 @@ class ConstVoidData;
                                     )
                                     f.write("  // at the API level\n")
                                     f.write(
-                                        '  attributes["{}"] = io::getModelFromString({}.getModelProto()).graph();\n'.format(
-                                            a.name, a.name
-                                        )
+                                        f'  attributes["{a.name}"] ='
+                                        f" io::getModelFromString({a.name}.getModelProto()).graph();\n"
                                     )
                                 elif op.name == "Cast":
                                     f.write(
                                         "  // Special case where we cast from DataType to int\n"
                                     )
                                     f.write(
-                                        "  DataType toDataType = dataTypeFromString({});\n".format(
-                                            a.name
-                                        )
+                                        "  DataType toDataType ="
+                                        f" dataTypeFromString({a.name});\n"
                                     )
                                     f.write(
-                                        '  attributes["{}"] = static_cast<int>(onnxutil::getTPDataType(toDataType));\n'.format(
-                                            a.name, a.name
-                                        )
+                                        f'  attributes["{a.name}"] ='
+                                        " static_cast<int>(onnxutil::getTPDataType(toDataType));\n"
                                     )
                                 else:
-                                    f.write(
-                                        '  attributes["{}"] = {};\n'.format(
-                                            a.name, a.name
-                                        )
-                                    )
+                                    f.write(f'  attributes["{a.name}"] = {a.name};\n')
                             elif a.isTensor():
-                                f.write(
-                                    '  attributes["{}"] = {};\n'.format(a.name, a.name)
-                                )
+                                f.write(f'  attributes["{a.name}"] = {a.name};\n')
                             else:
                                 if a.isList() and not a.isBoostOptional():
-                                    f.write("  if (!{}.empty()) {{\n".format(a.name))
+                                    f.write(f"  if (!{a.name}.empty()) {{\n")
                                 elif a.isFloat() and not a.isBoostOptional():
                                     f.write(
-                                        "  if ({} != {}) {{\n".format(
-                                            a.name, a.DefaultValue()
-                                        )
+                                        f"  if ({a.name} != {a.DefaultValue()}) {{\n"
                                     )
                                 else:
                                     if a.hasPrimitiveDefaultValue():
@@ -891,23 +847,16 @@ class ConstVoidData;
                                         )
                                     else:
                                         f.write(
-                                            "  if ({} != {}) {{\n".format(
-                                                a.name, a.DefaultValue()
-                                            )
+                                            f"  if ({a.name} != {a.DefaultValue()})"
+                                            " {\n"
                                         )
 
                                 if a.isBoostOptional():
                                     f.write(
-                                        '    attributes["{}"] = *{};\n'.format(
-                                            a.name, a.name
-                                        )
+                                        f'    attributes["{a.name}"] = *{a.name};\n'
                                     )
                                 else:
-                                    f.write(
-                                        '    attributes["{}"] = {};\n'.format(
-                                            a.name, a.name
-                                        )
-                                    )
+                                    f.write(f'    attributes["{a.name}"] = {a.name};\n')
                                 f.write("  }\n")
 
                     if op.inputs > 0:
@@ -922,9 +871,7 @@ class ConstVoidData;
                     f.write("  attributes.insert({sDebugInfoId, di.getId()});\n")
 
                     f.write(
-                        "  auto outputs = impl->op(Onnx::Operators::{},\n".format(
-                            op.CppId()
-                        )
+                        f"  auto outputs = impl->op(Onnx::Operators::{op.CppId()},\n"
                     )
 
                     # Add the opset version
@@ -951,9 +898,7 @@ class ConstVoidData;
                             "                         std::map<std::string, popart::any> attributes_) {\n"
                         )
                         f.write(
-                            "                     verify_{}_{}(this->impl, inputs_, attributes_);\n".format(
-                                classname, op.CppId()
-                            )
+                            f"                     verify_{classname}_{op.CppId()}(this->impl, inputs_, attributes_);\n"
                         )
                         f.write("                  }")
 
@@ -1276,20 +1221,13 @@ namespace Operators {
                 if op.min_input == op.max_input:
                     numInputs = str(op.min_input)
                 else:
-                    numInputs = "{{{}, {}}}".format(
-                        str(op.min_input), str(op.max_input)
-                    )
+                    numInputs = f"{{{str(op.min_input)}, {str(op.max_input)}}}"
 
-                if op.min_output == op.max_output:
-                    numOutputs = str(op.min_output)
-                else:
-                    numOutputs = str(op.max_output)
-                    # numOutputs = "{{{}, {}}}".format(str(op.min_output), str(op.max_output))
+                numOutputs = str(op.max_output)
 
                 f.write(
-                    '(Domain::ai_onnx, "{}", {}, {}, {});'.format(
-                        op.name, str(op.version), numInputs, numOutputs
-                    )
+                    f'(Domain::ai_onnx, "{op.name}", {str(op.version)}, {numInputs},'
+                    f" {numOutputs});"
                 )
 
                 f.write("\n")
@@ -1307,7 +1245,7 @@ namespace Operators {
 
             for opset_version, _ in sorted(v.opsets.items(), key=lambda x: int(x[0])):
 
-                f.write("namespace OpSet{} {{\n".format(str(opset_version)))
+                f.write(f"namespace OpSet{str(opset_version)} {{\n")
                 # Add all ops in the this op set
 
                 seen = []
@@ -1323,9 +1261,8 @@ namespace Operators {
                         if len(found) > 0:
                             seen.append(found[-1].name)
                             f.write(
-                                "const static OperatorIdentifier {} = Operators::{}_{};".format(
-                                    op.name, op.name, str(found[-1].version)
-                                )
+                                f"const static OperatorIdentifier {op.name} ="
+                                f" Operators::{op.name}_{str(found[-1].version)};"
                             )
                             f.write("\n")
 

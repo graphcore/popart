@@ -363,7 +363,7 @@ def build_test_ir(
 def train(train_session, training_data, opts, input_streams, loss_stream) -> None:
     nb_batches = len(training_data)
     for epoch in range(1, opts.epochs + 1):
-        print("Epoch {0}/{1}".format(epoch, opts.epochs))
+        print(f"Epoch {epoch}/{opts.epochs}")
         bar = tqdm(training_data, total=nb_batches)
         # train_session_inputs begin
         for data, labels in bar:
@@ -407,7 +407,7 @@ def test(test_session, test_data, opts, input_streams, out_stream) -> None:
                 }
             output = test_session.run(inputs)
             sum_acc += get_accuracy(output[out_stream], labels)
-    print("Accuracy on test set: {:0.2f}%".format(sum_acc / len(test_data)))
+    print(f"Accuracy on test set: {sum_acc / len(test_data):0.2f}%")
 
 
 def get_test_var_values(

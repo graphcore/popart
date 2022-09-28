@@ -147,15 +147,15 @@ def check_ir(ir, check_onchip, check_offchip):
     for tensor in check_onchip:
         off_chip_tensor_name = popart.reservedRemoteArgPrefix() + tensor
         assert off_chip_tensor_name not in off_chip_ir_tensors, (
-            "Expected %s to be OnChip but a tensor named %s was found in the IR, indicating it's OffChip"
-            % (tensor, off_chip_tensor_name)
+            f"Expected {tensor} to be OnChip but a tensor named"
+            f" {off_chip_tensor_name} was found in the IR, indicating it's OffChip"
         )
 
     for tensor in check_offchip:
         off_chip_tensor_name = popart.reservedRemoteArgPrefix() + tensor
         assert off_chip_tensor_name in off_chip_ir_tensors, (
-            "Expected %s to be OffChip but no tensor named %s was found in the IR, indicating it's OnChip"
-            % (tensor, off_chip_tensor_name)
+            f"Expected {tensor} to be OffChip but no tensor named"
+            f" {off_chip_tensor_name} was found in the IR, indicating it's OnChip"
         )
 
 

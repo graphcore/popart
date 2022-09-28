@@ -22,7 +22,7 @@ def test_lrn(op_tester):
                 beta=beta,
                 bias=bias,
                 size=nsize,
-                debugContext="test_lrn_{0}".format(nsize),
+                debugContext=f"test_lrn_{nsize}",
             )
             builder.addOutputTensor(out)
             result.append(out)
@@ -73,7 +73,7 @@ def test_lrn_training(op_tester):
                 beta=beta,
                 bias=bias,
                 size=nsize,
-                debugContext="test_lrn_{0}".format(nsize),
+                debugContext=f"test_lrn_{nsize}",
             )
             result.append(out)
             result.append(popart.reservedGradientPrefix() + tensor)

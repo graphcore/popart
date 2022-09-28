@@ -61,11 +61,7 @@ def run_poprun_broadcast_weights():
 
         tmp_path = pathlib.Path(args.tmpdir)
         tmp_path.mkdir(parents=True, exist_ok=True)
-        filename = "test_poprun_broadcast_weights_{}_{}_{}.pkl".format(
-            popdist.getInstanceIndex(),
-            popdist.getNumInstances(),
-            popdist.getNumTotalReplicas(),
-        )
+        filename = f"test_poprun_broadcast_weights_{popdist.getInstanceIndex()}_{popdist.getNumInstances()}_{popdist.getNumTotalReplicas()}.pkl"
 
         # Save the anchors to a file, so we can access them outside of the MPI context.
         with open(str(tmp_path / filename), "wb") as handle:
@@ -111,11 +107,7 @@ def test_poprun_broadcast_weights(tmpdir, config):
     anchors = []
 
     for instance_index in range(config["num_instances"]):
-        filename = "test_poprun_broadcast_weights_{}_{}_{}.pkl".format(
-            instance_index,
-            config["num_instances"],
-            config["num_replicas"],
-        )
+        filename = f"test_poprun_broadcast_weights_{instance_index}_{config['num_instances']}_{config['num_replicas']}.pkl"
 
         with open(str(tmp_path / filename), "rb") as handle:
             anchors.append(pickle.load(handle))

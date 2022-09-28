@@ -233,7 +233,7 @@ def test_import_torch_lstm(tmpdir):
     assert len(popart_out) == 3 and len(torch_out) == 3
 
     for i, (po, to) in enumerate(zip(popart_out, torch_out)):
-        print("Checking output {}".format(i))
+        print(f"Checking output {i}")
         assert np.allclose(po, to.data.numpy())
 
 
@@ -295,7 +295,7 @@ def test_import_torch_lstm_train(tmpdir):
 
         # manually update parameters
         for name, param in torch_lstm.named_parameters():
-            print("Updating lstm param {}".format(name))
+            print(f"Updating lstm param {name}")
             param.data.sub_(0.1 * param.grad.data)
 
         outputs = {
@@ -402,18 +402,18 @@ def test_import_torch_lstm_train(tmpdir):
     for key in popart_out.keys():
         po = popart_out[key]
         to = torch_out[key]
-        print("Checking {}".format(key))
+        print(f"Checking {key}")
         if po.shape != to.shape:
             errors += 1
-            print("tensors {} are not matching shapes".format(key))
+            print(f"tensors {key} are not matching shapes")
             print()
         elif not np.allclose(po, to, atol=1e-07):
             errors += 1
-            print("tensors {} are not close".format(key))
+            print(f"tensors {key} are not close")
             print("  popart")
-            print("    {}".format(po))
+            print(f"    {po}")
             print("  torch")
-            print("    {}".format(to))
+            print(f"    {to}")
             print()
     assert errors == 0
 
@@ -534,7 +534,7 @@ def test_import_torch_lstm_multi_run(tmpdir):
     assert len(popart_out) == 3 and len(torch_out) == 3
 
     for i, (po, to) in enumerate(zip(popart_out, torch_out)):
-        print("Checking output {}".format(i))
+        print(f"Checking output {i}")
         assert np.allclose(po, to.data.numpy())
 
 
@@ -710,13 +710,9 @@ def test_lstm_extra_inputs(enable_pattern):
             )
 
         try:
-            print("Preparing the {} graph".format(session_type))
+            print(f"Preparing the {session_type} graph")
             session.prepareDevice()
-            print(
-                "{0} graph preparation complete.".format(
-                    session_type.capitalize(),
-                )
-            )
+            print(f"{session_type.capitalize()} graph preparation complete.")
         except popart.OutOfMemoryException:
             print("Caught OutOfMemoryException during prepareDevice")
             raise

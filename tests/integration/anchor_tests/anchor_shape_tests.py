@@ -201,9 +201,7 @@ def test_all_anchor_returns():
             for a in dicts:
                 print(a, ":")
                 print(
-                    "Actual : {}, Expected: {}".format(
-                        list(dicts[a].shape), expected_shapes[a]
-                    )
+                    f"Actual : {list(dicts[a].shape)}, Expected: {expected_shapes[a]}"
                 )
                 assert list(dicts[a].shape) == expected_shapes[a]
                 print("CORRECT")

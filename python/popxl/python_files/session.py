@@ -128,7 +128,9 @@ class Session:
     def _assert_attached_before_runtime(self):
         if not self.is_attached:
             raise ValueError(
-                "Must be attached to device before calling a runtime function. Put the call inside a `Session` context, for example `with session: session.run()`."
+                "Must be attached to device before calling a runtime function. Put the"
+                " call inside a `Session` context, for example `with session:"
+                " session.run()`."
             )
 
     def run_with_outputs(
@@ -394,16 +396,16 @@ class Session:
         for tensor, data in tensors.items():
             if not isinstance(tensor, Variable):
                 raise TypeError(
-                    f"Tensor {tensor.id} is not of type Variable. write_variable_data is not"
-                    "supported for this type."
+                    f"Tensor {tensor.id} is not of type Variable. write_variable_data"
+                    " is not supported for this type."
                 )
 
             if isinstance(data, numbers.Number):
                 data = np.array(data).astype(tensor.dtype.as_numpy())
             if data.dtype != tensor.dtype.as_numpy():
                 raise TypeError(
-                    f"The dtype of the input array {data.dtype} must match the equivalent "
-                    f"type of the tensor {tensor.id} : {tensor.dtype}"
+                    f"The dtype of the input array {data.dtype} must match the"
+                    f" equivalent type of the tensor {tensor.id} : {tensor.dtype}"
                 )
             elif data.shape != tensor.shape_on_host:
                 raise ValueError(
@@ -623,8 +625,8 @@ class Session:
         )
         if not ir_ipus:
             raise RuntimeError(
-                f"The Ir {self.ir.id} has no graphs. The graphs may have all been optimised to"
-                "nothing, try adding more operations to your graphs."
+                f"The Ir {self.ir.id} has no graphs. The graphs may have all been"
+                " optimised to nothing, try adding more operations to your graphs."
             )
         return max(ir_ipus) + 1
 

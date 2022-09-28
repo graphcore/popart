@@ -52,7 +52,7 @@ def _get_bwd_rhs_matmul(matmuls):
 
 
 def gen_shape(shape):
-    return "[{0} {1} {2}]".format(str(shape[0]), str(shape[1]), str(shape[2]))
+    return f"[{str(shape[0])} {str(shape[1])} {str(shape[2])}]"
 
 
 def test_matmul_serialization_invalid_mode():

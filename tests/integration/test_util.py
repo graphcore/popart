@@ -163,8 +163,9 @@ def create_test_device(
 
     if device is None:
         return pytest.fail(
-            f"Tried to acquire device {testDeviceType} : {numIpus} IPUs, {tilesPerIPU} tiles,"
-            f" {pattern} pattern, {connectionType} connection, but none were availaible"
+            f"Tried to acquire device {testDeviceType} : {numIpus} IPUs,"
+            f" {tilesPerIPU} tiles, {pattern} pattern, {connectionType} connection, but"
+            " none were available"
         )
     return DeviceContext(device)
 

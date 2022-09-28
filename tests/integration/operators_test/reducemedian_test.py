@@ -38,7 +38,7 @@ def test_reducemedian_values(op_tester, type, keepdims, axes):
             [tensor],
             axes=axes,
             keepdims=keepdims,
-            debugContext="test_reducemedian_values_{}_{}".format(axes, keepdims),
+            debugContext=f"test_reducemedian_values_{axes}_{keepdims}",
         )
         builder.addOutputTensor(out[0])
         return [out[0]]
@@ -77,7 +77,7 @@ def test_reducemedian_indices_1(op_tester, type, keepdims, axes):
             [tensor],
             axes=axes,
             keepdims=keepdims,
-            debugContext="test_reducemedian_indices_1_{}_{}".format(axes, keepdims),
+            debugContext=f"test_reducemedian_indices_1_{axes}_{keepdims}",
         )
         builder.addOutputTensor(out[1])
         return [out[1]]
@@ -108,7 +108,7 @@ def test_reducemedian_indices_2(op_tester, type, keepdims, axes):
             [tensor],
             axes=axes,
             keepdims=keepdims,
-            debugContext="test_reducemedian_indices_2_{}_{}".format(axes, keepdims),
+            debugContext=f"test_reducemedian_indices_2_{axes}_{keepdims}",
         )
         builder.addOutputTensor(out[1])
         return [out[1]]
@@ -152,12 +152,12 @@ def test_reducemedian_training_1(op_tester, type, keepdims, axes):
             [tensor],
             axes=axes,
             keepdims=keepdims,
-            debugContext="test_reducemedian_training_1_{}_{}".format(axes, keepdims),
+            debugContext=f"test_reducemedian_training_1_{axes}_{keepdims}",
         )
         sum = builder.aiOnnx.reducesum(
             [out[0]],
             keepdims=False,
-            debugContext="test_reducemedian_training_1_{}_{}".format(axes, keepdims),
+            debugContext=f"test_reducemedian_training_1_{axes}_{keepdims}",
         )
         builder.addOutputTensor(sum)
         return [sum, out[0], popart.reservedGradientPrefix() + tensor]
@@ -199,12 +199,12 @@ def test_reducemedian_training_2(op_tester, type, keepdims, axes):
             [tensor],
             axes=axes,
             keepdims=keepdims,
-            debugContext="test_reducemedian_training_2_{}_{}".format(axes, keepdims),
+            debugContext=f"test_reducemedian_training_2_{axes}_{keepdims}",
         )
         sum = builder.aiOnnx.reducesum(
             [out[0]],
             keepdims=False,
-            debugContext="test_reducemedian_training_2_{}_{}".format(axes, keepdims),
+            debugContext=f"test_reducemedian_training_2_{axes}_{keepdims}",
         )
         builder.addOutputTensor(sum)
         return [sum, out[0], popart.reservedGradientPrefix() + tensor]
@@ -233,7 +233,7 @@ def test_reducemedian_values_shape_infer(keepdims, axes):
         [tensor],
         axes=axes,
         keepdims=keepdims,
-        debugContext="test_reducemedian_values_{}_{}".format(axes, keepdims),
+        debugContext=f"test_reducemedian_values_{axes}_{keepdims}",
     )
     builder.addOutputTensor(out[0])
     builder.addOutputTensor(out[1])
@@ -281,7 +281,7 @@ def test_reducemedian_indices_1_shape_infer(keepdims, axes):
         [tensor],
         axes=axes,
         keepdims=keepdims,
-        debugContext="test_reducemedian_values_{}_{}".format(axes, keepdims),
+        debugContext=f"test_reducemedian_values_{axes}_{keepdims}",
     )
     builder.addOutputTensor(out[0])
     builder.addOutputTensor(out[1])
@@ -329,7 +329,7 @@ def test_reducemedian_shape_infer():
         [tensor],
         axes=axes,
         keepdims=keepdims,
-        debugContext="test_reducemedian_values_{}_{}".format(axes, keepdims),
+        debugContext=f"test_reducemedian_values_{axes}_{keepdims}",
     )
     builder.addOutputTensor(out[0])
     builder.addOutputTensor(out[1])

@@ -20,12 +20,12 @@ def test_issue(op_tester):
     def zeros(*args):
         return np.zeros(args, dtype=np.float32)
 
-    print("matmul training test {} x {}".format(lhs, rhs))
+    print(f"matmul training test {lhs} x {rhs}")
 
     d1 = np.random.rand(*lhs).astype(np.float32)
     d2 = np.random.rand(*rhs).astype(np.float32)
 
-    print("Result  {}".format(np.matmul(d1, d2).shape))
+    print(f"Result  {np.matmul(d1, d2).shape}")
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -71,7 +71,7 @@ def test_issue(op_tester):
             r__o = ref_data.getOutputTensorGrad(0)
             r.backward(torch.tensor(r__o))
 
-            print("{} {} ".format(t1.grad, t2.grad))
+            print(f"{t1.grad} {t2.grad} ")
             return [r, r__o, t1.grad, t2.grad]
 
     op_tester.patterns = popart.Patterns(popart.PatternsLevel.Default)

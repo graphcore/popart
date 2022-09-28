@@ -24,5 +24,5 @@ def to_collective_op(op: CollectiveOps) -> _ir.CollectiveOperator:
         return OP_MAP[op]
     except KeyError:
         raise ValueError(
-            f"Not a valid op: {op}. " f"Must choose from: {', '.join(OP_MAP.keys())}"
+            f"Not a valid op: {op}. Must choose from: {', '.join(OP_MAP.keys())}"
         )

@@ -461,9 +461,10 @@ def assert_contains(pattern, output):
 def assert_does_not_contain(pattern, output):
     # Find the regex matches.
     matches = re.findall(pattern, output)
-    assert (
-        len(matches) == 0
-    ), f"Found pattern {pattern} that must not have been found in log output:\n\n{output}"
+    assert len(matches) == 0, (
+        f"Found pattern {pattern} that must not have been found in log"
+        f" output:\n\n{output}"
+    )
 
 
 # Test that poplar gets our instruction to set the enableConvDithering option.

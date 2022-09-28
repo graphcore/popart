@@ -56,7 +56,7 @@ class TestOfflineCompilation:
         with tempfile.TemporaryDirectory() as tmpdirname:
             assert os.path.isdir(tmpdirname)
             self.session.compileAndExport(tmpdirname)
-            files = glob.glob("%s/*" % tmpdirname)
+            files = glob.glob(f"{tmpdirname}/*")
             assert len(files) == 1, "Expected exactly 1 file"
 
     def test_compileAndExport_offline_ipu_file(self):

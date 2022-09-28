@@ -20,14 +20,14 @@ def test_reducesumsquare(op_tester):
                 out = builder.aiOnnx.reducesumsquare(
                     [tensor],
                     keepdims=keepdims,
-                    debugContext="test_reducesumsquare_default_{0}".format(keepdims),
+                    debugContext=f"test_reducesumsquare_default_{keepdims}",
                 )
             else:
                 out = builder.aiOnnx.reducesumsquare(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugContext="test_reducesumsquare_{0}_{1}".format(axes, keepdims),
+                    debugContext=f"test_reducesumsquare_{axes}_{keepdims}",
                 )
             builder.addOutputTensor(out)
             result.append(out)
@@ -63,14 +63,14 @@ def test_reducesumsquare_training(op_tester):
                 out = builder.aiOnnx.reducesumsquare(
                     [tensor],
                     keepdims=keepdims,
-                    debugContext="test_reducesumsquare_default_{0}".format(keepdims),
+                    debugContext=f"test_reducesumsquare_default_{keepdims}",
                 )
             else:
                 out = builder.aiOnnx.reducesumsquare(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugContext="test_reducesumsquare_{0}_{1}".format(axes, keepdims),
+                    debugContext=f"test_reducesumsquare_{axes}_{keepdims}",
                 )
             result.append(out)
             result.append(popart.reservedGradientPrefix() + tensor)

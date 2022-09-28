@@ -20,14 +20,14 @@ def test_reducelogsumexp(op_tester):
                 out = builder.aiOnnx.reducelogsumexp(
                     [tensor],
                     keepdims=keepdims,
-                    debugContext="test_reducelogsum_default_{0}".format(keepdims),
+                    debugContext=f"test_reducelogsum_default_{keepdims}",
                 )
             else:
                 out = builder.aiOnnx.reducelogsumexp(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugContext="test_reducelogsum_{0}_{1}".format(axes, keepdims),
+                    debugContext=f"test_reducelogsum_{axes}_{keepdims}",
                 )
             builder.addOutputTensor(out)
             result.append(out)
@@ -67,14 +67,14 @@ def test_reducelogsumexp_training(op_tester):
                 out = builder.aiOnnx.reducelogsumexp(
                     [tensor],
                     keepdims=keepdims,
-                    debugContext="test_reducelogsum_default_{0}".format(keepdims),
+                    debugContext=f"test_reducelogsum_default_{keepdims}",
                 )
             else:
                 out = builder.aiOnnx.reducelogsumexp(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugContext="test_reducelogsum_{0}_{1}".format(axes, keepdims),
+                    debugContext=f"test_reducelogsum_{axes}_{keepdims}",
                 )
             result.append(out)
             result.append(popart.reservedGradientPrefix() + tensor)

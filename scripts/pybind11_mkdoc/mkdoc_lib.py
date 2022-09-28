@@ -102,7 +102,7 @@ def d(s):
 def sanitize_name(name):
     name = re.sub(r"type-parameter-0-([0-9]+)", r"T\1", name)
     for k, v in CPP_OPERATORS.items():
-        name = name.replace("operator%s" % k, "operator_%s" % v)
+        name = name.replace(f"operator{k}", f"operator_{v}")
     name = re.sub("<.*>", "", name)
     name = "".join([ch if ch.isalnum() else "_" for ch in name])
     name = re.sub("_$", "", re.sub("_+", "_", name))
@@ -397,7 +397,7 @@ class ExtractionThread(Thread):
 
     def run(self):
         global errors_detected
-        print('Processing "%s" ..' % self.filename, file=sys.stderr)
+        print(f'Processing "{self.filename}" ..', file=sys.stderr)
         try:
             index = cindex.Index(cindex.conf.lib.clang_createIndex(False, True))
             tu = index.parse(self.filename, self.parameters)
@@ -456,7 +456,7 @@ def read_args(args):
             (
                 path
                 for libdir in ["lib64", "lib", "lib32"]
-                for path in glob("/usr/%s/llvm-*" % libdir)
+                for path in glob(f"/usr/{libdir}/llvm-*")
                 if os.path.exists(os.path.join(path, "lib", "libclang.so.1"))
             ),
             default=None,
@@ -502,7 +502,7 @@ def read_args(args):
 
             cpp_dirs.append(
                 max(
-                    glob("/usr/include/%s-linux-gnu/c++/*" % platform.machine()),
+                    glob(f"/usr/include/{platform.machine()}-linux-gnu/c++/*"),
                     default=None,
                     key=folder_version,
                 )
@@ -521,7 +521,7 @@ def read_args(args):
                 )
             )
 
-        cpp_dirs.append("/usr/include/%s-linux-gnu" % platform.machine())
+        cpp_dirs.append(f"/usr/include/{platform.machine()}-linux-gnu")
         cpp_dirs.append("/usr/include")
 
         # Capability to specify additional include directories manually
@@ -600,7 +600,7 @@ def write_header(comments, out_file=sys.stdout):
     for name, _, comment in list(sorted(comments, key=lambda x: (x[0], x[1]))):
         if name == name_prev:
             name_ctr += 1
-            name = name + "_%i" % name_ctr
+            name += f"_{name_ctr}"
         else:
             name_prev = name
             name_ctr = 1

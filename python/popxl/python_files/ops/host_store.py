@@ -36,11 +36,13 @@ def host_store(d2h_stream: DeviceToHostStream, t: Tensor) -> None:
 
     if d2h_stream.dtype != t.dtype:
         raise ValueError(
-            f"dtype of stream {d2h_stream.tensor_id} `{d2h_stream.dtype}` does not match dtype of provided tensor `{t.dtype}`"
+            f"dtype of stream {d2h_stream.tensor_id} `{d2h_stream.dtype}` does not"
+            f" match dtype of provided tensor `{t.dtype}`"
         )
     if d2h_stream.shape != t.shape:
         raise ValueError(
-            f"shape of stream {d2h_stream.tensor_id} `{d2h_stream.shape}` does not match shape of provided tensor `{t.shape}`"
+            f"shape of stream {d2h_stream.tensor_id} `{d2h_stream.shape}` does not"
+            f" match shape of provided tensor `{t.shape}`"
         )
 
     opid = _ir.OperatorIdentifier("ai.graphcore", "HostStore", 1, _ir.NumInputs(1), 0)

@@ -77,7 +77,7 @@ def pool(
                 )
             )
             for i in range(spatial_size)
-        ]
+        ],
     ):
         window = padded[shape[0], shape[1]]
         window_vals = np.array(
@@ -102,9 +102,7 @@ def pool(
             f = np.max
         else:
             raise NotImplementedError(
-                "Pooling type {} does not support. Should be AVG, MAX".format(
-                    pooling_type
-                )
+                f"Pooling type {pooling_type} is not supported. Should be AVG, MAX"
             )
 
         if count_include_pad == 1 and pooling_type == "AVG":

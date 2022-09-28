@@ -11,11 +11,11 @@ def _test_matmul_broadcasting_base(op_tester, shapes):
     # Test for inference
     for lhs, rhs in shapes:
 
-        print("matmul inference test {} x {} = ".format(lhs, rhs))
+        print(f"matmul inference test {lhs} x {rhs} = ")
 
         d1 = np.random.rand(*lhs).astype(np.float32)
         d2 = np.random.rand(*rhs).astype(np.float32)
-        print(" result  {}".format(np.matmul(d1, d2).shape))
+        print(f" result  {np.matmul(d1, d2).shape}")
 
         def init_builder_1(builder):
             i1 = builder.addInputTensor(d1)
@@ -46,7 +46,7 @@ def _test_matmul_broadcasting_base(op_tester, shapes):
     # Verify with torch
     print("")
     for lhs, rhs in shapes:
-        print("matmul torch training test {} x {}".format(lhs, rhs))
+        print(f"matmul torch training test {lhs} x {rhs}")
         d1 = np.random.rand(*lhs).astype(np.float32)
         d2 = np.random.rand(*rhs).astype(np.float32)
 
@@ -61,18 +61,18 @@ def _test_matmul_broadcasting_base(op_tester, shapes):
 
         loss.backward()
 
-        print(" - output {}".format(t3.shape))
-        print(" - d_Lhs {} d_Rhs {} ".format(t1.grad.shape, t2.grad.shape))
+        print(f" - output {t3.shape}")
+        print(f" - d_Lhs {t1.grad.shape} d_Rhs {t2.grad.shape} ")
 
     # Test for training
     for lhs, rhs in shapes:
 
-        print("matmul training test {} x {}".format(lhs, rhs))
+        print(f"matmul training test {lhs} x {rhs}")
 
         d1 = np.random.rand(*lhs).astype(np.float32)
         d2 = np.random.rand(*rhs).astype(np.float32)
 
-        print("Result  {}".format(np.matmul(d1, d2).shape))
+        print(f"Result  {np.matmul(d1, d2).shape}")
 
         def init_builder_2(builder):
             i1 = builder.addInputTensor(d1)
@@ -118,7 +118,7 @@ def _test_matmul_broadcasting_base(op_tester, shapes):
                 r__o = ref_data.getOutputTensorGrad(0)
                 r.backward(torch.tensor(r__o))
 
-                print("{} {} ".format(t1.grad, t2.grad))
+                print(f"{t1.grad} {t2.grad} ")
                 return [r, r__o, t1.grad, t2.grad]
 
         # Test with the MatMulXXGradOp to MatMulOp pass

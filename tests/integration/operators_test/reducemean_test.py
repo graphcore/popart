@@ -20,14 +20,14 @@ def test_reducemean(op_tester):
                 out = builder.aiOnnx.reducemean(
                     [tensor],
                     keepdims=keepdims,
-                    debugContext="test_reducemean_default_{0}".format(keepdims),
+                    debugContext=f"test_reducemean_default_{keepdims}",
                 )
             else:
                 out = builder.aiOnnx.reducemean(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugContext="test_reducemean_{0}_{1}".format(axes, keepdims),
+                    debugContext=f"test_reducemean_{axes}_{keepdims}",
                 )
             builder.addOutputTensor(out)
             result.append(out)
@@ -63,14 +63,14 @@ def test_reducemean_training(op_tester):
                 out = builder.aiOnnx.reducemean(
                     [tensor],
                     keepdims=keepdims,
-                    debugContext="test_reducemean_default_{0}".format(keepdims),
+                    debugContext=f"test_reducemean_default_{keepdims}",
                 )
             else:
                 out = builder.aiOnnx.reducemean(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugContext="test_reducemean_{0}_{1}".format(axes, keepdims),
+                    debugContext=f"test_reducemean_{axes}_{keepdims}",
                 )
             result.append(out)
             result.append(popart.reservedGradientPrefix() + tensor)

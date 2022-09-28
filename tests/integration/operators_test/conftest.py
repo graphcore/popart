@@ -117,21 +117,21 @@ def op_tester(tmpdir):
         def verifyTensor(self, t1, ref):
             if self.check_shapes:
                 if t1.shape != ref.shape:
-                    print("shape mismatch {} != {}".format(t1.shape, ref.shape))
+                    print(f"shape mismatch {t1.shape} != {ref.shape}")
                 assert t1.shape == ref.shape
 
             if self.check_dtypes:
                 if t1.dtype != ref.dtype:
-                    print("dtype mismatch {} != {}".format(t1.dtype, ref.dtype))
+                    print(f"dtype mismatch {t1.dtype} != {ref.dtype}")
                 assert t1.dtype == ref.dtype
 
             if not np.allclose(t1, ref, self.rtol, self.atol, self.equal_nan):
-                print("rtol:{} atol:{}".format(self.rtol, self.atol))
-                print("Popart:\n{}".format(t1))
-                print("Torch:\n{}".format(ref))
-                print("Diff:\n{}".format(np.subtract(t1, ref)))
+                print(f"rtol:{self.rtol} atol:{self.atol}")
+                print(f"Popart:\n{t1}")
+                print(f"Torch:\n{ref}")
+                print(f"Diff:\n{np.subtract(t1, ref)}")
                 isclose = np.isclose(t1, ref, self.rtol, self.atol, self.equal_nan)
-                print("IsClose:\n{}".format(isclose))
+                print(f"IsClose:\n{isclose}")
                 indices = np.argwhere(np.logical_not(isclose))
                 print("# not close:", indices.shape[0])
                 for i in indices[0:10]:
@@ -242,7 +242,7 @@ def op_tester(tmpdir):
                     # need to call np.ascontiguousarray
                     # `x = np.ascontiguousarray(x)`
                     raise Exception(
-                        'Input "{}" to popart.PyStepIO is not C_CONTIGUOS'.format(k)
+                        f'Input "{k}" to popart.PyStepIO is not C_CONTIGUOUS'
                     )
 
             # Add the replication dimension to the inputs
@@ -294,13 +294,13 @@ def op_tester(tmpdir):
             for index, key in enumerate(anchorIds):
                 if key in anchors:
                     if ref_out[index] is not None:
-                        print('Testing anchor "{}"...'.format(key))
+                        print(f'Testing anchor "{key}"...')
                         self.verifyTensor(anchor_map[key], ref_out[index])
                     else:
-                        print('Not Testing anchor "{}" as it is None'.format(key))
+                        print(f'Not Testing anchor "{key}" as it is None')
                 elif key in bld._init_input_map:
                     if ref_out[index] is not None:
-                        print('Testing weight "{}"...'.format(key))
+                        print(f'Testing weight "{key}"...')
                         weightInfo = session.getInfo(key)
                         print(
                             "Weight info shape:{} type:{}",
@@ -317,7 +317,7 @@ def op_tester(tmpdir):
                         self.verifyTensor(weights[key], ref_out[index])
 
                     else:
-                        print('Not Testing weight "{}" as it is None'.format(key))
+                        print(f'Not Testing weight "{key}" as it is None')
 
             return session
 

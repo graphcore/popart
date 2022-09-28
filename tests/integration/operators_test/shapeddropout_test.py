@@ -92,7 +92,7 @@ class ShapedDropoutHarness:
 def assert_not_equal(A, B):
     if np.array_equal(A, B):
         pytest.fail(
-            ("Arrays compare equal when expected not to:\n" f"A = \n{A}\n\nB = \n{B}")
+            f"Arrays compare equal when expected not to:\nA = \n{A}\n\nB = \n{B}"
         )
 
 
@@ -294,9 +294,7 @@ def test_shapeddropout_invalid_ratio():
         with tu.create_test_device() as device:
             ShapedDropoutHarness(np.zeros([2, 2]), drop_ratio=bad_ratio, device=device)
 
-    exmsg = (
-        "ratio value {} is not valid. " "Please use a value in the interval [0,1)"
-    ).format(bad_ratio)
+    exmsg = f"ratio value {bad_ratio} is not valid. Please use a value in the interval [0,1)"
     assert e_info.value.args[0].endswith(exmsg)
 
 

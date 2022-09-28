@@ -47,8 +47,8 @@ def check_op_with_invalid_axes(opset, reduceOp, axis):
             proto, dataFlow, device
         )  # this should throw an error
     assert e_info.value.args[0] == (
-        "Axis {} is out of acceptable range [{}, {}]"
-    ).format(axis, -RANK, RANK - 1)
+        f"Axis {axis} is out of acceptable range [{-RANK}, {RANK - 1}]"
+    )
 
 
 @pytest.mark.parametrize("axis", INVALID_AXES)
