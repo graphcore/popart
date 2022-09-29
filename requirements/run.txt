@@ -17,7 +17,7 @@
 
 # Packages we depend on at run/test-time:
 wheel
-numpy==1.19.2
+numpy==1.22.0
 onnx==1.6.0
 protobuf==3.11.2
 pytest==6.2.0
