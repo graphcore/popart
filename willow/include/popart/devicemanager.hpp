@@ -134,14 +134,12 @@ class DeviceInfo {
 public:
   /**
    * Constructor for the DeviceInfo class.
-   * \param _provider The DeviceProvider instance for the device.
    * \param _type The type of the device.
    * \param _connectionType The setting for when to connect to the device, if at
    *        all.
    * \param _flags A set of Poplar option/value string flags.
    */
-  DeviceInfo(DeviceProvider &_provider,
-             DeviceType _type,
+  DeviceInfo(DeviceType _type,
              DeviceConnectionType _connectionType,
              const poplar::OptionFlags &_flags);
 
@@ -262,7 +260,6 @@ public:
       const std::map<std::string, std::string> &auxKeyVals = {});
 
 private:
-  DeviceProvider &provider;
   DeviceType type;
   DeviceConnectionType connectionType;
   const std::unique_ptr<const poplar::OptionFlags> flags;

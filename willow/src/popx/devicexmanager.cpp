@@ -85,7 +85,7 @@ DevicexManager::getDevice(SyncPattern syncPattern,
   addSyncConfig(syncPattern, flags);
   auto device = deviceManager.getDevice(deviceManagerId, flags);
   return std::make_shared<DevicexIpuInfo>(
-      *this, connectionType, device.getId(), device, flags);
+      connectionType, device.getId(), device, flags);
 }
 
 void DevicexManager::enumerate(
@@ -111,7 +111,7 @@ void DevicexManager::enumerate(
       device = device.createVirtualDevice(requiredTilesPerIPU);
     }
     std::shared_ptr<popart::DeviceInfo> ipu = std::make_shared<DevicexIpuInfo>(
-        *this, connectionType, device.getId(), device, flags);
+        connectionType, device.getId(), device, flags);
     devices.push_back(ipu);
   }
 }
@@ -200,7 +200,7 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
   case DeviceType::Cpu: {
     checkOptions({});
     poplar::Device device = poplar::Device::createCPUDevice();
-    return std::make_shared<DevicexCpuInfo>(*this, device);
+    return std::make_shared<DevicexCpuInfo>(device);
   }
   case DeviceType::IpuModel: {
     checkOptions({"numIPUs", "tilesPerIPU", "compileIPUCode", "ipuVersion"});
@@ -232,7 +232,7 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
 
     poplar::Device device = ipuModel.createDevice();
 
-    return std::make_shared<DevicexIpuModelInfo>(*this, device, ipuVersion);
+    return std::make_shared<DevicexIpuModelInfo>(device, ipuVersion);
   }
   case DeviceType::OfflineIpu: {
     checkOptions({"numIPUs", "tilesPerIPU", "ipuVersion", "syncPattern"});
@@ -250,7 +250,7 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
 
     auto ipuTarget = poplar::Target::createIPUTarget(
         mapFind(options, "numIPUs", 1), poplar::StringRef(ipuVersion), flags);
-    return std::make_shared<DevicexOfflineIpuInfo>(*this, ipuTarget, flags);
+    return std::make_shared<DevicexOfflineIpuInfo>(ipuTarget, flags);
   }
   case DeviceType::Sim: {
     checkOptions({"numIPUs", "tilesPerIPU"});
@@ -263,7 +263,7 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
       auto target = poplar::Target::createIPUTarget(
           numIPUs, tilesPerIPU, "_VIRTUAL_GRAPH_TEST_16");
       poplar::Device device = poplar::Device::createSimulatorDevice(target);
-      return std::make_shared<DevicexSimInfo>(*this, device);
+      return std::make_shared<DevicexSimInfo>(device);
     } catch (const poplar::poplar_error &e) {
       throw error("Simulator not supported. " + std::string(e.what()));
     }
@@ -280,16 +280,16 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
 std::shared_ptr<DeviceInfo>
 DevicexManager::createOfflineIpuFromDeviceInfo(const DeviceInfo &deviceInfo) {
   auto ipuTarget = poplar::Target(deviceInfo.getTarget());
-  return std::make_shared<DevicexOfflineIpuInfo>(
-      *this, ipuTarget, deviceInfo.getOptionFlags());
+  return std::make_shared<DevicexOfflineIpuInfo>(ipuTarget,
+                                                 deviceInfo.getOptionFlags());
 }
 
 std::shared_ptr<DeviceInfo>
 DevicexManager::createOfflineIpuFromSystemString(const std::string &system,
                                                  uint32_t numIpus) {
   auto ipuTarget = poplar::Target::createIPUTarget(numIpus, system);
-  return std::make_shared<DevicexOfflineIpuInfo>(
-      *this, ipuTarget, poplar::OptionFlags{});
+  return std::make_shared<DevicexOfflineIpuInfo>(ipuTarget,
+                                                 poplar::OptionFlags{});
 }
 
 DevicexInfo::~DevicexInfo() {

@@ -53,12 +53,11 @@ public:
 
 class DevicexInfo : public popart::DeviceInfo {
 public:
-  DevicexInfo(DeviceProvider &_provider,
-              popart::DeviceType _type,
+  DevicexInfo(popart::DeviceType _type,
               popart::DeviceConnectionType _connectionType,
               poplar::Device &_device,
               const poplar::OptionFlags &_flags)
-      : popart::DeviceInfo(_provider, _type, _connectionType, _flags),
+      : popart::DeviceInfo(_type, _connectionType, _flags),
         device(std::move(_device)) {}
 
   virtual ~DevicexInfo();
@@ -118,9 +117,8 @@ private:
 
 class DevicexCpuInfo : public DevicexInfo {
 public:
-  DevicexCpuInfo(DeviceProvider &_provider, poplar::Device &_device)
-      : DevicexInfo(_provider,
-                    popart::DeviceType::Cpu,
+  DevicexCpuInfo(poplar::Device &_device)
+      : DevicexInfo(popart::DeviceType::Cpu,
                     popart::DeviceConnectionType::Always,
                     _device,
                     {}) {}
@@ -132,9 +130,8 @@ public:
 
 class DevicexSimInfo : public DevicexInfo {
 public:
-  DevicexSimInfo(DeviceProvider &_provider, poplar::Device &_device)
-      : DevicexInfo(_provider,
-                    popart::DeviceType::Sim,
+  DevicexSimInfo(poplar::Device &_device)
+      : DevicexInfo(popart::DeviceType::Sim,
                     popart::DeviceConnectionType::Always,
                     _device,
                     {}) {}
@@ -146,11 +143,8 @@ public:
 
 class DevicexIpuModelInfo : public DevicexInfo {
 public:
-  DevicexIpuModelInfo(DeviceProvider &_provider,
-                      poplar::Device &_device,
-                      const std::string _ipuVersion)
-      : DevicexInfo(_provider,
-                    popart::DeviceType::IpuModel,
+  DevicexIpuModelInfo(poplar::Device &_device, const std::string _ipuVersion)
+      : DevicexInfo(popart::DeviceType::IpuModel,
                     popart::DeviceConnectionType::Always,
                     _device,
                     {}),
@@ -166,13 +160,11 @@ private:
 
 class DevicexIpuInfo : public DevicexInfo {
 public:
-  DevicexIpuInfo(DeviceProvider &_provider,
-                 popart::DeviceConnectionType _dct,
+  DevicexIpuInfo(popart::DeviceConnectionType _dct,
                  int _id,
                  poplar::Device &_device,
                  const poplar::OptionFlags &_flags)
-      : DevicexInfo(_provider, popart::DeviceType::Ipu, _dct, _device, _flags),
-        id(_id) {}
+      : DevicexInfo(popart::DeviceType::Ipu, _dct, _device, _flags), id(_id) {}
 
   int getId() const override { return id; }
   std::vector<int> getChildIds() const override;
@@ -186,11 +178,9 @@ private:
 
 class DevicexOfflineIpuInfo : public popart::DeviceInfo {
 public:
-  DevicexOfflineIpuInfo(DeviceProvider &_provider,
-                        poplar::Target &_target,
+  DevicexOfflineIpuInfo(poplar::Target &_target,
                         const poplar::OptionFlags &_flags)
-      : popart::DeviceInfo(_provider,
-                           popart::DeviceType::OfflineIpu,
+      : popart::DeviceInfo(popart::DeviceType::OfflineIpu,
                            popart::DeviceConnectionType::Never,
                            _flags),
         target(std::move(_target)) {}

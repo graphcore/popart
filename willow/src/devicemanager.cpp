@@ -334,14 +334,11 @@ std::ostream &operator<<(std::ostream &os, const SyncPattern &sp) {
   return os;
 }
 
-DeviceInfo::DeviceInfo(DeviceProvider &_provider,
-                       DeviceType _type,
+DeviceInfo::DeviceInfo(DeviceType _type,
                        DeviceConnectionType _connectionType,
                        const poplar::OptionFlags &_flags)
-    : provider(_provider), type(_type), connectionType(_connectionType),
-      flags(std::make_unique<const poplar::OptionFlags>(_flags)) {
-  (void)provider;
-}
+    : type(_type), connectionType(_connectionType),
+      flags(std::make_unique<const poplar::OptionFlags>(_flags)) {}
 
 DeviceInfo::~DeviceInfo() {}
 
