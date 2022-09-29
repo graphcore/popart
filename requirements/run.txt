@@ -19,7 +19,7 @@
 wheel
 numpy==1.19.2
 onnx==1.6.0
-protobuf==3.11.2
+protobuf==3.18.3
 pytest==6.2.0
 pytest-xdist==2.5.0
 --find-links https://download.pytorch.org/whl/torch_stable.html
