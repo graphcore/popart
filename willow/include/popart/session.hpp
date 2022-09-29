@@ -543,7 +543,7 @@ public:
   void writeWeights(const IWeightsIO &weightsIo);
 
   /**
-   * Serizalise the IR graph to a string.
+   * Serialize the IR graph to a string.
    *
    * \param format The format to use for serializing.
    */
@@ -739,7 +739,7 @@ public:
    *      tensors. This
    *      is used to specify the sizes of the input tensors in the case that
    *      the ONNX model does not include this information. The Poplar graph
-   *      programmming framework uses statically allocated memory buffers and
+   *      programming framework uses statically allocated memory buffers and
    *      so it needs to know the size of tensors before the compilation.
    *      Default: InputShapeInfo().
    * \param userOptions (Optional) The user configuration options for the
@@ -804,7 +804,7 @@ public:
    *      tensors. This
    *      is used to specify the sizes of the input tensors in the case that
    *      the ONNX model does not include this information. The Poplar graph
-   *      programmming framework uses statically allocated memory buffers and
+   *      programming framework uses statically allocated memory buffers and
    *      so it needs to know the size of tensors before the compilation.
    *      Default: InputShapeInfo().
    * \param userOptions (Optional) The user configuration options for the

@@ -1227,7 +1227,7 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
   std::vector<float> A_readback1(A_info.nelms(), -9.0f);
   std::vector<float> B_readback1(B_info.nelms(), -99.0f);
 
-  auto devManager = popart::DeviceManager::createDeviceManager();
+  auto &devManager = popart::DeviceManager::createDeviceManager();
   devManager.setOnDemandAttachTimeout(900);
   std::vector<std::shared_ptr<popart::DeviceInfo>> devices;
 

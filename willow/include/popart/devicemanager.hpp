@@ -342,10 +342,20 @@ public:
 
 /// A class to manage devices.
 class DeviceManager {
-
+private: // data
   std::vector<DeviceProvider *> providers;
 
-public:
+  // How many seconds to continue trying to attach to an IPU.
+  unsigned attachTimeout = 0;
+
+private: // methods
+  // Meyer’s singleton pattern
+  DeviceManager()                      = default;
+  ~DeviceManager()                     = default;
+  DeviceManager(const DeviceManager &) = delete;
+  DeviceManager &operator=(const DeviceManager &) = delete;
+
+public: // methods
   /**
    * Accessor for the device manager.
    * \return A reference to the DeviceManager instance.
@@ -381,21 +391,6 @@ public:
   /**
    * Get the list of all devices with the required criteria.
    *
-   * \param syncPattern The setting for when to synchronise in a multi-IPU
-   *      system. (Default: SyncPattern::Full).
-   * \param deviceManagerId The ID of the requested device. (Default: 0)
-   * \param connectionType The setting for when to connect to the device.
-   *      (Default: DeviceConnectionType::Always).
-   * \return The list of devices with the required criteria.
-   */
-  std::shared_ptr<DeviceInfo>
-  getDevice(SyncPattern syncPattern             = SyncPattern::Full,
-            uint32_t deviceManagerId            = 0,
-            DeviceConnectionType connectionType = DeviceConnectionType::Always);
-
-  /**
-   * Get the list of all devices with the required criteria.
-   *
    * \param pattern The setting for when to synchronise in a multi-IPU
    *      system. (Default: SyncPattern::Full).
    * \param numIpus The number of IPUs required. (Default: 1).
@@ -414,15 +409,20 @@ public:
       int tilesPerIPU                     = 0);
 
   /**
-   * Create a simulated device on the host for testing purposes.
+   * Get a device with the required criteria.
    *
-   * \param type The type of device to simulate.
-   * \param options The configuration settings for the host device.
-   * \return The requested device for testing purposes.
+   * \param syncPattern The setting for when to synchronise in a multi-IPU
+   *      system. (Default: SyncPattern::Full).
+   * \param deviceManagerId The ID of the requested device. (Default: 0)
+   * \param connectionType The setting for when to connect to the device.
+   *      (Default: DeviceConnectionType::Always).
+   * \return A device, which can be used with a session. If no device is
+   *      acquired, a nullptr is returned.
    */
   std::shared_ptr<DeviceInfo>
-  createHostDevice(DeviceType type,
-                   const std::map<std::string, std::string> &options);
+  getDevice(SyncPattern syncPattern             = SyncPattern::Full,
+            uint32_t deviceManagerId            = 0,
+            DeviceConnectionType connectionType = DeviceConnectionType::Always);
 
   /**
    * Finds an available hardware device, with the specified number of IPUs.
@@ -509,6 +509,17 @@ public:
       DeviceConnectionType connectionType = DeviceConnectionType::Always);
 
   /**
+   * Create a simulated device on the host for testing purposes.
+   *
+   * \param type The type of device to simulate.
+   * \param options The configuration settings for the host device.
+   * \return The requested device for testing purposes.
+   */
+  std::shared_ptr<DeviceInfo>
+  createHostDevice(DeviceType type,
+                   const std::map<std::string, std::string> &options);
+
+  /**
    * Create a simulated CPU device for testing purposes.
    * \return A simulated CPU device.
    */
@@ -588,10 +599,6 @@ public:
    * \param seconds The attach timeout in seconds.
    */
   void setOnDemandAttachTimeout(const unsigned seconds);
-
-private:
-  // How many seconds to continue trying to attach to an IPU.
-  unsigned attachTimeout = 0;
 };
 
 /**

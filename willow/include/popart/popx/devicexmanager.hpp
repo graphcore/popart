@@ -26,32 +26,29 @@ class DevicexManager : public popart::DeviceProvider {
 public:
   DevicexManager();
 
-  virtual std::shared_ptr<DeviceInfo>
+  std::shared_ptr<DeviceInfo>
   getDevice(SyncPattern syncPattern,
             uint32_t deviceManagerId,
             DeviceConnectionType connectionType) override;
 
-  virtual void
-  enumerate(std::vector<std::shared_ptr<popart::DeviceInfo>> &devices,
-            unsigned requiredNumIPUs,
-            SyncPattern syncPattern,
-            DeviceType type,
-            DeviceConnectionType connectionType,
-            uint32_t requiredTilesPerIPU) override;
+  void enumerate(std::vector<std::shared_ptr<popart::DeviceInfo>> &devices,
+                 unsigned requiredNumIPUs,
+                 SyncPattern syncPattern,
+                 DeviceType type,
+                 DeviceConnectionType connectionType,
+                 uint32_t requiredTilesPerIPU) override;
 
-  virtual std::shared_ptr<popart::DeviceInfo>
+  std::shared_ptr<popart::DeviceInfo>
   createHostDevice(popart::DeviceType type,
                    const std::map<std::string, std::string> &options,
                    SyncPattern syncPattern = SyncPattern::Full) override;
 
-  virtual std::shared_ptr<DeviceInfo>
+  std::shared_ptr<DeviceInfo>
   createOfflineIpuFromDeviceInfo(const DeviceInfo &deviceInfo) override;
 
-  virtual std::shared_ptr<DeviceInfo>
+  std::shared_ptr<DeviceInfo>
   createOfflineIpuFromSystemString(const std::string &system,
                                    uint32_t numIpus) override;
-
-private:
 };
 
 class DevicexInfo : public popart::DeviceInfo {
@@ -132,6 +129,7 @@ public:
   std::vector<int> getChildIds() const override { return {}; }
   std::string getVersion() const override { return "<unknown-cpu>"; }
 };
+
 class DevicexSimInfo : public DevicexInfo {
 public:
   DevicexSimInfo(DeviceProvider &_provider, poplar::Device &_device)
@@ -145,6 +143,7 @@ public:
   std::vector<int> getChildIds() const override { return {}; }
   std::string getVersion() const override { return "<unknown-sim>"; }
 };
+
 class DevicexIpuModelInfo : public DevicexInfo {
 public:
   DevicexIpuModelInfo(DeviceProvider &_provider,
@@ -164,6 +163,7 @@ public:
 private:
   std::string ipuVersion;
 };
+
 class DevicexIpuInfo : public DevicexInfo {
 public:
   DevicexIpuInfo(DeviceProvider &_provider,

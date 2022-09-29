@@ -96,7 +96,8 @@ findReverseTransposeWithReshapes(TransposeBaseOp *transpose) {
 
         // Support 1 Reshape that adds singleton dimensions on the path between
         // transposes.
-        // T35423: Support N reshapes. Support removing singleton dimensions.
+        // TODO T35423: Support N reshapes. Support removing singleton
+        // dimensions.
         if (dimensionsToRemove.size() < 1 &&
             candidate->isConvertibleTo<ReshapeOp>()) {
           if (candidate->input->n() > 1) {

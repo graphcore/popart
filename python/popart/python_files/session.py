@@ -142,7 +142,7 @@ class InferenceSession(_InferenceSessionCore):
             inputShapeInfo: (Optional) The sizes and dtypes of the input
                 tensors. This is used to specify the sizes of the input
                 tensors in the case that the ONNX model does not include
-                this information. The Poplar graph programmming framework
+                this information. The Poplar graph programming framework
                 uses statically allocated memory buffers and so it needs to
                 know the size of tensors before the compilation. Default:
                 :py:class:`~popart.InputShapeInfo()`.
@@ -325,7 +325,7 @@ class TrainingSession(_TrainingSessionCore):
             inputShapeInfo: (Optional) The sizes and dtypes of the input
                 tensors. This is used to specify the sizes of the input
                 tensors in the case that the ONNX model does not include
-                this information. The Poplar graph programmming framework
+                this information. The Poplar graph programming framework
                 uses statically allocated memory buffers and so it needs to
                 know the size of tensors before the compilation. Default:
                 :py:class:`~popart.InputShapeInfo()`.

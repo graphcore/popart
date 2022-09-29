@@ -48,7 +48,7 @@ private:
   Tensor *seedTensor = nullptr;
 
   // We only populate these structures during deserialization to
-  // avoid unneccessary copies
+  // avoid unnecessary copies
   nonstd::optional<std::unordered_map<TensorId, std::unique_ptr<Tensor>>>
       tensors;
   nonstd::optional<std::map<TensorId, CollectiveBalancedReorderId>>

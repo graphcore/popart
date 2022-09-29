@@ -4859,7 +4859,7 @@ static const char *__singlelinedoc_popart_DeviceInfo_type = R"doc()doc";
 
 static const char *__doc_popart_DeviceInfo_writeToDeviceAccessLog =
     R"doc(Log an event for device debugging purposes.
-This event will get logged to the file location defined by the evironment
+This event will get logged to the file location defined by the environment
 variable POPART_LOG_DEVICE_ACCESS_IN_TESTS, if it is set.
 
 Args:
@@ -4867,7 +4867,7 @@ Args:
  auxKeyVals: Optional additional parameters to log.)doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo_writeToDeviceAccessLog =
-    R"doc(Log an event for device debugging purposes. This event will get logged to the file location defined by the evironment variable POPART_LOG_DEVICE_ACCESS_IN_TESTS, if it is set. Args: event: A text description of the event to be written to the log. auxKeyVals: Optional additional parameters to log.)doc";
+    R"doc(Log an event for device debugging purposes. This event will get logged to the file location defined by the environment variable POPART_LOG_DEVICE_ACCESS_IN_TESTS, if it is set. Args: event: A text description of the event to be written to the log. auxKeyVals: Optional additional parameters to log.)doc";
 
 static const char *__doc_popart_DeviceManager =
     R"doc(A class to manage devices.)doc";
@@ -5280,11 +5280,11 @@ static const char *__singlelinedoc_popart_DeviceType_OfflineIpu =
     R"doc(Compile graph for later execution. This can be done even if IPUs are not present. Offline graph compilation is also useful for verifying memory constraints.)doc";
 
 static const char *__doc_popart_DeviceType_Sim =
-    R"doc([For Graphcore intenal use only]
+    R"doc([For Graphcore internal use only]
 Use a simulator for graph compilation and execution.)doc";
 
 static const char *__singlelinedoc_popart_DeviceType_Sim =
-    R"doc([For Graphcore intenal use only] Use a simulator for graph compilation and execution.)doc";
+    R"doc([For Graphcore internal use only] Use a simulator for graph compilation and execution.)doc";
 
 static const char *__doc_popart_ErrorSource = R"doc()doc";
 
@@ -6536,7 +6536,7 @@ Args:
       tensors. This
       is used to specify the sizes of the input tensors in the case that
       the ONNX model does not include this information. The Poplar graph
-      programmming framework uses statically allocated memory buffers and
+      programming framework uses statically allocated memory buffers and
       so it needs to know the size of tensors before the compilation.
       Default: InputShapeInfo().
  userOptions: (Optional) The user configuration options for the
@@ -6549,7 +6549,7 @@ Args:
       "inference".)doc";
 
 static const char *__singlelinedoc_popart_InferenceSession_createFromOnnxModel =
-    R"doc(Create a session for inference from an ONNX model. Args: model: An ONNX model protobuf, or the name of a file containing an ONNX model protobuf. dataFlow: Configuration for the data feeds and fetches. deviceInfo: The type of device that this session uses. inputShapeInfo: (Optional) The sizes and dtypes of the input tensors. This is used to specify the sizes of the input tensors in the case that the ONNX model does not include this information. The Poplar graph programmming framework uses statically allocated memory buffers and so it needs to know the size of tensors before the compilation. Default: InputShapeInfo(). userOptions: (Optional) The user configuration options for the Session class. Default: SessionOptions(). patterns: (Optional) A user-selected set of graph transformation patterns which will be applied to the graph. If this is not specified, a default set of optimisation transformations will be applied. Default: Patterns(). name: (Optional) The name of this inference session. Default: "inference".)doc";
+    R"doc(Create a session for inference from an ONNX model. Args: model: An ONNX model protobuf, or the name of a file containing an ONNX model protobuf. dataFlow: Configuration for the data feeds and fetches. deviceInfo: The type of device that this session uses. inputShapeInfo: (Optional) The sizes and dtypes of the input tensors. This is used to specify the sizes of the input tensors in the case that the ONNX model does not include this information. The Poplar graph programming framework uses statically allocated memory buffers and so it needs to know the size of tensors before the compilation. Default: InputShapeInfo(). userOptions: (Optional) The user configuration options for the Session class. Default: SessionOptions(). patterns: (Optional) A user-selected set of graph transformation patterns which will be applied to the graph. If this is not specified, a default set of optimisation transformations will be applied. Default: Patterns(). name: (Optional) The name of this inference session. Default: "inference".)doc";
 
 static const char *__doc_popart_InferenceSession_popxlSetEngineIsLoaded =
     R"doc()doc";
@@ -15435,14 +15435,14 @@ static const char *__singlelinedoc_popart_Session_saveVariables =
     R"doc(Save all variables to a file. The function will save data consistent with the variables contained within the model. The file will be in the `PopEF <https://docs.graphcore.ai/projects/popef/en/latest/>`_ format. If you want to analyze tensors saved by the function please refer to the `PopEF dump tool <https://docs.graphcore.ai/projects/popef/en/latest/popef_file_format.html#popef-file-analysis>`_. \pre prepareDevice() must have been called. Args: path: The name of the file or directory where the compiled variables will be saved. If you specified a path to the directory, the function will write the data to the file: "<path>/variables.popef". If the file exists, the function will overwrite the old data with the new ones.)doc";
 
 static const char *__doc_popart_Session_serializeIr =
-    R"doc(Serizalise the IR graph to a string.
+    R"doc(Serialize the IR graph to a string.
 
 
 Args:
  format: The format to use for serializing.)doc";
 
 static const char *__singlelinedoc_popart_Session_serializeIr =
-    R"doc(Serizalise the IR graph to a string. Args: format: The format to use for serializing.)doc";
+    R"doc(Serialize the IR graph to a string. Args: format: The format to use for serializing.)doc";
 
 static const char *__doc_popart_Session_setDevice =
     R"doc(Select a device type.
@@ -16873,7 +16873,7 @@ Args:
       tensors. This
       is used to specify the sizes of the input tensors in the case that
       the ONNX model does not include this information. The Poplar graph
-      programmming framework uses statically allocated memory buffers and
+      programming framework uses statically allocated memory buffers and
       so it needs to know the size of tensors before the compilation.
       Default: InputShapeInfo().
  userOptions: (Optional) The user configuration options for the
@@ -16886,7 +16886,7 @@ Args:
       "training".)doc";
 
 static const char *__singlelinedoc_popart_TrainingSession_createFromOnnxModel =
-    R"doc(Create a session for inference from an ONNX model. Args: model: An ONNX model protobuf, or the name of a file containing an ONNX model protobuf. dataFlow: Configuration for the data feeds and fetches. loss: The identifier of the final scalar loss tensor for training. optimizer: The name of an optimizer to use when training. deviceInfo: The type of device that this session uses. inputShapeInfo: (Optional) The sizes and dtypes of the input tensors. This is used to specify the sizes of the input tensors in the case that the ONNX model does not include this information. The Poplar graph programmming framework uses statically allocated memory buffers and so it needs to know the size of tensors before the compilation. Default: InputShapeInfo(). userOptions: (Optional) The user configuration options for the Session class. Default: SessionOptions(). patterns: (Optional) A user-selected set of graph transformation patterns which will be applied to the graph. If this is not specified, a default set of optimisation transformations will be applied. Default: Patterns(). name: (Optional) The name of this inference session. Default: "training".)doc";
+    R"doc(Create a session for inference from an ONNX model. Args: model: An ONNX model protobuf, or the name of a file containing an ONNX model protobuf. dataFlow: Configuration for the data feeds and fetches. loss: The identifier of the final scalar loss tensor for training. optimizer: The name of an optimizer to use when training. deviceInfo: The type of device that this session uses. inputShapeInfo: (Optional) The sizes and dtypes of the input tensors. This is used to specify the sizes of the input tensors in the case that the ONNX model does not include this information. The Poplar graph programming framework uses statically allocated memory buffers and so it needs to know the size of tensors before the compilation. Default: InputShapeInfo(). userOptions: (Optional) The user configuration options for the Session class. Default: SessionOptions(). patterns: (Optional) A user-selected set of graph transformation patterns which will be applied to the graph. If this is not specified, a default set of optimisation transformations will be applied. Default: Patterns(). name: (Optional) The name of this inference session. Default: "training".)doc";
 
 static const char *__doc_popart_TrainingSession_updateOptimizerFromHost =
     R"doc(Update the optimizer from the host.
