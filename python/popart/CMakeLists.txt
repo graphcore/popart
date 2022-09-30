@@ -12,6 +12,8 @@ add_custom_target(popart_python_files ALL
 
 install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/popart"
     DESTINATION ${INSTALL_PYDIR}
+    PATTERN "*.cmake" EXCLUDE
+    PATTERN "CMakeFiles" EXCLUDE
 )
 
 configure_file(__init__.py.in
@@ -28,7 +30,10 @@ foreach(opset IN LISTS POPART_OPSETS)
   # Install stub files for `popart_core` and `popart_opset##`.
   install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${opset}/"
       DESTINATION "${INSTALL_PYDIR}/popart/"
-      FILES_MATCHING PATTERN "*.pyi"
+      PATTERN "*.pyi"
+      PATTERN "*.cmake" EXCLUDE
+      PATTERN "*.so" EXCLUDE
+      PATTERN "CMakeFiles" EXCLUDE
   )
 
   add_subdirectory(${opset})

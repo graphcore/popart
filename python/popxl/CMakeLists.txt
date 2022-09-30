@@ -18,6 +18,8 @@ configure_file(__init__.py.in
 
 install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/../popxl/"
     DESTINATION "${INSTALL_PYDIR}/popxl/"
+    PATTERN "*.cmake" EXCLUDE
+    PATTERN "CMakeFiles" EXCLUDE
 )
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/../popxl/__init__.py"
