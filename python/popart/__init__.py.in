@@ -21,29 +21,29 @@ for parent_dir in parent_path.parents:
         sys.path.insert(0, lp)
         break
 
-# Popart currently distributes binaries for a specific Python version. If the
-# user imports the popart module with a different Python version the import
-# statements below would fail with an unfriendly error. Hence, we check the
-# python version here and throw a friendlier error when this happens.
-actualVersion = sys.version_info[:2]
-requiredVersion = (@Python3_VERSION_MAJOR@, @Python3_VERSION_MINOR@)
-if (actualVersion != requiredVersion):
-    raise RuntimeError("This version of the PopART library is not compatible with Python %d.%d (it was built against Python %d.%d).\n" % \
-        (actualVersion + requiredVersion))
+_import_exc = None
+try:
+    # Import all symbols into our namespace
+    from popart_core import *
+    from popart_opset6 import *
+    from popart_opset7 import *
+    from popart_opset8 import *
+    from popart_opset9 import *
+    from popart_opset10 import *
+    from popart_opset11 import *
 
-# Import all symbols into our namespace
-from popart_core import *
-from popart_opset6 import *
-from popart_opset7 import *
-from popart_opset8 import *
-from popart_opset9 import *
-from popart_opset10 import *
-from popart_opset11 import *
+    from popart.builder import Builder
+    from popart.session import InferenceSession, TrainingSession, OutOfMemoryException
+    from popart.tensorinfo import TensorInfo
+except ModuleNotFoundError as exc:
+    _import_exc = exc
 
-from popart.builder import Builder
-from popart.session import InferenceSession, TrainingSession, OutOfMemoryException
-from popart.tensorinfo import TensorInfo
-
+if _import_exc:
+    msg = (
+        f"{_import_exc}.\n"
+        "Hint: You might be running a Python version that PopART doesn't support."
+    )
+    raise RuntimeError(msg)
 
 # pybind11 has some odd behaviour when binding
 # a member type `std::map<K, V>`.

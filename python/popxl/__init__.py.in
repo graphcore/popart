@@ -1,17 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-import sys
 
 __version__ = "@VERSION@"
-
-# PopART currently distributes binaries for a specific Python version. If the
-# user imports the PopART module with a different Python version the import
-# statements below would fail with an unfriendly error. Hence, we check the
-# Python version here and throw a friendlier error when this happens.
-actualVersion = sys.version_info[:2]
-requiredVersion = (@Python3_VERSION_MAJOR@, @Python3_VERSION_MINOR@)
-if (actualVersion != requiredVersion):
-    raise RuntimeError("This version of PopXL is not compatible with Python %d.%d (it was built against Python %d.%d)" % \
-        (actualVersion + requiredVersion))
 
 __all__ = [
     # context.py
@@ -46,31 +35,38 @@ __all__ = [
     "Session"
 ]
 
-from .context import (get_current_graph, get_main_graph, gcg, gmg,
-    in_sequence, name_scope, ipu, io_tiles)
-from .dtypes import (dtype, bool, int8, int16, int32, int64, uint8,
-    uint16, uint32, uint64, half, float16, float, float32, double, float64,
-    complex64, complex128)
-from .graph import Graph
-from .module import Module
-from .ir import Ir
-from .random_seed import create_seeds
-from .remote_buffer import (RemoteBuffer, remote_buffer)
-from .replica_grouping import (ReplicaGrouping)
-from .streams import (HostToDeviceStream, DeviceToHostStream,
-    h2d_stream, d2h_stream)
-from .tensor import (Tensor, variable, remote_variable,
-    remote_replica_sharded_variable, replica_sharded_variable, replica_sharded_buffer, constant,
-    graph_input, graph_output, TensorByRef, TensorSpec)
-from .tensorlocation import (TensorStorage, TensorLocation,
-    ReplicatedTensorSharding, TileSet, ExecutionContext)
-from .session import Session
+_import_exc = None
+try:
+    from .context import (get_current_graph, get_main_graph, gcg, gmg,
+        in_sequence, name_scope, ipu, io_tiles)
+    from .dtypes import (dtype, bool, int8, int16, int32, int64, uint8,
+        uint16, uint32, uint64, half, float16, float, float32, double, float64,
+        complex64, complex128)
+    from .graph import Graph
+    from .module import Module
+    from .ir import Ir
+    from .random_seed import create_seeds
+    from .remote_buffer import (RemoteBuffer, remote_buffer)
+    from .replica_grouping import (ReplicaGrouping)
+    from .streams import (HostToDeviceStream, DeviceToHostStream,
+        h2d_stream, d2h_stream)
+    from .tensor import (Tensor, variable, remote_variable,
+        remote_replica_sharded_variable, replica_sharded_variable, replica_sharded_buffer, constant,
+        graph_input, graph_output, TensorByRef, TensorSpec)
+    from .tensorlocation import (TensorStorage, TensorLocation,
+        ReplicatedTensorSharding, TileSet, ExecutionContext)
+    from .session import Session
 
-from . import transforms
+    from . import transforms
+except ModuleNotFoundError as exc:
+    _import_exc = exc
 
-del sys
-del actualVersion
-del requiredVersion
+if _import_exc:
+    msg = (
+        f"{_import_exc}.\n"
+        "Hint: You might be running a Python version that PopXL doesn't support."
+    )
+    raise RuntimeError(msg)
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
