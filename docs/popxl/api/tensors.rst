@@ -19,12 +19,13 @@ Tensors
     :special-members: __init__
 
 .. autofunction:: popxl.constant
-.. autofunction:: popxl.remote_replica_sharded_variable
+.. autofunction:: popxl.variable
 .. autofunction:: popxl.remote_variable
+.. autofunction:: popxl.replica_sharded_buffer
+.. autofunction:: popxl.remote_replica_sharded_variable
 .. autofunction:: popxl.replica_sharded_variable
 .. autofunction:: popxl.graph_input
 .. autofunction:: popxl.graph_output
-.. autofunction:: popxl.variable
 
 .. autodata:: popxl.HostScalarTensor
 .. autodata:: popxl.HostTensor
