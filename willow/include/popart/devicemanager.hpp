@@ -347,12 +347,23 @@ private: // data
 
 private: // methods
   // Meyer’s singleton pattern
-  DeviceManager()                      = default;
-  ~DeviceManager()                     = default;
-  DeviceManager(const DeviceManager &) = delete;
+  DeviceManager()        = default;
   DeviceManager &operator=(const DeviceManager &) = delete;
 
 public: // methods
+  // TODO T70073: Deprecated for 3.1.0 Revert back to correct Singleton pattern
+  // once deprecation period is over.
+  [[deprecated(
+      "DeviceManager is a Singleton and should not be copied."
+      " createDeviceManager returns a reference, so you possibly need auto-ref"
+      " not just auto in code like: auto&"
+      " dm=DeviceManager::createDeviceManager();")]] DeviceManager(const DeviceManager
+                                                                       &) =
+      default;
+
+  // Also deprecated, but no need to (double) warn.
+  ~DeviceManager() = default;
+
   /**
    * Accessor for the device manager.
    * \return A reference to the DeviceManager instance.
