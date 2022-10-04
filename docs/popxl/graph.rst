@@ -212,6 +212,8 @@ method.
 
     :download:`Download repeat_graph_1.py <files/repeat_graph_1.py>`
 
+.. _sec_graph_replication:
+
 Graph replication
 -----------------
 

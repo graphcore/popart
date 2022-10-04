@@ -18,6 +18,7 @@ PopXL User Guide and API (experimental)
     session
     remote
     replication
+    distributed
     application_example
     application_example_rts
     env_vars

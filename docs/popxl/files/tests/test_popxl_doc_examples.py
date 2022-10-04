@@ -1,6 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import os
 from pathlib import Path
+import pytest
 
 import sys
 
@@ -41,6 +42,37 @@ class TestPythonDocExamples(ExamplesTester):
     def test_documentation_popxl_remote_var_replica_grouped(self):
         """Test the popxl remote variable in combination with replica groupings"""
         filename = "remote_variable_replica_grouped.py"
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
+
+    @pytest.mark.skip(
+        reason=(
+            "Cannot run multi-GCD tests on CI, and distributed on-chip "
+            "replica-grouped variables are not yet implemented (TODO T69061)."
+        )
+    )
+    def test_documentation_popxl_distributed_simple_example(self):
+        """Test a simple distributed popxl example"""
+        filename = "distributed_simple_example.py"
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
+
+    @pytest.mark.skip(reason="Cannot run multi-GCD tests on CI.")
+    def test_documentation_popxl_distributed_rts_simple_example(self):
+        """Test a simple distributed RTS popxl example"""
+        filename = "distributed_rts_simple_example.py"
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
+
+    @pytest.mark.skip(reason="Cannot run multi-GCD tests on CI.")
+    def test_documentation_popxl_distributed_rts_simple_example_manual_remote_buffer(
+        self,
+    ):
+        """Test a simple distributed RTS popxl example using the manual remote buffer API"""
+        filename = "distributed_rts_simple_example_manual_remote_buffer.py"
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
+
+    @pytest.mark.skip(reason="Cannot run multi-GCD tests on CI.")
+    def test_documentation_popxl_distributed_rts_complex_example(self):
+        """Test a complex distributed RTS popxl example"""
+        filename = "distributed_rts_complex_example.py"
         self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_create_multi_subgraph(self):
