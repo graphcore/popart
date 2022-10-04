@@ -1453,7 +1453,7 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
     test(
         testType,
         AutodiffStitchStrategy::RecomputeMinimal,
-        [](IrInfo) { return OptStitchIndices{{}}; },
+        [](IrInfo) { return OptStitchIndices(std::in_place); }, // empty vec
         [](IrInfo irInfo) {
           return BwdGraphInfo{
               irInfo._k,
@@ -1574,7 +1574,7 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
   test(
       TestType::CallOpTestType,
       AutodiffStitchStrategy::AddFwdOutputs,
-      [](IrInfo irInfo) { return OptStitchIndices{{}}; },
+      [](IrInfo irInfo) { return OptStitchIndices(std::in_place); },
       [](IrInfo irInfo) {
         return BwdGraphInfo{
             irInfo._k,
@@ -1672,7 +1672,7 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
   test(
       TestType::CallOpTestType,
       AutodiffStitchStrategy::SafeAddFwdOutputs,
-      [](IrInfo irInfo) { return OptStitchIndices{{}}; },
+      [](IrInfo irInfo) { return OptStitchIndices(std::in_place); },
       [](IrInfo irInfo) {
         return BwdGraphInfo{
             irInfo._k,

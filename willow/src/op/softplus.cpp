@@ -72,7 +72,7 @@ static OpDefinition::DataTypes T = {DataType::UINT8,
 
 static OpDefinition softplusOpDef({OpDefinition::Inputs({{"input", T}}),
                                    OpDefinition::Outputs({{"output", T}}),
-                                   OpDefinition::Attributes({{}})});
+                                   OpDefinition::Attributes({})});
 
 static OpCreator<SoftPlusOp> softplusOpCreator(
     OpDefinitions({{Onnx::Operators::Softplus_1, softplusOpDef}}),

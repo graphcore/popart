@@ -11,4 +11,4 @@ target_link_libraries(testdevice PUBLIC popart-internal Boost::boost)
 target_include_directories(testdevice
                            PUBLIC ${test_device_root_public_headers_dir})
 
-target_compile_features(testdevice PRIVATE cxx_std_14)
+target_compile_features(testdevice PRIVATE cxx_std_17)

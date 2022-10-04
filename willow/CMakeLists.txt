@@ -206,7 +206,7 @@ set_target_properties(popart-only PROPERTIES
     # Need position independent code to make dynamic library with static libs.
     POSITION_INDEPENDENT_CODE ON
 )
-target_compile_features(popart-only PRIVATE cxx_std_14)
+target_compile_features(popart-only PRIVATE cxx_std_17)
 target_compile_features(popart-only INTERFACE cxx_std_11)
 
 # These definitions are private to popart-only, as the external user does not
@@ -224,6 +224,10 @@ list(REMOVE_DUPLICATES onnx_defs)
 target_compile_definitions(popart-only
   PUBLIC
     ${onnx_defs}
+
+    # Ensure libpopart and users alike use the same type for nonstd::optional,
+    # else linking errors will occur.
+    optional_CONFIG_SELECT_OPTIONAL=optional_OPTIONAL_NONSTD
 
   PRIVATE
     # Required to prevent warnings.

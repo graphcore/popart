@@ -88,4 +88,4 @@ target_link_libraries(popart_capnp
 )
 
 add_dependencies(popart_capnp create_capnp_output_dir)
-target_compile_features(popart_capnp PUBLIC cxx_std_14)
+target_compile_features(popart_capnp PUBLIC cxx_std_17)

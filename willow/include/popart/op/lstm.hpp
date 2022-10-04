@@ -162,7 +162,7 @@ public:
                bool outputFullSequence_,
                const Op::Settings &,
                const nonstd::optional<float> available_memory_proportion_ =
-                   nonstd::optional_lite::nullopt);
+                   nonstd::nullopt);
 
   PopartLSTMOp(const OperatorIdentifier &,
                bool outputFullSequence_,
@@ -170,7 +170,7 @@ public:
                ActivationFunction recurrent_activation,
                const Op::Settings &,
                const nonstd::optional<float> available_memory_proportion_ =
-                   nonstd::optional_lite::nullopt);
+                   nonstd::nullopt);
 
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;

@@ -30,7 +30,7 @@ const int64_t ELEMENT_SIZE = sizeof(int64_t);
 
 // Constant folds a ReduceProd with the provided keepdims and axes atributes and
 // a 2 * 3 * 5 constant tensor of 2s as input.
-void check_combination(nonstd::optional_lite::optional<Shape> axes,
+void check_combination(nonstd::optional<Shape> axes,
                        int64_t keepdims,
                        int64_t num_elements) {
 

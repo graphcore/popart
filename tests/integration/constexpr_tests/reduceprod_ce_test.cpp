@@ -20,7 +20,6 @@
 #include "popart/patterns/patterns.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorinfo.hpp"
-#include "popart/vendored/optional.hpp"
 #include "popart/voiddata.hpp"
 
 using namespace popart;
@@ -28,8 +27,7 @@ using namespace popart;
 const Shape SHAPE{2, 3, 5};
 const int64_t RANK = SHAPE.size();
 
-void check_combination(nonstd::optional_lite::optional<Shape> axes,
-                       int64_t keepdims) {
+void check_combination(nonstd::optional<Shape> axes, int64_t keepdims) {
   // Print out axes and keepdims
   BOOST_TEST_MESSAGE("keepdims: " + std::to_string(keepdims));
   std::string axes_string;

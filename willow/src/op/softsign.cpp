@@ -72,7 +72,7 @@ static OpDefinition::DataTypes T = {DataType::UINT8,
 
 static OpDefinition softsignOpDef({OpDefinition::Inputs({{"input", T}}),
                                    OpDefinition::Outputs({{"output", T}}),
-                                   OpDefinition::Attributes({{}})});
+                                   OpDefinition::Attributes({})});
 
 static OpCreator<SoftSignOp> softsignOpCreator(
     OpDefinitions({{Onnx::Operators::Softsign_1, softsignOpDef}}),

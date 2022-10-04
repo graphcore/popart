@@ -32,7 +32,7 @@ function(add_popart_python_module module_name)
       # Sources
     ${ARGN})
 
-  target_compile_features(${module_name} PUBLIC cxx_std_14)
+  target_compile_features(${module_name} PUBLIC cxx_std_17)
 
   add_coverage_flags_if_enabled(${module_name})
 
