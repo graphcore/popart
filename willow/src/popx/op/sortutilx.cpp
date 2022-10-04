@@ -53,7 +53,7 @@ snap::Tensor getIotaTensor(snap::Graph &graph,
 
   // Loop over the front dimension and copy in the constant.
   for (int i = 0; i < nToSort; ++i) {
-    prog.add(snap::program::Copy(
+    prog.getPoplarSequence().add(snap::program::Copy(
         singleRowIota, shuffledView[i], false, {dnai, "copy"}));
   }
 

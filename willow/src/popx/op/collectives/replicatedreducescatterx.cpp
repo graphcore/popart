@@ -89,7 +89,7 @@ void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
           cbr->undoRearrangeForCollective(c.getPoplarTensor()), graph()};
       if (hasInViewChangers(ReplicatedReduceScatterOp::getInIndex())) {
         // Copy data to non-pad regions
-        prog.add(snap::program::Copy(
+        prog.getPoplarSequence().add(snap::program::Copy(
             getInViewChangers(ReplicatedReduceScatterOp::getInIndex())
                 .apply(toReduceScatter)
                 .flatten(),
@@ -98,7 +98,7 @@ void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
             debugContext()));
       } else {
         // Copy data to non-pad regions
-        prog.add(snap::program::Copy(
+        prog.getPoplarSequence().add(snap::program::Copy(
             toReduceScatter.flatten(), ref.flatten(), false, debugContext()));
       }
       toReduceScatter = c;

@@ -35,7 +35,7 @@ void InitOpx::grow(snap::program::Sequence &prog) const {
     break;
   }
   case InitType::NoInit: {
-    prog.add(snap::program::WriteUndef(outTensor));
+    prog.getPoplarSequence().add(snap::program::WriteUndef(outTensor));
     break;
   }
   default:

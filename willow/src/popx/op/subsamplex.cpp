@@ -90,13 +90,15 @@ void SubsampleGradOpx::grow(snap::program::Sequence &prog) const {
       graph().addVariable(output.elementType(), output.shape(), debugContext());
   poputil::mapTensorLinearly(graph().getPoplarGraph(),
                              outTensor.getPoplarTensor());
-  prog.add(snap::program::Copy(output, outTensor, false, debugContext()));
+  prog.getPoplarSequence().add(
+      snap::program::Copy(output, outTensor, false, debugContext()));
 
   // Create a subsample view of the output
   auto ss_output = subsample(outTensor, gradOp.strides_u32());
 
   // Copy the input tensor into the subsampled view of the output
-  prog.add(snap::program::Copy(in, ss_output, false, debugContext()));
+  prog.getPoplarSequence().add(
+      snap::program::Copy(in, ss_output, false, debugContext()));
 
   // Return the output
   setOutTensor(SubsampleGradOp::getOutIndex(), outTensor);

@@ -234,7 +234,7 @@ snap::Tensor BasePadOpx::constantModePadGrow(snap::Tensor inTensor,
   if (propitious.first) {
     auto outTensor    = graph().clone(propitious.second);
     auto chisseledDst = getChisseled(outTensor);
-    s.add(snap::program::Copy(
+    s.getPoplarSequence().add(snap::program::Copy(
         inTensor, chisseledDst.core, false, debugContext()));
     std::vector<poplar::Tensor> allPads;
     allPads.reserve(chisseledDst.lows.size() + chisseledDst.upps.size());

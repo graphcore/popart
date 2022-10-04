@@ -44,7 +44,7 @@ void TensorRemapOpx::grow(snap::program::Sequence &prog) const {
       out,
       false,
       debugContext(outId(TensorRemapOp::getOutIndex())));
-  prog.add(copyProg);
+  prog.getPoplarSequence().add(copyProg);
 }
 
 bool TensorRemapOpx::outputCreatedExternally(OutIndex) const {

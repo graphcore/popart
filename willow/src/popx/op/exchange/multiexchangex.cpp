@@ -274,17 +274,20 @@ void MultiExchangeOpx::grow(snap::program::Sequence &prog) const {
   for (int j = 0; j < segments.size(); ++j) {
     // Prepare for the exchange
     for (int i = segments.at(j).first; i < segments.at(j).second; ++i) {
-      prog.add(popart::popx::get(state->preSeqs, i, graph()));
+      prog.getPoplarSequence().add(
+          popart::popx::get(state->preSeqs, i, graph()));
     }
 
     // Exchange
     for (int i = segments.at(j).first; i < segments.at(j).second; ++i) {
-      prog.add(popart::popx::get(state->exchangeSeqs, i, graph()));
+      prog.getPoplarSequence().add(
+          popart::popx::get(state->exchangeSeqs, i, graph()));
     }
 
     // Post process the exchange
     for (int i = segments.at(j).first; i < segments.at(j).second; ++i) {
-      prog.add(popart::popx::get(state->postSeqs, i, graph()));
+      prog.getPoplarSequence().add(
+          popart::popx::get(state->postSeqs, i, graph()));
     }
   }
 }

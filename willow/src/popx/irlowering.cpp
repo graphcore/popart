@@ -604,7 +604,8 @@ void IrLowering::instrumentWithHardwareCycleCounter(snap::program::Sequence &sq,
   // Add program fragment to copy to host stream
   auto cyclesToHostStream =
       snap::program::Copy(cycleCountTensor, st, true, {"copyCycleCounter"});
-  progs_.cycleCountTensorToHostFragment().add(cyclesToHostStream);
+  progs_.cycleCountTensorToHostFragment().getPoplarSequence().add(
+      cyclesToHostStream);
 }
 
 snap::Tensor IrLowering::getConst(snap::Graph &graph,
@@ -2166,13 +2167,13 @@ void IrLowering::growOpx(PopOpx *opx,
         printedTensorIds.find(id) == printedTensorIds.end()) {
       auto printProg =
           snap::program::PrintTensor(id, tensor, opx->debugContext());
-      seqIt->add(printProg);
+      seqIt->getPoplarSequence().add(printProg);
       printedTensorIds.insert(id);
     }
   };
 
   if (opxTrace) {
-    seqIt->add(snap::program::PrintTensor(
+    seqIt->getPoplarSequence().add(snap::program::PrintTensor(
         opx->op_p->str() + "/enter", opxTraceTensor, opx->debugContext()));
   }
 
@@ -2212,7 +2213,7 @@ void IrLowering::growOpx(PopOpx *opx,
           // during opx->grow(seq)
           auto inTensorClone =
               graph().clone(inTensor, opx->debugContext("orig"));
-          seqIt->add(snap::program::Copy(
+          seqIt->getPoplarSequence().add(snap::program::Copy(
               inTensor, inTensorClone, false, opx->debugContext("check")));
           nonModifiedTensors[inputMap.first] =
               std::make_pair(inTensor, inTensorClone);
@@ -2278,12 +2279,13 @@ void IrLowering::growOpx(PopOpx *opx,
       }
 
       // Add the lowered sequence to the mapped sequence.
-      seqIt->add(*it);
+      seqIt->getPoplarSequence().add(*it);
     }
   } else {
     for (auto out : opx->op_p->output->tensorMap()) {
       snap::Tensor outTensor = opx->getOutTensor(out.first);
-      seqIt->add(snap::program::WriteUndef(outTensor, opx->debugContext()));
+      seqIt->getPoplarSequence().add(
+          snap::program::WriteUndef(outTensor, opx->debugContext()));
     }
     logging::devicex::trace(
         "Skipping code sequence for Op {} with debugName {}",
@@ -2350,15 +2352,16 @@ void IrLowering::growOpx(PopOpx *opx,
           opx->debugContext("if"));
       auto elseProg =
           snap::program::Sequence(opx->debugContext("else"), graph());
-      seqIt->add(snap::program::If(snap::Tensor{checkReduced, opx->graph()},
-                                   ifProg,
-                                   elseProg,
-                                   opx->debugContext("opxModifyCheck")));
+      seqIt->getPoplarSequence().add(
+          snap::program::If(snap::Tensor{checkReduced, opx->graph()},
+                            ifProg,
+                            elseProg,
+                            opx->debugContext("opxModifyCheck")));
     }
   }
 
   if (opxTrace) {
-    seqIt->add(snap::program::PrintTensor(
+    seqIt->getPoplarSequence().add(snap::program::PrintTensor(
         opx->op_p->str() + "/exit", opxTraceTensor, opx->debugContext()));
   }
 }
@@ -2402,6 +2405,7 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
 
       growOpx(opx, progs_.createRecomputeFragment(op->id));
       seqs.getSequence(&progs_.forwardFragment())
+          .getPoplarSequence()
           .add(*progs_.recomputeFragment(op->id));
     }
 
@@ -2439,6 +2443,7 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
                                   opToRerun->debugName());
 
           seqs.getSequence(&progs_.backwardFragment())
+              .getPoplarSequence()
               .add(*progs_.recomputeFragment(opToRerun->id));
           contextOpRegistry[{context, taskId}].push_back(opToRerun);
           ExecutionPhase phase =
@@ -2513,6 +2518,7 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
         seqs
             .getSequence(&progs_.pipelineMainFragment(
                 op->getPipelineStage(), "recompute of " + opToRerun->str()))
+            .getPoplarSequence()
             .add(*progs_.recomputeFragment(opToRerun->id));
 
         contextOpRegistry[{context, taskId}].push_back(opToRerun);
@@ -2548,6 +2554,7 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
       growOpx(opx, progs_.createRecomputeFragment(op->id));
       seqs.getSequence(
               &progs_.pipelineMainFragment(op->getPipelineStage(), op->str()))
+          .getPoplarSequence()
           .add(*progs_.recomputeFragment(op->id));
     }
   }
@@ -3360,7 +3367,7 @@ void IrLowering::prepareGraph() {
         auto &sequenceMap = seqs.at(emplaceTask.name);
         for (auto seq : sequenceMap.getFullSequenceMap()) {
           // Emplace intermediate sequence in final sequence
-          seq.first->add(*seq.second);
+          seq.first->getPoplarSequence().add(*seq.second);
         }
         // Erase sequences for task, so that each tasks's sequences
         // are only added once.
@@ -3631,7 +3638,7 @@ PriTask IrLowering::fromHostTask(Tensor *tensor, snap::program::Sequence &sq) {
       }
     }
 
-    seqs.getSequence(&sq).add(
+    seqs.getSequence(&sq).getPoplarSequence().add(
         // Tensors with views: Use the view instead, so that e.g.
         // replicated tensor sharding padding is ignored
         snap::program::Copy(fromHostStreams.at(tensor->id),
@@ -3693,7 +3700,7 @@ PriTask IrLowering::toHostTask(Tensor *tensor,
                            nElmsStream);
     }
 
-    seqs.getSequence(&sq).add(snap::program::Copy(
+    seqs.getSequence(&sq).getPoplarSequence().add(snap::program::Copy(
         anchorTensor,
         poplarStream,
         doRearrangeOnHost(tensor),
@@ -3814,7 +3821,7 @@ PriTask IrLowering::initBatchCounterTensorsTask(snap::program::Sequence &sq) {
                    batchCountingTensors[N].getPoplarTensor(),
                    sq.getPoplarSequence(),
                    logging::format("initBatchCountTensors[{}]", N));
-      sq.add(snap::program::Copy(
+      sq.getPoplarSequence().add(snap::program::Copy(
           falseConst, batchCountCheckingTensors[N], false, {"copyFalse"}));
     }
 
@@ -3860,10 +3867,11 @@ PriTask IrLowering::updateBatchCountTask(snap::program::Sequence &sq) {
       auto zero = getConst(graph(), poplar::INT, {}, 0, "batchCount/zero");
       snap::program::Copy trueBody(
           zero, batchCountingTensors[N], false, {"copyZero"});
-      seqs.getSequence(&sq).add(snap::program::If(batchCountCheckingTensors[N],
-                                                  trueBody,
-                                                  emptyseq,
-                                                  {"batchCountResetCheck"}));
+      seqs.getSequence(&sq).getPoplarSequence().add(
+          snap::program::If(batchCountCheckingTensors[N],
+                            trueBody,
+                            emptyseq,
+                            {"batchCountResetCheck"}));
     }
     return seqs;
   };
@@ -3918,7 +3926,7 @@ PriTask IrLowering::toHostEveryNBatchesTask(Tensor *tensor,
     snap::Tensor isNthBatch = batchCountCheckingTensors.at(N);
 
     snap::program::Sequence copyseq(poplar::DebugContext{"copy"}, graph());
-    copyseq.add(snap::program::Copy(
+    copyseq.getPoplarSequence().add(snap::program::Copy(
         tensors_.get(tensor->id),
         toHostAnchorStreams.at(tensor->id),
         doRearrangeOnHost(tensor),
@@ -3928,7 +3936,7 @@ PriTask IrLowering::toHostEveryNBatchesTask(Tensor *tensor,
     // Placeholder 'do nothing' branch if not running copy program
     snap::program::Sequence emptyseq(poplar::DebugContext{"empty"}, graph());
 
-    seqs.getSequence(&sq).add(
+    seqs.getSequence(&sq).getPoplarSequence().add(
         snap::program::If(isNthBatch, copyseq, emptyseq, {"nthBatchCheck"}));
     return seqs;
   };

@@ -96,7 +96,7 @@ void RNNOpx::grow(snap::program::Sequence &prog) const {
   auto fwdStepProg = getFwdStepProg(bias, initialH, output, H_prev, index);
 
   // Repeat fwdStepProg max_seq_length times
-  prog.add(snap::program::Repeat(
+  prog.getPoplarSequence().add(snap::program::Repeat(
       max_seq_length, fwdStepProg, debugContext("repeat_forward_pass_step")));
 
   // Set outputs
@@ -174,10 +174,11 @@ snap::program::Sequence RNNOpx::getFwdStepProg(snap::Tensor &bias,
                                              fwdStepProg.getPoplarSequence(),
                                              debugContext("regrouped_H_next"));
   // Copy H_next to H_prev for next iteration
-  fwdStepProg.add(snap::program::Copy(snap::Tensor{H_next, graph()},
-                                      H_prev,
-                                      false,
-                                      debugContext("H_next_copy_to_H_prev")));
+  fwdStepProg.getPoplarSequence().add(
+      snap::program::Copy(snap::Tensor{H_next, graph()},
+                          H_prev,
+                          false,
+                          debugContext("H_next_copy_to_H_prev")));
 
   // Copy current hidden_state slice to output tensor
   popops::dynamicUpdate(graph().getPoplarGraph(),
@@ -450,9 +451,10 @@ void RNNGradOpx::grow(snap::program::Sequence &prog) const {
                                        da,
                                        index);
   // Repeat the program max_seq_length times
-  prog.add(snap::program::Repeat(max_seq_length,
-                                 singleStepProg,
-                                 debugContext("repeat_backward_pass_step")));
+  prog.getPoplarSequence().add(
+      snap::program::Repeat(max_seq_length,
+                            singleStepProg,
+                            debugContext("repeat_backward_pass_step")));
 
   // Perform weight update from accumulated da tensor
 
@@ -621,16 +623,17 @@ RNNGradOpx::getBwdStepProg(snap::Tensor &dh_prev,
                      debugContext("dh_next+=dh_recursive"));
 
   // forward_output_prev = forward_output[i]
-  bwdStepProg.add(
+  bwdStepProg.getPoplarSequence().add(
       snap::program::Copy(forward_output_next,
                           forward_output_prev,
                           false,
                           debugContext("copy_forward_output_next")));
   // dh_prev = dh_next
-  bwdStepProg.add(snap::program::Copy(snap::Tensor{dh_next, graph()},
-                                      dh_prev,
-                                      false,
-                                      debugContext("copy_dh_next")));
+  bwdStepProg.getPoplarSequence().add(
+      snap::program::Copy(snap::Tensor{dh_next, graph()},
+                          dh_prev,
+                          false,
+                          debugContext("copy_dh_next")));
 
   // Decrement index
   popops::subInPlace<unsigned int>(graph().getPoplarGraph(),

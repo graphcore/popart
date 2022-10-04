@@ -407,7 +407,7 @@ public:
                                       opx.getDebugNameAndId("zerosUpdate"));
 
     auto gradInitials = snap::Tensor{t, opx.graph()};
-    prog.add(snap::program::Copy(
+    prog.getPoplarSequence().add(snap::program::Copy(
         gradIn, gradInitials, false, opx.debugContext("copyToScatter")));
 
     popops::multiUpdate(opx.graph().getPoplarGraph(),
@@ -731,7 +731,7 @@ void ScatterReduceOpx::grow(snap::program::Sequence &prog) const {
 
   if (srop.hasInput(ScatterReduceOp::initialValuesInIndex())) {
     const auto &t = getInTensor(ScatterReduceOp::initialValuesInIndex());
-    prog.add(snap::program::Copy(
+    prog.getPoplarSequence().add(snap::program::Copy(
         t, out, false, debugContext("copyToScatterReduce")));
   } else {
     strategy->initReductionOutput(*this, out, prog);

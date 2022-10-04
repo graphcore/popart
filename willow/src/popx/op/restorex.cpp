@@ -108,7 +108,7 @@ snap::Tensor RestoreBaseOpx<Derived>::growStaticSliceRestore(
             debugContext("static-restore/switch-copy-" + std::to_string(i))));
   }
 
-  prog.add(switchCase);
+  prog.getPoplarSequence().add(switchCase);
 
   return actFromStash.squeeze({0});
 }
@@ -137,7 +137,7 @@ void RestoreInplaceOpx::grow(snap::program::Sequence &prog) const {
 
   const auto actFromStash = growRestore(prog, stash);
 
-  prog.add(
+  prog.getPoplarSequence().add(
       snap::program::Copy(actFromStash, actToRestore, false, debugContext()));
   setOutTensor(RestoreInplaceOp::getRestoredActOutIndex(), actToRestore);
 }

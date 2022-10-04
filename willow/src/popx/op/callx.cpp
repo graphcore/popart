@@ -81,7 +81,7 @@ void CallOpx::copyModified(snap::program::Sequence &prog,
                           callop.inId(i));
       snap::program::Copy copy_prog(
           graph_input, call_input, false, debugContext());
-      prog.add(copy_prog);
+      prog.getPoplarSequence().add(copy_prog);
     } else {
       logging::opx::trace("[CallOpx] Skipping copy modified input {}->{}",
                           graph_input_id,
@@ -120,7 +120,7 @@ void CallOpx::copyInput(snap::program::Sequence &prog,
           "[CallOpx] Copying input {}->{}", call_input_id, graph_input_id);
       snap::program::Copy copy_prog(
           call_input, graph_input, false, debugContext());
-      prog.add(copy_prog);
+      prog.getPoplarSequence().add(copy_prog);
     } else {
       logging::opx::trace("[CallOpx] Skipping copy input {}->{} "
                           "(tensor not read in subgraph)",
@@ -133,7 +133,8 @@ void CallOpx::copyInput(snap::program::Sequence &prog,
   }
   if (accessType == view::AccessType::Write) {
     logging::opx::trace("[CallOpx] Write undef tensor {}", graph_input_id);
-    prog.add(snap::program::WriteUndef(graph_input, debugContext()));
+    prog.getPoplarSequence().add(
+        snap::program::WriteUndef(graph_input, debugContext()));
   }
 }
 
@@ -175,7 +176,7 @@ void CallOpx::copyOutput(snap::program::Sequence &prog,
           "[CallOpx] Copying output {}->{}", graph_output_id, callop.outId(i));
       snap::program::Copy copy_prog(
           graph_output, call_output, false, debugContext());
-      prog.add(copy_prog);
+      prog.getPoplarSequence().add(copy_prog);
     } else {
       logging::opx::trace(
           "[CallOpx] Skipping output {}->{}", graph_output_id, callop.outId(i));
@@ -197,7 +198,8 @@ void CallOpx::doCall(snap::program::Sequence &prog,
                       called_graph.getGraphString(),
                       subgraphPart);
   auto dbgStr = logging::format("{}/{}", called_graph.id.str(), subgraphPart);
-  prog.add(snap::program::Call(graph(), graph_prog, debugContext(dbgStr)));
+  prog.getPoplarSequence().add(
+      snap::program::Call(graph(), graph_prog, debugContext(dbgStr)));
 }
 
 void CallOpx::grow(std::vector<snap::program::Sequence> &sequences) const {

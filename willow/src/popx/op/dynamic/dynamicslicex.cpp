@@ -75,7 +75,7 @@ void DynamicSliceOpx::grow(snap::program::Sequence &prog) const {
         cloneNcopy(prog,
                    getInTensor(DynamicSliceOp::getSliceInIndex()),
                    op.inId(DynamicSliceOp::getSliceInIndex()) + "_writeable");
-    prog.add(snap::program::Copy(s, outTensor));
+    prog.getPoplarSequence().add(snap::program::Copy(s, outTensor));
   }
 
   setOutTensor(DynamicSliceBaseOp::getOutIndex(), outTensor);
@@ -253,7 +253,7 @@ void DynamicSliceInplaceOpx::grow(snap::program::Sequence &prog) const {
         op.inId(DynamicSliceInplaceOp::getSliceInIndex()) + "_writeable");
   }
 
-  prog.add(
+  prog.getPoplarSequence().add(
       snap::program::Copy(s.reshape(writeableSlice.shape()), writeableSlice));
 
   setOutTensor(DynamicSliceBaseOp::getOutIndex(), writeableSlice);

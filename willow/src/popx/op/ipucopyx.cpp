@@ -101,10 +101,10 @@ void IpuCopyOpx::growPipelined(snap::program::Sequence &prog,
 
     // Using dontOutline=false will ensure the copies (buffers & code) are
     // reused.
-    prog.add(snap::program::Copy(copyTensors.at(idx).first,
-                                 copyTensors.at(idx).second,
-                                 false,
-                                 debugContext()));
+    prog.getPoplarSequence().add(snap::program::Copy(copyTensors.at(idx).first,
+                                                     copyTensors.at(idx).second,
+                                                     false,
+                                                     debugContext()));
   }
 }
 

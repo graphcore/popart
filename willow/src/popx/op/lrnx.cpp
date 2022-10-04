@@ -55,7 +55,8 @@ snap::Tensor getScale(snap::Graph &graph,
                                             {di}),
                              graph};
   auto square_sum = graph.clone(square, {di});
-  prog.add(snap::program::Copy(square, square_sum, false, {di}));
+  prog.getPoplarSequence().add(
+      snap::program::Copy(square, square_sum, false, {di}));
   auto channels = input.dim(1);
 
   auto left  = ((size - 1) / 2);

@@ -42,8 +42,8 @@ void IoTileCopyOpx::grow(snap::program::Sequence &prog) const {
   // Copy from view to view
   snap::program::Copy outCopy(inView, outView, false, debugContext());
 
-  prog.add(writeUndef);
-  prog.add(outCopy);
+  prog.getPoplarSequence().add(writeUndef);
+  prog.getPoplarSequence().add(outCopy);
 }
 
 InputCreatorType IoTileCopyOpx::getInputCreatorType(InIndex index) const {

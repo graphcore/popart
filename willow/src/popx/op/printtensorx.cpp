@@ -42,7 +42,7 @@ void PrintTensorOpx::grow(snap::program::Sequence &prog) const {
   if (op.shouldPrint()) {
     auto printProg = snap::program::PrintTensor(
         getTitle(), input, toPoplarPrintTensorFmt(op.getFmt()));
-    prog.add(printProg);
+    prog.getPoplarSequence().add(printProg);
   }
 
   auto output = cloneNcopy(prog, input);

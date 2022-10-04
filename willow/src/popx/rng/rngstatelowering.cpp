@@ -178,7 +178,8 @@ void RngStateLowering::lowerGetHwSeeds(
                                              seq.getPoplarSequence(),
                                              dbgCtx),
                           graph.get()};
-  seq.add(snap::program::Copy(tmp, rngState, false, dbgCtx));
+  seq.getPoplarSequence().add(
+      snap::program::Copy(tmp, rngState, false, dbgCtx));
 }
 
 PriTask RngStateLowering::initRngStateTensor() {
@@ -215,7 +216,7 @@ PriTask RngStateLowering::randomSeedToHost() {
     auto &seq =
         seqs.getSequence(&irLowering.get().progs().randomSeedToHostFragment());
 
-    seq.add(snap::program::Copy(
+    seq.getPoplarSequence().add(snap::program::Copy(
         streamedSeed, streamSeedToHost, false, {"randomSeedToHost"}));
     return seqs;
   };
@@ -245,19 +246,20 @@ PriTask RngStateLowering::rngStateFromHost() {
         seqs.getSequence(&irLowering.get().progs().rngStateFromHostFragment());
 
     // Stream newRngState to combinedRngStateTensor
-    seq.add(snap::program::Copy(streamRngFromHost,
-                                combinedRngStateTensor,
-                                false,
-                                {"copyStreamRngStateTensor"}));
+    seq.getPoplarSequence().add(
+        snap::program::Copy(streamRngFromHost,
+                            combinedRngStateTensor,
+                            false,
+                            {"copyStreamRngStateTensor"}));
     // Copy first half of combinedRngStateTensor to identicalSeedsRngStateTensor
-    seq.add(snap::program::Copy(
+    seq.getPoplarSequence().add(snap::program::Copy(
         combinedRngStateTensor[0],
         identicalSeedsRngStateTensor,
         false,
         {"copyRngStateTensorToIdenticalSeedsRngStateTensor"}));
     // Copy second half of combinedRngStateTensor to
     // differingSeedsRngStateTensor
-    seq.add(snap::program::Copy(
+    seq.getPoplarSequence().add(snap::program::Copy(
         combinedRngStateTensor[1],
         differingSeedsRngStateTensor,
         false,
@@ -287,14 +289,14 @@ PriTask RngStateLowering::rngStateToHost() {
 
     // Update combinedRngStateTensor with the new values of
     // identicalSeedsRngStateTensor and differingSeedsRngStateTensor
-    seq.add(snap::program::Copy(
+    seq.getPoplarSequence().add(snap::program::Copy(
         snap::concat(identicalSeedsRngStateTensor.expand({0}),
                      differingSeedsRngStateTensor.expand({0})),
         combinedRngStateTensor,
         false,
         "seedsToRngStateTensor"));
     // Stream combinedRngStateTensor to host
-    seq.add(snap::program::Copy(
+    seq.getPoplarSequence().add(snap::program::Copy(
         combinedRngStateTensor, streamRngToHost, false, {"rngStateToHost"}));
     return seqs;
   };

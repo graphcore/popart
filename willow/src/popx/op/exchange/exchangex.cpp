@@ -300,7 +300,7 @@ void HostLoadDescriptorx::exchange(snap::Graph &graph,
 
     snap::program::Copy copy_prog(
         stream, streamTensor, rearrangeOnHost(), context);
-    prog.add(copy_prog);
+    prog.getPoplarSequence().add(copy_prog);
 
   } else {
     throw error("Stream for tensor {} not found",
@@ -328,7 +328,7 @@ void HostLoadDescriptorx::post(snap::Graph &graph,
                               context);
   snap::program::Copy tmp_copy_prog(
       streamTensor, outTensors.at(0), false, context);
-  prog.add(tmp_copy_prog);
+  prog.getPoplarSequence().add(tmp_copy_prog);
 }
 
 snap::Tensor HostLoadDescriptorx::unwind(snap::Graph &graph,
@@ -362,7 +362,7 @@ void HostStoreDescriptorx::pre(snap::Graph &graph,
 
   snap::program::Copy tmp_copy_prog(
       inTensors.at(0).second, streamTensor, false, context);
-  prog.add(tmp_copy_prog);
+  prog.getPoplarSequence().add(tmp_copy_prog);
 }
 
 void HostStoreDescriptorx::exchange(snap::Graph &graph,
@@ -400,7 +400,7 @@ void HostStoreDescriptorx::exchange(snap::Graph &graph,
 
     snap::program::Copy copy_prog(
         streamTensor, stream, rearrangeOnHost, context);
-    prog.add(copy_prog);
+    prog.getPoplarSequence().add(copy_prog);
 
   } else {
     throw error("Stream for tensor {} not found",
@@ -455,13 +455,13 @@ void RemoteLoadDescriptorx::exchange(snap::Graph &graph,
         selectRemoteBufferLandingPad(rbTensors, descriptor),
         offset,
         context);
-    prog.add(copy_prog);
+    prog.getPoplarSequence().add(copy_prog);
   } else {
     snap::program::Copy copy_prog(
         buffer.first,
         selectRemoteBufferLandingPad(rbTensors, descriptor),
         context);
-    prog.add(copy_prog);
+    prog.getPoplarSequence().add(copy_prog);
   }
 }
 
@@ -479,7 +479,7 @@ void RemoteLoadDescriptorx::post(snap::Graph &graph,
       outTensors.at(0),
       false,
       context);
-  prog.add(tmp_copy_prog);
+  prog.getPoplarSequence().add(tmp_copy_prog);
 }
 
 snap::Tensor RemoteLoadDescriptorx::unwind(snap::Graph &graph,
@@ -515,7 +515,7 @@ void RemoteStoreDescriptorx::pre(snap::Graph &graph,
       selectRemoteBufferLandingPad(rbTensors, descriptor),
       false,
       context);
-  prog.add(tmp_copy_prog);
+  prog.getPoplarSequence().add(tmp_copy_prog);
 }
 
 void RemoteStoreDescriptorx::exchange(snap::Graph &graph,
@@ -535,13 +535,13 @@ void RemoteStoreDescriptorx::exchange(snap::Graph &graph,
         buffer.first,
         offset,
         context);
-    prog.add(copy_prog);
+    prog.getPoplarSequence().add(copy_prog);
   } else {
     snap::program::Copy copy_prog(
         selectRemoteBufferLandingPad(rbTensors, descriptor),
         buffer.first,
         context);
-    prog.add(copy_prog);
+    prog.getPoplarSequence().add(copy_prog);
   }
 }
 

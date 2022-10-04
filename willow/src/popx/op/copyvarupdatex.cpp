@@ -51,11 +51,11 @@ void CopyVarUpdateOpx::grow(snap::program::Sequence &prog) const {
 
   if (twoTensorsParallelWritable(updater, toUpdate)) {
     snap::program::Copy copy(updater, toUpdate, false, debugContext());
-    prog.add(copy);
+    prog.getPoplarSequence().add(copy);
   } else {
     auto newUpdater = cloneNcopy(prog, updater);
     snap::program::Copy copy(newUpdater, toUpdate, false, debugContext());
-    prog.add(copy);
+    prog.getPoplarSequence().add(copy);
   }
   // output is a reference to destination of the copy
   setOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),

@@ -66,10 +66,10 @@ snap::Tensor cloneAndGroupImpl(ClonerT &default_cloner,
         g.getPoplarGraph(), outTensor.getPoplarTensor(), 0, grain_size);
 
     // Copy the values to it.
-    p.add(snap::program::Copy(t,
-                              outTensor,
-                              /* dontOutline = */ false,
-                              d));
+    p.getPoplarSequence().add(snap::program::Copy(t,
+                                                  outTensor,
+                                                  /* dontOutline = */ false,
+                                                  d));
   } else {
     outTensor = default_cloner(p, t);
   }

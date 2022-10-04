@@ -301,49 +301,49 @@ snap::program::Sequence &PopPrograms::weightsToHostFragment() {
 snap::program::Sequence PopPrograms::weightsFromHost() const {
   snap::program::Sequence prog(poplar::DebugContext{"weightsFromHost"},
                                ir_lowering_p->graph());
-  prog.add(streamWeightsFromHostFragment());
+  prog.getPoplarSequence().add(streamWeightsFromHostFragment());
   return prog;
 }
 
 snap::program::Sequence PopPrograms::optimizerFromHost() const {
   snap::program::Sequence prog(poplar::DebugContext{"optimizerFromHost"},
                                ir_lowering_p->graph());
-  prog.add(streamOptimizerFromHostFragment());
+  prog.getPoplarSequence().add(streamOptimizerFromHostFragment());
   return prog;
 }
 
 snap::program::Sequence PopPrograms::randomSeedFromHost() const {
   snap::program::Sequence prog(poplar::DebugContext{"randomSeedFromHost"},
                                ir_lowering_p->graph());
-  prog.add(randomSeedFromHostFragment());
+  prog.getPoplarSequence().add(randomSeedFromHostFragment());
   return prog;
 }
 
 snap::program::Sequence PopPrograms::randomSeedToHost() const {
   snap::program::Sequence prog(poplar::DebugContext{"randomSeedToHost"},
                                ir_lowering_p->graph());
-  prog.add(randomSeedToHostFragment());
+  prog.getPoplarSequence().add(randomSeedToHostFragment());
   return prog;
 }
 
 snap::program::Sequence PopPrograms::cycleCountTensorToHost() const {
   snap::program::Sequence prog(poplar::DebugContext{"cycleCountTensorToHost"},
                                ir_lowering_p->graph());
-  prog.add(cycleCountTensorToHostFragment());
+  prog.getPoplarSequence().add(cycleCountTensorToHostFragment());
   return prog;
 }
 
 snap::program::Sequence PopPrograms::rngStateFromHost() const {
   snap::program::Sequence prog(poplar::DebugContext{"rngStateFromHost"},
                                ir_lowering_p->graph());
-  prog.add(rngStateFromHostFragment());
+  prog.getPoplarSequence().add(rngStateFromHostFragment());
   return prog;
 }
 
 snap::program::Sequence PopPrograms::rngStateToHost() const {
   snap::program::Sequence prog(poplar::DebugContext{"rngStateToHost"},
                                ir_lowering_p->graph());
-  prog.add(rngStateToHostFragment());
+  prog.getPoplarSequence().add(rngStateToHostFragment());
   return prog;
 }
 
@@ -365,7 +365,7 @@ void PopPrograms::addPipelineCycle(PipelineInfo pInfo,
   // 5. Inter-IPU copies for all pipeline stages
 
   // 1.
-  sq.add(preForwardFragment());
+  sq.getPoplarSequence().add(preForwardFragment());
 
   // 2.
   if (pipelineSeqs.find(PipelineFragmentId::ToDeviceStream) !=
@@ -375,7 +375,7 @@ void PopPrograms::addPipelineCycle(PipelineInfo pInfo,
       if (pInfo.doStage(pCycle, stage_seq.first)) {
         ss << "\n  ps" << stage_seq.first << " : ToDeviceStream";
         // Inline code in order to not block overlap
-        sq.add(stage_seq.second);
+        sq.getPoplarSequence().add(stage_seq.second);
       }
     }
   } else {
@@ -391,7 +391,8 @@ void PopPrograms::addPipelineCycle(PipelineInfo pInfo,
     auto stage = stage_seq.first;
     if (pInfo.doStage(pCycle, stage)) {
       ss << "\n  ps" << stage << " : Main";
-      sq.add(snap::program::Call(ir_lowering_p->graph(), stage_seq.second));
+      sq.getPoplarSequence().add(
+          snap::program::Call(ir_lowering_p->graph(), stage_seq.second));
     }
   }
 
@@ -403,7 +404,7 @@ void PopPrograms::addPipelineCycle(PipelineInfo pInfo,
       if (pInfo.doStage(pCycle, stage_seq.first)) {
         ss << "\n  ps" << stage_seq.first << " : ToHostStream";
         // Inline code to not block overlap
-        sq.add(stage_seq.second);
+        sq.getPoplarSequence().add(stage_seq.second);
       }
     }
   }
@@ -412,7 +413,8 @@ void PopPrograms::addPipelineCycle(PipelineInfo pInfo,
   // Note: Always do all the copies. This is ensure that ALL copies are
   // outlined across pipelineCycles AND merged across pipelineStages.
   ss << logging::format("\n  IpuCopies");
-  sq.add(snap::program::Call(ir_lowering_p->graph(), pipelineIpuCopyFunction));
+  sq.getPoplarSequence().add(
+      snap::program::Call(ir_lowering_p->graph(), pipelineIpuCopyFunction));
 }
 
 void PopPrograms::addFunctionBuffers(const GraphId gid,
@@ -546,41 +548,42 @@ PopPrograms::getFullProgramFromPipelineFragments(bool fwdOnly) const {
   snap::program::Sequence inner(poplar::DebugContext{"inner"},
                                 ir_lowering_p->graph());
 
-  inner.add(fill);
+  inner.getPoplarSequence().add(fill);
   // This is the inner main cycles loop, if doing pipelining without gradient
   // accumulation, this the batches per step loop, as batch size = micro_batch
   // size
-  inner.add(snap::program::Repeat(
+  inner.getPoplarSequence().add(snap::program::Repeat(
       static_cast<uint32_t>(mainCycles), main, {"innerLoop"}));
-  inner.add(flush);
+  inner.getPoplarSequence().add(flush);
 
   snap::program::Sequence outer(poplar::DebugContext{"outer"},
                                 ir_lowering_p->graph());
 
-  outer.add(initFragment());
+  outer.getPoplarSequence().add(initFragment());
 
   // Only add index zero function call if required
   if (ir_lowering_p->ir()
           .getSessionOptions()
           .createImplicitPipeliningFwdOnlyProgram) {
-    outer.add(
+    outer.getPoplarSequence().add(
         snap::program::Call(ir_lowering_p->graph(), zeroPipelineIndexFunction));
   }
 
   if (!ir_lowering_p->getOuterLoopFragEmpty()) {
     if (!fwdOnly) {
-      inner.add(accumulateOuterFragment());
+      inner.getPoplarSequence().add(accumulateOuterFragment());
     }
     // If doing gradient accumulation, the inner loop is over mini batches,
     // and this outer loop loops over multiple batches per step.
     auto bps = ir_lowering_p->ir().getDataFlow().batchesPerStep();
-    outer.add(snap::program::Repeat(bps, inner, {"outerloop"}));
+    outer.getPoplarSequence().add(
+        snap::program::Repeat(bps, inner, {"outerloop"}));
   } else {
     // No gradient accumulation, so just add one iteration of the inner program.
-    outer.add(inner);
+    outer.getPoplarSequence().add(inner);
   }
 
-  outer.add(
+  outer.getPoplarSequence().add(
       snap::program::Call(ir_lowering_p->graph(), toHostFinalCopyFunction));
 
   return outer;
@@ -594,22 +597,22 @@ snap::program::Sequence PopPrograms::program() const {
                                 ir_lowering_p->graph());
 
   if (opts.enableExplicitMainLoops) {
-    outer.add(initFragment());
-    outer.add(preForwardFragment());
-    outer.add(forwardFragment());
-    outer.add(backwardFragment());
-    outer.add(toHostFinalCopyFragment());
+    outer.getPoplarSequence().add(initFragment());
+    outer.getPoplarSequence().add(preForwardFragment());
+    outer.getPoplarSequence().add(forwardFragment());
+    outer.getPoplarSequence().add(backwardFragment());
+    outer.getPoplarSequence().add(toHostFinalCopyFragment());
   } else {
     if (opts.implicitPipeliningEnabled()) {
-      outer.add(getFullProgramFromPipelineFragments(false));
+      outer.getPoplarSequence().add(getFullProgramFromPipelineFragments(false));
     } else {
       snap::program::Sequence prog(poplar::DebugContext{"program"},
                                    ir_lowering_p->graph());
-      prog.add(preForwardFragment());
-      prog.add(forwardFragment());
-      prog.add(backwardFragment());
+      prog.getPoplarSequence().add(preForwardFragment());
+      prog.getPoplarSequence().add(forwardFragment());
+      prog.getPoplarSequence().add(backwardFragment());
 
-      outer.add(initFragment());
+      outer.getPoplarSequence().add(initFragment());
 
       auto accumulationFactor = ir_lowering_p->getAccumulationFactor();
       if (!ir_lowering_p->getOuterLoopFragEmpty()) {
@@ -619,8 +622,8 @@ snap::program::Sequence PopPrograms::program() const {
         snap::program::Repeat repeat(
             accumulationFactor, prog, {"accumulationLoop"});
         prog = snap::program::Sequence(ir_lowering_p->graph());
-        prog.add(repeat);
-        prog.add(accumulateOuterFragment());
+        prog.getPoplarSequence().add(repeat);
+        prog.getPoplarSequence().add(accumulateOuterFragment());
       }
 
       if (opts.instrumentWithHardwareCycleCounter &&
@@ -645,9 +648,9 @@ snap::program::Sequence PopPrograms::program() const {
       // BatchesPerStep loop
       logging::devicex::trace("Adding batches per step loop with {} iterations",
                               batchesPerStep);
-      outer.add(
+      outer.getPoplarSequence().add(
           snap::program::Repeat(batchesPerStep, prog, {"batchesPerStep"}));
-      outer.add(toHostFinalCopyFragment());
+      outer.getPoplarSequence().add(toHostFinalCopyFragment());
     }
   }
 
@@ -662,7 +665,7 @@ snap::program::Sequence PopPrograms::program() const {
 snap::program::Sequence PopPrograms::weightsToHost() const {
   snap::program::Sequence prog(poplar::DebugContext{"weightsToHost"},
                                ir_lowering_p->graph());
-  prog.add(weightsToHostFragment());
+  prog.getPoplarSequence().add(weightsToHostFragment());
   return prog;
 }
 
