@@ -39,7 +39,7 @@ void TensorRemapOpx::grow(snap::program::Sequence &prog) const {
     out = getOutTensor(TensorRemapOp::getOutIndex());
   }
 
-  snap::program::Copy copyProg(
+  poplar::program::Copy copyProg(
       getInTensor(TensorRemapOp::getInIndex()),
       out,
       false,

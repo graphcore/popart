@@ -78,11 +78,11 @@ void GRUOpx::prepareInitialState(snap::Tensor &init_state_h,
   // Check the inputs have been created
   if (hasInitH) {
     prog.getPoplarSequence().add(
-        snap::program::Copy(getInTensor(GRUOp::getInitialHInIndex()),
-                            createInputTensor(GRUOp::getInitialHInIndex(),
-                                              getDebugNameAndId("initH")),
-                            false,
-                            debugContext()));
+        poplar::program::Copy(getInTensor(GRUOp::getInitialHInIndex()),
+                              createInputTensor(GRUOp::getInitialHInIndex(),
+                                                getDebugNameAndId("initH")),
+                              false,
+                              debugContext()));
   }
 }
 
@@ -207,7 +207,7 @@ void GRUOpx::growBias(snap::program::Sequence &prog) const {
     bias_input = snap::concat({br, bhr, bz, bhz, bh, bhh});
     bias_input = bias_input.reshape({3, 2, hidden_size});
 
-    snap::program::Copy copyProg(bias_input, biases, false, debugContext());
+    poplar::program::Copy copyProg(bias_input, biases, false, debugContext());
     prog.getPoplarSequence().add(copyProg);
     return;
   }
@@ -218,7 +218,7 @@ void GRUOpx::growBias(snap::program::Sequence &prog) const {
   auto input_bias  = snap::concat({br, bz, bh});
   auto hidden_bias = snap::concat({bhr, bhz, bhh});
 
-  snap::program::Copy copyProg(input_bias, biases, false, debugContext());
+  poplar::program::Copy copyProg(input_bias, biases, false, debugContext());
   prog.getPoplarSequence().add(copyProg);
 
   snap::popops::mapInPlace(graph(),
@@ -378,17 +378,17 @@ std::set<TensorId> GRUOpx::mustExistBeforeCreate(InIndex) const { return {}; }
 void GRUOpx::prepareWeights(snap::program::Sequence &prog) const {
   // check to see if the weights were created
   prog.getPoplarSequence().add(
-      snap::program::Copy(getInTensor(GRUOp::getInputWeightsInIndex()),
-                          reshapePoplibWeightsForOnnx(snap::Tensor{
-                              getGRUWeights().inputWeights, graph()}),
-                          false,
-                          debugContext()));
+      poplar::program::Copy(getInTensor(GRUOp::getInputWeightsInIndex()),
+                            reshapePoplibWeightsForOnnx(snap::Tensor{
+                                getGRUWeights().inputWeights, graph()}),
+                            false,
+                            debugContext()));
   prog.getPoplarSequence().add(
-      snap::program::Copy(getInTensor(GRUOp::getRecurrenceWeightsInIndex()),
-                          reshapePoplibWeightsForOnnx(snap::Tensor{
-                              getGRUWeights().outputWeights, graph()}),
-                          false,
-                          debugContext()));
+      poplar::program::Copy(getInTensor(GRUOp::getRecurrenceWeightsInIndex()),
+                            reshapePoplibWeightsForOnnx(snap::Tensor{
+                                getGRUWeights().outputWeights, graph()}),
+                            false,
+                            debugContext()));
 }
 
 snap::Tensor GRUOpx::getInput(snap::program::Sequence &prog) const {
@@ -397,7 +397,7 @@ snap::Tensor GRUOpx::getInput(snap::program::Sequence &prog) const {
         createInputTensor(GRUOp::getInputInIndex(), getDebugNameAndId("input"));
     auto raw_input = getInTensor(GRUOp::getInputInIndex());
     prog.getPoplarSequence().add(
-        snap::program::Copy(raw_input, input, false, debugContext()));
+        poplar::program::Copy(raw_input, input, false, debugContext()));
     return input;
   } else {
     return getInTensor(GRUOp::getInputInIndex());

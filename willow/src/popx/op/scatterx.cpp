@@ -50,8 +50,8 @@ snap::Tensor scatter(const popart::popx::PopOpx &opx,
                                             /* broadcasted= */ true,
                                             opx.getDebugNameAndId(""));
 
-  prog.getPoplarSequence().add(
-      snap::program::Copy(data, out, false, opx.debugContext("copyToScatter")));
+  prog.getPoplarSequence().add(poplar::program::Copy(
+      data, out, false, opx.debugContext("copyToScatter")));
 
   auto data2d    = out.dimRoll(uaxis);
   auto updates2d = updates.dimRoll(uaxis);

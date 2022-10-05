@@ -79,7 +79,7 @@ void CallOpx::copyModified(snap::program::Sequence &prog,
       logging::opx::trace("[CallOpx] Copying modified input {}->{}",
                           graph_input_id,
                           callop.inId(i));
-      snap::program::Copy copy_prog(
+      poplar::program::Copy copy_prog(
           graph_input, call_input, false, debugContext());
       prog.getPoplarSequence().add(copy_prog);
     } else {
@@ -118,7 +118,7 @@ void CallOpx::copyInput(snap::program::Sequence &prog,
         dv_p->lowering().getAliasZeroCopy()->copyInputRequired(&callop, i)) {
       logging::opx::trace(
           "[CallOpx] Copying input {}->{}", call_input_id, graph_input_id);
-      snap::program::Copy copy_prog(
+      poplar::program::Copy copy_prog(
           call_input, graph_input, false, debugContext());
       prog.getPoplarSequence().add(copy_prog);
     } else {
@@ -174,7 +174,7 @@ void CallOpx::copyOutput(snap::program::Sequence &prog,
     if (dv_p->lowering().getAliasZeroCopy()->copyOutputRequired(&callop, i)) {
       logging::opx::trace(
           "[CallOpx] Copying output {}->{}", graph_output_id, callop.outId(i));
-      snap::program::Copy copy_prog(
+      poplar::program::Copy copy_prog(
           graph_output, call_output, false, debugContext());
       prog.getPoplarSequence().add(copy_prog);
     } else {

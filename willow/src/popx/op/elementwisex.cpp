@@ -210,7 +210,7 @@ snap::Tensor EwuComputex::cloneNcopy(snap::program::Sequence &prog,
                                      const snap::Tensor &tensor,
                                      const poplar::DebugNameAndId &dnai) const {
   auto outTensor = graph.clone(tensor, {dnai});
-  snap::program::Copy copyProg(tensor, outTensor, false, {dnai});
+  poplar::program::Copy copyProg(tensor, outTensor, false, {dnai});
   prog.getPoplarSequence().add(copyProg);
   return outTensor;
 }

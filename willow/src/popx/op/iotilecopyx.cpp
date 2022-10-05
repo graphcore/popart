@@ -40,7 +40,7 @@ void IoTileCopyOpx::grow(snap::program::Sequence &prog) const {
   snap::program::WriteUndef writeUndef(outTensor, debugContext());
 
   // Copy from view to view
-  snap::program::Copy outCopy(inView, outView, false, debugContext());
+  poplar::program::Copy outCopy(inView, outView, false, debugContext());
 
   prog.getPoplarSequence().add(writeUndef);
   prog.getPoplarSequence().add(outCopy);

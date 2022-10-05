@@ -131,18 +131,14 @@ void MultiReplicatedReduceScatterOpx::growPart(OpxGrowPartId id) const {
           cbr->undoRearrangeForCollective(cbrTensor.getPoplarTensor()),
           inGraph(inputIndex)};
       if (hasInViewChangers(inputIndex)) {
-        progs.add(
-            snap::program::Copy(
-                getInViewChangers(inputIndex).apply(toReduceScatter).flatten(),
-                ref.flatten(),
-                false,
-                debugContext())
-                .getPoplarProgram());
+        progs.add(poplar::program::Copy(
+            getInViewChangers(inputIndex).apply(toReduceScatter).flatten(),
+            ref.flatten(),
+            false,
+            debugContext()));
       } else {
-        progs.add(
-            snap::program::Copy(
-                toReduceScatter.flatten(), ref.flatten(), false, debugContext())
-                .getPoplarProgram());
+        progs.add(poplar::program::Copy(
+            toReduceScatter.flatten(), ref.flatten(), false, debugContext()));
       }
       toReduceScatter = cbrTensor;
     }

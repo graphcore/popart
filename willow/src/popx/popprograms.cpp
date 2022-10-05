@@ -552,7 +552,7 @@ PopPrograms::getFullProgramFromPipelineFragments(bool fwdOnly) const {
   // This is the inner main cycles loop, if doing pipelining without gradient
   // accumulation, this the batches per step loop, as batch size = micro_batch
   // size
-  inner.getPoplarSequence().add(snap::program::Repeat(
+  inner.getPoplarSequence().add(poplar::program::Repeat(
       static_cast<uint32_t>(mainCycles), main, {"innerLoop"}));
   inner.getPoplarSequence().add(flush);
 
@@ -577,7 +577,7 @@ PopPrograms::getFullProgramFromPipelineFragments(bool fwdOnly) const {
     // and this outer loop loops over multiple batches per step.
     auto bps = ir_lowering_p->ir().getDataFlow().batchesPerStep();
     outer.getPoplarSequence().add(
-        snap::program::Repeat(bps, inner, {"outerloop"}));
+        poplar::program::Repeat(bps, inner, {"outerloop"}));
   } else {
     // No gradient accumulation, so just add one iteration of the inner program.
     outer.getPoplarSequence().add(inner);
@@ -619,7 +619,7 @@ snap::program::Sequence PopPrograms::program() const {
         logging::devicex::trace(
             "Adding gradient accumulation repeat loop with {} iterations",
             accumulationFactor);
-        snap::program::Repeat repeat(
+        poplar::program::Repeat repeat(
             accumulationFactor, prog, {"accumulationLoop"});
         prog = snap::program::Sequence(ir_lowering_p->graph());
         prog.getPoplarSequence().add(repeat);
@@ -649,7 +649,7 @@ snap::program::Sequence PopPrograms::program() const {
       logging::devicex::trace("Adding batches per step loop with {} iterations",
                               batchesPerStep);
       outer.getPoplarSequence().add(
-          snap::program::Repeat(batchesPerStep, prog, {"batchesPerStep"}));
+          poplar::program::Repeat(batchesPerStep, prog, {"batchesPerStep"}));
       outer.getPoplarSequence().add(toHostFinalCopyFragment());
     }
   }

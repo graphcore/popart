@@ -48,7 +48,7 @@ void IfOpx::copyInputs(snap::program::Sequence &thenProg,
     auto ifInput     = get(ifInputId);
     auto branchInput = get(branchInputId);
 
-    snap::program::Copy copyProg(ifInput, branchInput, false, debugContext());
+    poplar::program::Copy copyProg(ifInput, branchInput, false, debugContext());
     prog.getPoplarSequence().add(copyProg);
   };
 
@@ -90,7 +90,8 @@ void IfOpx::copyOutputs(snap::program::Sequence &thenProg,
 
     auto opOutput     = outputs.at(opIndex);
     auto branchOutput = get(branchId);
-    snap::program::Copy copyProg(branchOutput, opOutput, false, debugContext());
+    poplar::program::Copy copyProg(
+        branchOutput, opOutput, false, debugContext());
     prog.getPoplarSequence().add(copyProg);
   };
 
@@ -177,7 +178,7 @@ void IfOpx::grow(snap::program::Sequence &prog) const {
 
   // Reshape to scalar in case the user passed in tensor of shape [1]
   condition = condition.reshape({});
-  prog.getPoplarSequence().add(snap::program::If(
+  prog.getPoplarSequence().add(poplar::program::If(
       condition, then_prog, else_prog, debugContext("condition")));
 
   for (int i = 0; i < outputs.size(); i++) {

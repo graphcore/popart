@@ -603,7 +603,7 @@ void IrLowering::instrumentWithHardwareCycleCounter(snap::program::Sequence &sq,
 
   // Add program fragment to copy to host stream
   auto cyclesToHostStream =
-      snap::program::Copy(cycleCountTensor, st, true, {"copyCycleCounter"});
+      poplar::program::Copy(cycleCountTensor, st, true, {"copyCycleCounter"});
   progs_.cycleCountTensorToHostFragment().getPoplarSequence().add(
       cyclesToHostStream);
 }
@@ -2213,7 +2213,7 @@ void IrLowering::growOpx(PopOpx *opx,
           // during opx->grow(seq)
           auto inTensorClone =
               graph().clone(inTensor, opx->debugContext("orig"));
-          seqIt->getPoplarSequence().add(snap::program::Copy(
+          seqIt->getPoplarSequence().add(poplar::program::Copy(
               inTensor, inTensorClone, false, opx->debugContext("check")));
           nonModifiedTensors[inputMap.first] =
               std::make_pair(inTensor, inTensorClone);
@@ -2353,10 +2353,10 @@ void IrLowering::growOpx(PopOpx *opx,
       auto elseProg =
           snap::program::Sequence(opx->debugContext("else"), graph());
       seqIt->getPoplarSequence().add(
-          snap::program::If(snap::Tensor{checkReduced, opx->graph()},
-                            ifProg,
-                            elseProg,
-                            opx->debugContext("opxModifyCheck")));
+          poplar::program::If(snap::Tensor{checkReduced, opx->graph()},
+                              ifProg,
+                              elseProg,
+                              opx->debugContext("opxModifyCheck")));
     }
   }
 
@@ -3621,7 +3621,7 @@ PriTask IrLowering::fromHostTask(Tensor *tensor, snap::program::Sequence &sq) {
   }
   auto f = [&sq, tensor, this]() {
     SequenceMap seqs(graph());
-    logging::devicex::debug("Adding snap::program::Copy from host " +
+    logging::devicex::debug("Adding poplar::program::Copy from host " +
                             tensor->id);
 
     if (tensors_.hasViewChangers(tensor->id)) {
@@ -3641,12 +3641,12 @@ PriTask IrLowering::fromHostTask(Tensor *tensor, snap::program::Sequence &sq) {
     seqs.getSequence(&sq).getPoplarSequence().add(
         // Tensors with views: Use the view instead, so that e.g.
         // replicated tensor sharding padding is ignored
-        snap::program::Copy(fromHostStreams.at(tensor->id),
-                            tensors_.getView(tensor->id),
-                            doRearrangeOnHost(tensor),
-                            {{tensor->getDebugInfo().getPathName(),
-                              tensor->getDebugInfo().getId()},
-                             "copyFromHost"}));
+        poplar::program::Copy(fromHostStreams.at(tensor->id),
+                              tensors_.getView(tensor->id),
+                              doRearrangeOnHost(tensor),
+                              {{tensor->getDebugInfo().getPathName(),
+                                tensor->getDebugInfo().getId()},
+                               "copyFromHost"}));
     return seqs;
   };
   return {priority,
@@ -3671,7 +3671,7 @@ PriTask IrLowering::toHostTask(Tensor *tensor,
       throw error("snap::Graph is null");
     }
     SequenceMap seqs(*pGraph);
-    logging::devicex::debug("Adding snap::program::Copy to host "
+    logging::devicex::debug("Adding poplar::program::Copy to host "
                             "(Type: {}) {}",
                             static_cast<int>(stype),
                             tensor->id);
@@ -3700,7 +3700,7 @@ PriTask IrLowering::toHostTask(Tensor *tensor,
                            nElmsStream);
     }
 
-    seqs.getSequence(&sq).getPoplarSequence().add(snap::program::Copy(
+    seqs.getSequence(&sq).getPoplarSequence().add(poplar::program::Copy(
         anchorTensor,
         poplarStream,
         doRearrangeOnHost(tensor),
@@ -3821,7 +3821,7 @@ PriTask IrLowering::initBatchCounterTensorsTask(snap::program::Sequence &sq) {
                    batchCountingTensors[N].getPoplarTensor(),
                    sq.getPoplarSequence(),
                    logging::format("initBatchCountTensors[{}]", N));
-      sq.getPoplarSequence().add(snap::program::Copy(
+      sq.getPoplarSequence().add(poplar::program::Copy(
           falseConst, batchCountCheckingTensors[N], false, {"copyFalse"}));
     }
 
@@ -3865,13 +3865,13 @@ PriTask IrLowering::updateBatchCountTask(snap::program::Sequence &sq) {
 
       // Reset batch count once it has reached N
       auto zero = getConst(graph(), poplar::INT, {}, 0, "batchCount/zero");
-      snap::program::Copy trueBody(
+      poplar::program::Copy trueBody(
           zero, batchCountingTensors[N], false, {"copyZero"});
       seqs.getSequence(&sq).getPoplarSequence().add(
-          snap::program::If(batchCountCheckingTensors[N],
-                            trueBody,
-                            emptyseq,
-                            {"batchCountResetCheck"}));
+          poplar::program::If(batchCountCheckingTensors[N],
+                              trueBody,
+                              emptyseq,
+                              {"batchCountResetCheck"}));
     }
     return seqs;
   };
@@ -3920,13 +3920,13 @@ PriTask IrLowering::toHostEveryNBatchesTask(Tensor *tensor,
 
   auto f = [&sq, tensor, N, this]() {
     SequenceMap seqs(graph());
-    logging::devicex::debug("Adding conditional snap::program::Copy to host " +
-                            tensor->id);
+    logging::devicex::debug(
+        "Adding conditional poplar::program::Copy to host " + tensor->id);
 
     snap::Tensor isNthBatch = batchCountCheckingTensors.at(N);
 
     snap::program::Sequence copyseq(poplar::DebugContext{"copy"}, graph());
-    copyseq.getPoplarSequence().add(snap::program::Copy(
+    copyseq.getPoplarSequence().add(poplar::program::Copy(
         tensors_.get(tensor->id),
         toHostAnchorStreams.at(tensor->id),
         doRearrangeOnHost(tensor),
@@ -3937,7 +3937,7 @@ PriTask IrLowering::toHostEveryNBatchesTask(Tensor *tensor,
     snap::program::Sequence emptyseq(poplar::DebugContext{"empty"}, graph());
 
     seqs.getSequence(&sq).getPoplarSequence().add(
-        snap::program::If(isNthBatch, copyseq, emptyseq, {"nthBatchCheck"}));
+        poplar::program::If(isNthBatch, copyseq, emptyseq, {"nthBatchCheck"}));
     return seqs;
   };
 

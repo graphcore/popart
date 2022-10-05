@@ -211,7 +211,7 @@ snap::Tensor resizeNearest(snap::Tensor input,
                            poplar::DebugContext debugContext) {
   auto result = graph.clone(input, debugContext);
   prog.getPoplarSequence().add(
-      snap::program::Copy(input, result, false, debugContext));
+      poplar::program::Copy(input, result, false, debugContext));
 
   for (int i = 0; i < input.rank(); i++) {
     if (params.nearestMode == ResizeNearestMode::Pytorch) {
@@ -238,7 +238,7 @@ snap::Tensor resizeLinear(snap::Tensor input,
                           poplar::DebugContext debugContext) {
   auto result = graph.clone(input, debugContext);
   prog.getPoplarSequence().add(
-      snap::program::Copy(input, result, false, debugContext));
+      poplar::program::Copy(input, result, false, debugContext));
 
   // Generate new params for calculating nearest floor.
   ResizeParams paramsFloor = params;

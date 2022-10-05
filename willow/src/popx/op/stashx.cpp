@@ -36,17 +36,17 @@ void StashOpx::growStaticStashUpdate(snap::program::Sequence &prog,
     We have thus "unrolled" the dynamic update in a way.
   */
 
-  snap::program::Switch switchCase(stashIndex.reshape({}),
-                                   debugContext("static-stash/switch"));
+  poplar::program::Switch switchCase(stashIndex.reshape({}),
+                                     debugContext("static-stash/switch"));
 
   for (unsigned i = 0; i != hStashSize; ++i) {
     const auto outSliceAtIdx = outTensor.slice(i, i + 1, 0);
     switchCase.add(i,
-                   snap::program::Copy(inTensor,
-                                       outSliceAtIdx,
-                                       false,
-                                       debugContext("static-stash/switch-" +
-                                                    std::to_string(i))));
+                   poplar::program::Copy(inTensor,
+                                         outSliceAtIdx,
+                                         false,
+                                         debugContext("static-stash/switch-" +
+                                                      std::to_string(i))));
   }
 
   prog.getPoplarSequence().add(switchCase);

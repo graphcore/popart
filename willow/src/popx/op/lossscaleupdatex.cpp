@@ -109,7 +109,7 @@ void LossScaleUpdateOpx::grow(snap::program::Sequence &prog) const {
                      scaleDown.getPoplarSequence(),
                      debugContext("scaleDown"));
 
-  prog.getPoplarSequence().add(snap::program::If(
+  prog.getPoplarSequence().add(poplar::program::If(
       shouldScaleDown, scaleDown, scaleUp, debugContext("lossScaleUpdate")));
 
   setOutTensor(op.getUpdatedLossScaleUpdateFactorOutIndex(),

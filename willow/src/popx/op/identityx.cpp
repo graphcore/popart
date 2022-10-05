@@ -73,7 +73,7 @@ void IdentityLossGradOpx::grow(snap::program::Sequence &prog) const {
   auto reference                     = getOutTensor(0);
   if (identitylossop.getReductionType() == ReductionType::NoReduction) {
     // Same as IdentityGradOpx
-    prog.getPoplarSequence().add(snap::program::Copy(
+    prog.getPoplarSequence().add(poplar::program::Copy(
         output, reference, false, debugContext("copy_identity")));
   } else {
     if (identitylossop.getReductionType() == ReductionType::Mean) {
