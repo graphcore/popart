@@ -1207,14 +1207,8 @@ void Devicex::loadEngineAndConnectStreams() {
 
   if (di.getConnectionType() == DeviceConnectionType::OnDemand) {
     logging::devicex::debug("Attaching to device on demand");
-    if (!di.attach()) {
-      if (di.getOnDemandAttachTimeout() > 0) {
-        di.tryAttachUntilTimeout();
-      }
-      // If still not attached, error
-      if (!di.isAttached()) {
-        throw runtime_error("Failed to attach to device");
-      }
+    if (!di.tryAttachUntilTimeout()) {
+      throw runtime_error("Failed to attach to device");
     }
   }
 

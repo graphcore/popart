@@ -376,24 +376,24 @@ void DeviceInfo::setOnDemandAttachTimeout(const unsigned seconds) {
 
 bool DeviceInfo::tryAttachUntilTimeout() {
 
-  auto start = std::chrono::steady_clock::now();
-
   writeToDeviceAccessLog(
       "try-attach-start",
       {{"timeout", std::to_string(getOnDemandAttachTimeout())}});
 
+  const auto startTime = std::chrono::steady_clock::now();
+
   // Periodically try to attach until either timeout reached or
   // successfully attached
-  auto startTime = std::chrono::steady_clock::now();
-  unsigned wait  = 0;
-  bool attached  = false;
-  while (wait < getOnDemandAttachTimeout() && !attached) {
+  auto attached = attach();
+  unsigned wait = 0;
+  while (!attached && wait < getOnDemandAttachTimeout()) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     attached       = attach();
     auto delayTime = std::chrono::steady_clock::now();
     wait =
         std::chrono::duration_cast<std::chrono::seconds>(delayTime - startTime)
             .count();
+
     writeToDeviceAccessLog(
         "try-attach-wait",
         {{"wait", std::to_string(wait)},
@@ -402,19 +402,12 @@ bool DeviceInfo::tryAttachUntilTimeout() {
 
   auto end = std::chrono::steady_clock::now();
   auto total =
-      std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+      std::chrono::duration_cast<std::chrono::seconds>(end - startTime).count();
 
-  if (attached) {
-    writeToDeviceAccessLog(
-        "try-attach-success",
-        {{"try-time", std::to_string(total)},
-         {"timeout", std::to_string(getOnDemandAttachTimeout())}});
-  } else {
-    writeToDeviceAccessLog(
-        "try-attach-fail",
-        {{"try-time", std::to_string(total)},
-         {"timeout", std::to_string(getOnDemandAttachTimeout())}});
-  }
+  writeToDeviceAccessLog(
+      attached ? "try-attach-success" : "try-attach-fail",
+      {{"try-time", std::to_string(total)},
+       {"timeout", std::to_string(getOnDemandAttachTimeout())}});
 
   return attached;
 }
