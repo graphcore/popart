@@ -147,7 +147,7 @@ static OpCreator<SplitOp> splitOpCreator(
       if (axis < 0) {
         auto input = info.getInputTensor(0);
         auto rank  = input->info.rank();
-        if (abs(axis) > rank) {
+        if (std::abs(axis) > rank) {
           throw error(
               "Split op input tensor {}, rank {}, axis {} is out of range",
               input->str(),

@@ -306,11 +306,11 @@ public:
       : max_priority_(max_priority), num_elems_(num_elems),
         schedule_index_(schedule_index) {}
 
-  double getMaxCreatorPriority() const override { return max_priority_; };
+  double getMaxCreatorPriority() const override { return max_priority_; }
 
-  int64_t getNumElems() const override { return num_elems_; };
+  int64_t getNumElems() const override { return num_elems_; }
 
-  int64_t getScheduleIndex() const override { return schedule_index_; };
+  int64_t getScheduleIndex() const override { return schedule_index_; }
 
   std::pair<snap::Tensor, popx::ViewChangers>
   createInput(const poplar::DebugNameAndId &dnai) override {

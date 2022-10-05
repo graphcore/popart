@@ -9,6 +9,13 @@ function(add_popart_cxx_11_unit_test name source)
 
   target_link_libraries(${name} PRIVATE popart)
 
+  # Because we use [[deprecated]] in our headers, which is C++14.
+  # On Clang, with -pedantic,-Werror, this results in a compile error, so we
+  # have to pass -Wno-c++14-extensions to disable the warning.
+  if (${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
+    target_compile_options(${name} PRIVATE -Wno-c++14-extensions)
+  endif()
+
   set_target_properties(
     ${name}
     PROPERTIES CXX_EXTENSIONS OFF
