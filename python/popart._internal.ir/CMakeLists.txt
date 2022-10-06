@@ -230,6 +230,7 @@ add_popart_python_module(
   bindings/bwdgraphinfo.cpp
   bindings/commgroup.cpp
   bindings/util.cpp
+  bindings/fp8conversion.cpp
   # Transforms
   bindings/transforms/transform.cpp
   bindings/transforms/prune.cpp

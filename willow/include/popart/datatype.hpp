@@ -12,6 +12,8 @@ enum class DataType {
   // fixed point types
   UINT8 = 0,
   INT8,
+  FLOAT8_143,
+  FLOAT8_152,
   UINT16,
   INT16,
   INT32,

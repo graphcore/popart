@@ -34,6 +34,8 @@ void bindTensorInfo(py::module &m) {
       .value("FLOAT", DataType::FLOAT)
       .value("FLOAT16", DataType::FLOAT16)
       .value("BFLOAT16", DataType::BFLOAT16)
+      .value("FLOAT8_143", DataType::FLOAT8_143)
+      .value("FLOAT8_152", DataType::FLOAT8_152)
       .value("DOUBLE", DataType::DOUBLE)
       .value("COMPLEX64", DataType::COMPLEX64)
       .value("COMPLEX128", DataType::COMPLEX128)
