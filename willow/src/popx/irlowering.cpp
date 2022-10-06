@@ -2166,14 +2166,14 @@ void IrLowering::growOpx(PopOpx *opx,
     if (printTensorIds.find(id) != printTensorIds.end() &&
         printedTensorIds.find(id) == printedTensorIds.end()) {
       auto printProg =
-          snap::program::PrintTensor(id, tensor, opx->debugContext());
+          poplar::program::PrintTensor(id, tensor, opx->debugContext());
       seqIt->getPoplarSequence().add(printProg);
       printedTensorIds.insert(id);
     }
   };
 
   if (opxTrace) {
-    seqIt->getPoplarSequence().add(snap::program::PrintTensor(
+    seqIt->getPoplarSequence().add(poplar::program::PrintTensor(
         opx->op_p->str() + "/enter", opxTraceTensor, opx->debugContext()));
   }
 
@@ -2285,7 +2285,7 @@ void IrLowering::growOpx(PopOpx *opx,
     for (auto out : opx->op_p->output->tensorMap()) {
       snap::Tensor outTensor = opx->getOutTensor(out.first);
       seqIt->getPoplarSequence().add(
-          snap::program::WriteUndef(outTensor, opx->debugContext()));
+          poplar::program::WriteUndef(outTensor, opx->debugContext()));
     }
     logging::devicex::trace(
         "Skipping code sequence for Op {} with debugName {}",
@@ -2343,7 +2343,7 @@ void IrLowering::growOpx(PopOpx *opx,
       } else {
         checkReduced = checkReduced.squeeze({0});
       }
-      auto ifProg = snap::program::ErrorProgram(
+      auto ifProg = poplar::program::ErrorProgram(
           logging::format("Op {} claims input {} is not modified, "
                           "but the Poplar tensors disagree.",
                           opx->op_p->debugName(),
@@ -2361,7 +2361,7 @@ void IrLowering::growOpx(PopOpx *opx,
   }
 
   if (opxTrace) {
-    seqIt->getPoplarSequence().add(snap::program::PrintTensor(
+    seqIt->getPoplarSequence().add(poplar::program::PrintTensor(
         opx->op_p->str() + "/exit", opxTraceTensor, opx->debugContext()));
   }
 }

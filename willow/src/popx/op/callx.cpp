@@ -134,7 +134,7 @@ void CallOpx::copyInput(snap::program::Sequence &prog,
   if (accessType == view::AccessType::Write) {
     logging::opx::trace("[CallOpx] Write undef tensor {}", graph_input_id);
     prog.getPoplarSequence().add(
-        snap::program::WriteUndef(graph_input, debugContext()));
+        poplar::program::WriteUndef(graph_input, debugContext()));
   }
 }
 

@@ -37,7 +37,7 @@ void IoTileCopyOpx::grow(snap::program::Sequence &prog) const {
 
   // Write undef the whole output tensor, which can be larger
   // than the getOutView tensor.
-  snap::program::WriteUndef writeUndef(outTensor, debugContext());
+  poplar::program::WriteUndef writeUndef(outTensor, debugContext());
 
   // Copy from view to view
   poplar::program::Copy outCopy(inView, outView, false, debugContext());

@@ -40,7 +40,7 @@ void PrintTensorOpx::grow(snap::program::Sequence &prog) const {
   auto input     = getInTensor(PrintTensorOp::getInIndex());
 
   if (op.shouldPrint()) {
-    auto printProg = snap::program::PrintTensor(
+    auto printProg = poplar::program::PrintTensor(
         getTitle(), input, toPoplarPrintTensorFmt(op.getFmt()));
     prog.getPoplarSequence().add(printProg);
   }
