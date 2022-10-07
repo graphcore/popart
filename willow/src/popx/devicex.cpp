@@ -17,6 +17,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <popdist/backend.hpp>
 #include <popdist/collectives.hpp>
 #include <poplar/ArrayRef.hpp>
 #include <poplar/Engine.hpp>
@@ -229,7 +230,10 @@ void Devicex::run(unsigned ind, const std::string debugName) {
     logging::devicex::debug("Reloading engine & connecting streams");
     loadEngineAndConnectStreams();
   }
-  pEngine->run(ind, debugName);
+
+  // Use a synchronized engine run in distributed environments. It defaults
+  // to non-synchronized `engine.run(...)` in non-distributed environments.
+  popdist::run(*pEngine, ind, debugName);
 }
 
 void Devicex::weightsToHost() {
