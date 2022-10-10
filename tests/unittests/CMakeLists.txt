@@ -66,6 +66,7 @@ add_unit_test(unittest_ReplicatedTensorMutableVoidInfoVerifier unittest_replicat
 add_unit_test(unittest_pattern_optimizerdecompose patterns/optimizerdecompose.cpp)
 add_unit_test(unittest_pattern_lambserialisedweight patterns/lambserialisedweight.cpp)
 add_unit_test(unittest_pattern_sgd2decompose patterns/sgd2decompose.cpp SUPPORT_LIBS test-graphs-test-util ir-query-test-util)
+add_unit_test(unittest_pattern_subtractarg1gradop patterns/subtractarg1gradop.cpp)
 add_unit_test(unittest_pattern_tiedgather patterns/tiedgather.cpp)
 add_unit_test(unittest_pattern_updateinplaceprioritiesforipu patterns/updateinplaceprioritiesforipu.cpp)
 
