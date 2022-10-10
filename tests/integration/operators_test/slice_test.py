@@ -410,10 +410,118 @@ def test_slice_flip_grad_1(op_tester):
         d__o = ref_data.getOutputTensorGrad(0)
 
         o.backward(torch.tensor(d__o))
-
         print(o)
         print(a.grad)
         return [o, a.grad, None]
 
     op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")
+
+
+def test_slice_positive_step(op_tester):
+    d1 = np.array(
+        [[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0], [9.0, 10.0, 11.0, 12.0]]
+    ).astype(np.float32)
+
+    axesV = np.array([0, 1], dtype=np.int64)
+    startsV = np.array([1, -4], dtype=np.int64)
+    endsV = np.array([13, 3], dtype=np.int64)
+    stepsV = np.array([2, 2], dtype=np.int64)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        axes = builder.aiOnnx.constant(axesV)
+        starts = builder.aiOnnx.constant(startsV)
+        ends = builder.aiOnnx.constant(endsV)
+        steps = builder.aiOnnx.constant(stepsV)
+
+        o = builder.aiOnnx.slice([i1, starts, ends, axes, steps])
+
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(_):  # ref_data is an unused argument
+        d2 = np.array([[5.0, 7.0]]).astype(np.float32)
+        return [d2]
+
+    patterns = ["Slice2SliceSubsample"]
+    op_tester.setPatterns(patterns, enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")
+
+
+def test_slice_neg_step(op_tester):
+    d1 = np.array(
+        [[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0], [9.0, 10.0, 11.0, 12.0]]
+    ).astype(np.float32)
+
+    axesV = np.array([0, 1], dtype=np.int64)
+    startsV = np.array([-1, -2], dtype=np.int64)
+    endsV = np.array([-9527, 0], dtype=np.int64)
+    stepsV = np.array([-2, -1], dtype=np.int64)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        axes = builder.aiOnnx.constant(axesV)
+        starts = builder.aiOnnx.constant(startsV)
+        ends = builder.aiOnnx.constant(endsV)
+        steps = builder.aiOnnx.constant(stepsV)
+
+        o = builder.aiOnnx.slice([i1, starts, ends, axes, steps])
+
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(_):  # ref_data is an unused argument
+        d2 = np.array([[11, 10], [3, 2]]).astype(np.float32)
+        return [d2]
+
+    patterns = ["Slice2SliceSubsample"]
+    op_tester.setPatterns(patterns, enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")
+
+
+# grad op
+def test_slice_flip_grad_2(op_tester):
+    d1 = np.array([1.0, 2.0, 3.0, 4.0, 5.0]).astype(np.float32)
+    axesV = np.array([0], dtype=np.int64)
+
+    starts0V = np.array([4], dtype=np.int64)
+    ends0V = np.array([-6], dtype=np.int64)
+    stepsV = np.array([-2], dtype=np.int64)
+
+    starts1V = np.array([1], dtype=np.int64)
+    ends1V = np.array([3], dtype=np.int64)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        axes = builder.aiOnnx.constant(axesV)
+        starts = builder.aiOnnx.constant(starts0V)
+        ends = builder.aiOnnx.constant(ends0V)
+        steps = builder.aiOnnx.constant(stepsV)
+
+        o = builder.aiOnnx.slice([i1, starts, ends, axes, steps])
+
+        starts1 = builder.aiOnnx.constant(starts1V)
+        ends1 = builder.aiOnnx.constant(ends1V)
+
+        o = builder.aiOnnx.slice([o, starts1, ends1, axes])
+
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        o = torch.flip(a[0:5:2], dims=[0])
+        o = o[1:3]
+        d__o = ref_data.getOutputTensorGrad(0)
+        o.backward(torch.tensor(d__o))
+        return [o, a.grad, None]
+
+    op_tester.setPatterns(
+        ["PreUniRepl", "Slice2SliceSubsample"], enableRuntimeAsserts=False
+    )
     op_tester.run(init_builder, reference, "train")

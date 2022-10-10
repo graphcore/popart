@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -44,6 +45,17 @@ std::vector<int64_t> BaseSliceOp::getPads() const {
 }
 
 void BaseSliceOp::growAliasModel(AliasModel &m) const {
+  for (auto step : steps) {
+    if (std::abs(step) != 1) {
+      throw error("Please enable pattern \"Slice2SliceSubsample\" first. "
+                  "Invalid 'step' value, {}, in BaseSliceOp::getSlices. "
+                  "Only steps of '1' or '-1' are supported. "
+                  "This error is for Op {}.",
+                  step,
+                  str());
+    }
+  }
+
   const auto lu = getLowerUpper();
   const auto vc = m.g.slice(
       m.getPoprithmsTensorId(inId(0)), std::get<0>(lu), std::get<1>(lu));
@@ -64,11 +76,14 @@ TensorInfo BaseSliceOp::createOutInfo() const {
   auto in_info      = inInfo(getInIndex());
   auto output_shape = in_info.shape();
 
-  for (auto slice : getSlices()) {
-    auto new_size            = slice.end - slice.start;
-    output_shape[slice.axis] = new_size;
-  }
+  auto slices = getSlices();
+  for (int i = 0; i < axes.size(); i++) {
+    auto new_axes = axes[i] < 0 ? axes[i] + output_shape.size() : axes[i];
+    auto len      = slices[i].end - slices[i].start;
+    auto new_size = std::ceil(std::abs((1.0 * len) / steps[i]));
 
+    output_shape[new_axes] = new_size;
+  }
   return {in_info.dataType(), output_shape};
 }
 
@@ -205,18 +220,11 @@ BaseSliceOp::getSlices(std::vector<int64_t> input_shape) const {
     auto step     = steps[i];
 
     bool flip;
-    if (step == 1) {
+    if (step > 0) {
       flip = false;
-    } else if (step == -1) {
-      flip = true;
     } else {
-      throw error("Invalid 'step' value, {}, in BaseSliceOp::getSlices. "
-                  "Only steps of '1' or '-1' are supported. "
-                  "This error is for Op {}.",
-                  step,
-                  str());
+      flip = true;
     }
-
     auto start = normalizeIndex(starts[i], dim_size, flip);
     auto end   = normalizeIndex(ends[i], dim_size, flip);
 
@@ -225,19 +233,6 @@ BaseSliceOp::getSlices(std::vector<int64_t> input_shape) const {
       auto tmp_start = start;
       start          = end + 1;
       end            = tmp_start + 1;
-    }
-
-    if (start > end) {
-      throw error("BaseSliceOp::getSlices: begin = {} and end = {}. "
-                  "The input was starts[{}] = {}, end [{}] = {}. "
-                  "This error for Op {}",
-                  start,
-                  end,
-                  i,
-                  starts[i],
-                  i,
-                  ends[i],
-                  str());
     }
 
     slices.emplace_back(start, end, axis, flip);

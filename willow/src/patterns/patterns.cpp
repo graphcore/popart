@@ -48,6 +48,7 @@
 #include <popart/patterns/preunirepl.hpp>
 #include <popart/patterns/reciprocalgradoppattern.hpp>
 #include <popart/patterns/sgd1decompose.hpp>
+#include <popart/patterns/sliceoppattern.hpp>
 #include <popart/patterns/softmaxgraddirect.hpp>
 #include <popart/patterns/splitgather.hpp>
 #include <popart/patterns/splitgradoptoconcatpattern.hpp>
@@ -592,6 +593,7 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
   }
 
   static std::map<std::type_index, float> patternPriority{
+      {std::type_index(typeid(SlicePattern)), 55},
       {std::type_index(typeid(ExpandCastPattern)), 54},
       {std::type_index(typeid(ConvFlipWeightsDoubleFlipPattern)), 53},
       {std::type_index(typeid(ConvFlipWeightsGradOpPattern)), 52},
