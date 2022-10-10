@@ -33,5 +33,5 @@ def test_valid_recompute_options():
             )
         assert (
             e_info.value.args[0]
-            == "A mixture of auto and manual recomputaion is not supported"
+            == "A mixture of auto and manual recomputation is not supported"
         )

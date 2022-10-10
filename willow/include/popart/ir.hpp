@@ -240,7 +240,7 @@ public:
    * \param bundle The bundle to prepare.
    * \param cacheEntries The engine cache.
    * \param hashSeed The seed to initiate the IR hash with -- this hash should
-   *   encorporate non-IR factors that could affect the compilation such as
+   *   incorporate non-IR factors that could affect the compilation such as
    *   engine options and session options.
    */
   void prepare(const IrBundle &bundle,
@@ -607,7 +607,7 @@ public:
    * Marks the Ir as "prepared". This means the Ir is now ready to be lowered.
    * Failing to do this before lowering the Ir will result in an error.
    * The schedule of all graphs will be fixed by calling this.
-   * Modifying the graphs afther the IR is prepared will result in an error.
+   * Modifying the graphs after the IR is prepared will result in an error.
    */
   void setIsPrepared();
 
@@ -660,7 +660,7 @@ private:
 
   // Very that all virtual graph ids have not been initialised. (Used when
   // virtual graphs are disabled)
-  void verifyVirualGraphIdsNotInitialized() const;
+  void verifyVirtualGraphIdsNotInitialized() const;
 
   void verifyVertexAttributesOnlyInMain() const;
   void verifyPipelineSettings() const;

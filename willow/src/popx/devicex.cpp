@@ -106,9 +106,8 @@ void Devicex::InputDatastream::read(void *ptr) {
 
     // check the shape
 
-    // Not sure how best to match the shape as the shape of the input
-    // does not match the shape of the data.info. Infact that is a bit
-    // wrong now.
+    // Not sure how best to match the shape as the shape of the input does not
+    // match the shape of the data.info. In fact that is a bit wrong now.
 
     // check the type
     if (srcInfo.dataType() == dstInfo.dataType()) {
@@ -161,9 +160,8 @@ bool Devicex::InputDatastream::readPrefetch(void *ptr) {
 
       // check the shape
 
-      // Not sure how best to match the shape as the shape of the input
-      // does not match the shape of the data.info. Infact that is a bit
-      // wrong now.
+      // Not sure how best to match the shape as the shape of the input does not
+      // match the shape of the data.info. In fact that is a bit wrong now.
 
       // check the type
       if (srcInfo.dataType() == dstInfo.dataType()) {
@@ -328,7 +326,7 @@ void Devicex::remoteBufferWeightsToHost() {
       const auto retrievalMode =
           tensor->getVariableSettings().getRetrievalMode();
 
-      // Lamba expression that does the reading op automatically
+      // Lambda expression that does the reading op automatically
       auto copyFromRemoteBuffer = [&](char *to, unsigned replicaId) {
         pEngine->copyFromRemoteBuffer(
             lowering().getExchangeBundle().getRemoteBufferName(
@@ -360,7 +358,7 @@ void Devicex::remoteBufferWeightsToHost() {
         `groups` times more memory to be live at once. We choose to go with the
         more memory-efficient route, as memory is quite likely to be a problem
         for large models, and iterating over all the replicas is likely barely
-        a noticable overhead.
+        a noticeable overhead.
        */
         for (unsigned group = 0; group < numGroups; group++) {
           // Replicated weight sharding, each replica holds parts of the
@@ -407,10 +405,9 @@ void Devicex::remoteBufferWeightsToHost() {
             address                     = firstInGroup * nelms * elemSize;
           } else {
             throw internal_error(
-                "Attempting to return an unsuported number of "
-                "weight replicas: Returned (r) = {}, Groups (G)"
-                " = {}, Global replication Factor (R) = {}. r != G && "
-                "r != R",
+                "Attempting to return an unsupported number of weight replicas:"
+                " Returned (r) = {}, Groups (G) = {}, Global replication"
+                " Factor (R) = {}. r != G && r != R",
                 returned,
                 numGroups,
                 globalReplicas);
@@ -521,7 +518,7 @@ void Devicex::remoteBufferWeightsToHost() {
 
 void Devicex::readWeights(const IWeightsIO &weights) {
   POPART_TRACEPOINT();
-  // Better to do this the otherway round
+  // Better to do this the other way round
   for (auto *tensor : executable_.getWeightTensors()) {
     const auto &id = tensor->id;
     if (weights.contains(id)) {
@@ -717,7 +714,7 @@ void Devicex::remoteBufferWeightsFromHost() {
       const unsigned numGroups     = grouping.getNumGroups();
       const unsigned realGroupSize = grouping.getGroupSize();
 
-      // Lamba expression that does the writing op automatically
+      // Lambda expression that does the writing op automatically
       const auto copyToRemoteBuffer =
           [this, remoteBufferInfo](char *from, const unsigned replicaId) {
             pEngine->copyToRemoteBuffer(

@@ -345,7 +345,7 @@ std::string DevicexIpuInfo::getVersion() const {
 
   if (isAttached()) {
     unsigned major, minor, point;
-    device.getDriverVersion(major, minor, point);
+    getDevice().getDriverVersion(major, minor, point);
 
     std::stringstream ss;
     ss << major << "." << minor << "." << point;

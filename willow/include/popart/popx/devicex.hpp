@@ -264,7 +264,7 @@ private:
     // return true is there is data prefetch else false
     bool readPrefetch(void *ptr);
 
-    // Called to indicate the data has been comsumed
+    // Called to indicate the data has been consumed
     // by poplar
     void readComplete();
   };
@@ -279,7 +279,7 @@ private:
 
     // NOTE: We do not need to override invalidatePrefetched because
     // our current StepIOSplitter implementation will never allow a
-    // successful prefetch to happen accross a step (i.e. a call to
+    // successful prefetch to happen across a step (i.e. a call to
     // Session::run call) and therefore there is never any
     // prefetches to invalidate.
 

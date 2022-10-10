@@ -1345,7 +1345,7 @@ void Ir::prepareImpl(const IrBundle &gb,
 
   if (autoRecomputationEnabled() && getMainGraph().hasUserRecomputeOps() &&
       getSessionOptions().executionPhaseSettings.phases < 2) {
-    throw error("A mixture of auto and manual recomputaion is not supported");
+    throw error("A mixture of auto and manual recomputation is not supported");
   }
 
   // tensors with no producer and no consumers are removed
@@ -1869,7 +1869,7 @@ void Ir::addAdditionalModelProtoTensor(Tensor *tensor) {
 
 void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
   if (!virtualGraphsEnabled()) {
-    verifyVirualGraphIdsNotInitialized();
+    verifyVirtualGraphIdsNotInitialized();
     return;
   }
 
@@ -1928,13 +1928,13 @@ void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
                   "paramater "
                   "postAutoVirtualGraphTransform is true, so AutoVirtualGraph "
                   "should have been run. This is an inconsistent combination, "
-                  "possibly an internal logic error has occured",
+                  "possibly an internal logic error has occurred",
                   getSessionOptions().virtualGraphMode);
     }
   }
 }
 
-void Ir::verifyVirualGraphIdsNotInitialized() const {
+void Ir::verifyVirtualGraphIdsNotInitialized() const {
   for (auto &id_graph : graphs) {
     auto &graph = id_graph.second;
     for (auto &id_op : graph->getOps()) {
@@ -2885,7 +2885,7 @@ void Ir::updateVertices() {
     if (graph.id == getMainGraph().id) {
       logging::ir::debug(
           "setting scheduledPreLoss for Tensors in updateVertices");
-      // 3.2) scheduledPreLoss for Tensors and any ops occuring post the loss
+      // 3.2) scheduledPreLoss for Tensors and any ops occurring post the loss
       // in the schedule
       bool postLoss = false;
       auto ops      = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
@@ -3183,7 +3183,7 @@ void Ir::serialise(SerialiseFormat format,
     ss << "\"" << nameToUse << "\" :[";
   };
 
-  // TODO use the format to seralize the ir
+  // TODO use the format to serialize the ir
   (void)format;
 
   ss << "{";
@@ -3501,7 +3501,7 @@ void Ir::applyInplacePattern(Graph &graph) {
     Triplet zeroPriority      = priorities[0];
     std::get<2>(zeroPriority) = 0.;
 
-    // (2) we find the first elememts in priorities which is not less than the
+    // (2) we find the first elements in priorities which is not less than the
     // pivot, and erase all elements from there to the end. Note that
     // priority 0 elements will be removed.
     auto found = std::lower_bound(

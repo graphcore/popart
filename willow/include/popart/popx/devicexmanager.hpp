@@ -60,7 +60,7 @@ public:
       : popart::DeviceInfo(_type, _connectionType, _flags),
         device(std::move(_device)) {}
 
-  virtual ~DevicexInfo();
+  ~DevicexInfo() override;
 
   bool attach() override;
   void detach() override;
@@ -75,7 +75,7 @@ public:
     return device.getDriverIDs();
   }
 
-  poplar::Device &getDevice() { return device; }
+  const poplar::Device &getDevice() const { return device; }
 
   const poplar::Target &getTarget() const override {
     return device.getTarget();
@@ -97,10 +97,9 @@ public:
    **/
   virtual bool isMostRecentlyLoaded(const Devicex *devicex) const;
 
-protected:
-  poplar::Device device;
-
 private:
+  const poplar::Device device;
+
   // The most recent Devicex that was loaded onto this DevicexInfo's device.
   // This is set for some device when loadEngineAndConnectStreams() is called
   // and is overwritten if another engine is loaded after
@@ -155,7 +154,7 @@ public:
   std::string getVersion() const override { return ipuVersion; }
 
 private:
-  std::string ipuVersion;
+  const std::string ipuVersion;
 };
 
 class DevicexIpuInfo : public DevicexInfo {
@@ -173,7 +172,7 @@ public:
   bool canCompileOffline() const override { return true; }
 
 private:
-  int id;
+  const int id;
 };
 
 class DevicexOfflineIpuInfo : public popart::DeviceInfo {
@@ -210,8 +209,8 @@ public:
   bool canCompileOffline() const override { return true; }
   bool isAttached() const override { return false; }
 
-protected:
-  poplar::Target target;
+private:
+  const poplar::Target target;
 };
 
 popart::DeviceType convertDeviceType(poplar::TargetType targetType);

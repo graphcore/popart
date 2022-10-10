@@ -126,7 +126,7 @@ std::shared_ptr<DeviceInfo> DeviceManager::createHostDevice(
     DeviceType type,
     const std::map<std::string, std::string> &options) {
   for (auto p : providers) {
-    std::shared_ptr<DeviceInfo> device = p->createHostDevice(type, options);
+    auto device = p->createHostDevice(type, options);
     if (device != nullptr) {
       return device;
     }
