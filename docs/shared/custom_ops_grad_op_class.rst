@@ -20,17 +20,17 @@ the forward operation defined in :numref:`sec_custom_op_op_class`:
 
 We emphasise that gradient operations are operations themselves and hence
 require the definition of a static ``defaultOperatorId`` function and
-:cpp:func:`~popart-cpp-api:popart::Op::setup`, as explained in
+:external+popart-user-guide:cpp:func:`popart::Op::setup`, as explained in
 :numref:`sec_custom_op_op_class`. Also, note that ``LeakyReluOp`` and
 ``LeakyReluGradOp`` share the parameter struct definition, ``LeakyReluParams``.
 
 The job of gradient operations (meaning the set of operations obtained by
-calling :cpp:func:`~popart-cpp-api:popart::Op::getGradOps` on a forward
+calling :external+popart-user-guide:cpp:func:`popart::Op::getGradOps` on a forward
 operation) is to perform one step of the
 :ref:`chain rule <https://en.wikipedia.org/wiki/Chain_rule>`.
 
 For ``LeakyReluOp``, recall that
-:cpp:func:`~popart-cpp-api:popart::Op::getGradOps` returns a single gradient
+:external+popart-user-guide:cpp:func:`popart::Op::getGradOps` returns a single gradient
 operation that is ``LeakyReluGradOp``, so we have one operation that has to
 produce a partial derivative for a single output of the forward operation.
 
@@ -87,11 +87,11 @@ produces one tensor output. In terms of data type and tensor shape these inputs
 and outputs are all identical to the forward tensor :math:`x`.
 
 This information is what we need when implementing
-:cpp:func:`~popart-cpp-api:popart::Op::gradInputInfo` and
-:cpp:func:`~popart-cpp-api:popart::Op::gradOutToNonGradIn`, which is an
+:external+popart-user-guide:cpp:func:`popart::Op::gradInputInfo` and
+:external+popart-user-guide:cpp:func:`popart::Op::gradOutToNonGradIn`, which is an
 additional requirement we place on gradient operations.
 
-The :cpp:func:`~popart-cpp-api:popart::Op::gradInputInfo` function tells the
+The :external+popart-user-guide:cpp:func:`popart::Op::gradInputInfo` function tells the
 :ref:`autodiff <autodiff>` transform what input tensors an operation requires.
 Gradient operations can request to connect
 to any inputs or outputs of the forward operation, or can request to connect
@@ -111,7 +111,7 @@ input at index 1 to be connected to the input of ``LeakyReluOp`` at index 0 (so
     :end-before: GradOp-gradInputInfo end
     :dedent: 2
 
-The :cpp:func:`~popart-cpp-api:popart::Op::gradOutToNonGradIn` function is what
+The :external+popart-user-guide:cpp:func:`popart::Op::gradOutToNonGradIn` function is what
 the :ref:`autodiff <autodiff>` transform uses to determine what outputs a
 gradient operation produces. Gradient operations produce gradients for some
 inputs of the forward graph. To do this, this function must be implemented so it

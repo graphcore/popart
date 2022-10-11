@@ -521,7 +521,7 @@ Compiling and using the custom op
 
 Finally, you can compile the C++ code of your op into a shared library,
 dynamically load the library from your Python application, and use
-:py:func:`popart.builder.customOp` to create an ONNX node in the model with your
+:py:func:`popart.builder.customOp() <popart.builder._BuilderCore.customOp>` to create an ONNX node in the model with your
 operator identifier. When you compile the model (by creating :py:class:`~popart.TrainingSession` or :py:class:`~popart.InferenceSession`),
 PopART will find the ``OpCreator`` and ``OpxCreator`` instances you have dynamically loaded, and use them to create the ``Op`` and ``Opx`` instances you defined.
 

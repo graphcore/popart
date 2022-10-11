@@ -23,9 +23,9 @@ Note that this struct must implement two methods: ``appendAttributes`` and
 ``makeFromAttributes``.
 
 The method ``appendAttributes`` appends the parameters from an instance of
-PopART's :cpp:class:`~popart-cpp-api:popart::OpSerialiserBase` class. This is so
+PopART's :external+popart-user-guide:cpp:class:`popart::OpSerialiserBase` class. This is so
 that two operations with different parameter values can be distinguished from
 each other in the IR.
 
 The static method, ``makeFromAttributes``, creates an instance of the parameter
-struct from PopART's :cpp:class:`~popart-cpp-api:popart::Attributes` class.
+struct from PopART's :external+popart-user-guide:cpp:class:`popart::Attributes` class.
