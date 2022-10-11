@@ -17,11 +17,12 @@ class Testdtype:
     def test_properties(self):
         dtypes = get_all_dtypes()
         uint_dtypes = get_all_int_dtypes(include_signed=False)
+        fp8_dtypes = {popxl.float8_143, popxl.float8_152}
         int_dtypes = get_all_int_dtypes()
         for popxl_dtype in dtypes:
-            if popxl_dtype in uint_dtypes:
-                # PyTorch doesn't have unsigned integers. These are tested
-                # below.
+            if popxl_dtype in uint_dtypes or popxl_dtype in fp8_dtypes:
+                # PyTorch doesn't have unsigned integers or FP8 types
+                # The former are tested below.
                 continue
             torch_dtype = eval(f"torch.{popxl_dtype.name}")
             assert torch_dtype.is_complex == popxl_dtype.is_complex
@@ -42,7 +43,9 @@ class Testdtype:
         assert popxl.double == popxl.float64
 
     def test_conversion_numpy(self):
-        popxl_dtypes = get_all_dtypes()
+        # Numpy does not currently support FP8 formats
+        popxl_fp8_dtypes = {popxl.float8_143, popxl.float8_152}
+        popxl_dtypes = filter(lambda t: t not in popxl_fp8_dtypes, get_all_dtypes())
         np_dtypes = [eval(f"np.{popxl_dtype.name}") for popxl_dtype in popxl_dtypes]
 
         for popxl_dtype, np_dtype in zip(popxl_dtypes, np_dtypes):
@@ -50,6 +53,10 @@ class Testdtype:
             assert popxl_dtype == popxl.dtype.as_dtype(arr)
             assert popxl_dtype == popxl.dtype.as_dtype(np_dtype)
             assert popxl_dtype.as_numpy() == np_dtype
+
+        np_uint8 = np.dtype("uint8")
+        for popxl_fp8_type in popxl_fp8_dtypes:
+            assert popxl_fp8_type.as_numpy() == np_uint8
 
         with pytest.raises(ValueError):
             popxl.dtype.as_dtype(np.str)

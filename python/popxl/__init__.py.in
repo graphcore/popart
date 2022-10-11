@@ -8,8 +8,8 @@ __all__ = [
     "in_sequence", "name_scope", "ipu", "io_tiles",
     # dtypes.py
     "dtype", "bool", "int8", "int16", "int32", "int64", "uint8", "uint16",
-    "uint32", "uint64", "half", "float16", "float", "float32", "double",
-    "float64", "complex64", "complex128",
+    "uint32", "uint64", "half", "float8_143", "float8_152", "float16", "float",
+    "float32", "double", "float64", "complex64", "complex128",
     # graph.py
     "Graph",
     # ir.py
@@ -40,8 +40,8 @@ try:
     from .context import (get_current_graph, get_main_graph, gcg, gmg,
         in_sequence, name_scope, ipu, io_tiles)
     from .dtypes import (dtype, bool, int8, int16, int32, int64, uint8,
-        uint16, uint32, uint64, half, float16, float, float32, double, float64,
-        complex64, complex128)
+        uint16, uint32, uint64, half, float8_143, float8_152, float16,
+        float, float32, double, float64, complex64, complex128)
     from .graph import Graph
     from .module import Module
     from .ir import Ir
