@@ -60,7 +60,7 @@ ReplicaGrouping CommGroup::toReplicaGrouping(unsigned numReplicas) const {
     groupSize = 1;
     break;
   default:
-    throw error("Invalid type '[]' for a CommGroup.", type);
+    throw error("Invalid type '{}' for a CommGroup.", type);
   }
 
   return ReplicaGrouping(numReplicas, stride, groupSize);
