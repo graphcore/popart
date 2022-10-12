@@ -887,7 +887,7 @@ Tensor::Tensor(TensorId n,
 void Consumers::decrement(Op *op) {
   auto found = consumers_m.find(op);
   if (found == consumers_m.end()) {
-    throw error("cannot decrement non-existant consumer, " + op->debugName());
+    throw error("cannot decrement non-existent consumer, " + op->debugName());
   }
   --(found->second);
   if (found->second == 0) {

@@ -95,7 +95,7 @@ def test_session_ctxtmgr_attach_detach(use_popdist: bool):
         pytest.skip("TODO(T68480): Investigate why this test fails on CI and re-enable")
 
     # PopDist environment has not been setup, so it will default to behaving in
-    # a simple no-replcation no-multi-instancing manner.
+    # a simple no-replication no-multi-instancing manner.
     ir = popxl.Ir(replication="popdist" if use_popdist else 1)
 
     with ir.main_graph:
@@ -152,7 +152,7 @@ def test_session_ctxtmgr_does_weights_from_host_on_enter():
         exp_w = ops.host_load(exp_w_h2d)
 
         # We expect these to be true:
-        # If weights_from_host occured as expected, will be the same.
+        # If weights_from_host occurred as expected, will be the same.
         # If weights_from_host did not occur as expected, w will be garbage, so
         # will be different.
         res = ops.equal(w, exp_w)
@@ -173,7 +173,7 @@ def test_session_ctxtmgr_does_weights_from_host_on_enter():
 
 def test_session_ctxtmgr_exit_weights_to_host_behaviour():
     """
-    Test that on exiting of the context, a `weights_to_host` will implictly be
+    Test that on exiting of the context, a `weights_to_host` will implicitly be
     done for the user; and that a subsequent call to `get_tensor_data(w)`
     outside of the context is a) permitted and b) will not attempt to attach to
     the device and re-fetch weights, but use the weights now on the host.
@@ -199,7 +199,7 @@ def test_session_ctxtmgr_exit_weights_to_host_behaviour():
     session: popxl.Session = mk_session_with_test_device(ir)
 
     with session:
-        # We are not testing weights_from_host occured on ctxt entry, so
+        # We are not testing weights_from_host occurred on ctxt entry, so
         # manually ensure it happens here to get a clearer error in this test
         # if that behaviour is broken too.
         session.weights_from_host()

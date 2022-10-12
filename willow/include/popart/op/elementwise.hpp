@@ -55,7 +55,7 @@ public:
   /**
    * \return true, if and only if (iff) this Op is mathematically equivalent to
    *        f(x) = x. This is slightly different to canBeReplacedByIdentity; for
-   *        example Detach and Identity have isIdentity overriden to return
+   *        example Detach and Identity have isIdentity overridden to return
    *        true, but still return false for canBeReplacedByIdentity.
    */
   virtual bool isIdentity() const { return canBeReplacedByIdentity(); }
@@ -291,7 +291,7 @@ public:
   void setup() final;
 
   // Returns the axes along which to perform the reduction, as set in the
-  // constructor, for caess of numpy-style broadcasting
+  // constructor, for cases of numpy-style broadcasting
   const std::vector<int64_t> &getReductionAxes() const {
     return reduction_axes;
   }

@@ -94,7 +94,7 @@ void serializePoprithmsGraph(
         dirName, "poprithms_shift_graph_" + std::to_string(i) + ".json");
   };
 
-  // iterate through file names until a non-existant one is found
+  // iterate through file names until a non-existent one is found
   int modelNumber{0};
   while (boost::filesystem::exists(getTargetName(modelNumber))) {
     ++modelNumber;

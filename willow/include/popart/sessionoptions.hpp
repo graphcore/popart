@@ -579,7 +579,7 @@ struct ExecutionPhaseSettings {
 
 /**
  * Enum type that determines how the operations in the accumulate outer fragment
- * will be scheduled accross virtual graphs (only relevant to pipelined modes).
+ * will be scheduled across virtual graphs (only relevant to pipelined modes).
  */
 enum class AccumulateOuterFragmentSchedule {
   /// Don't add additional constraints and let the scheduler work it out.
@@ -1270,7 +1270,7 @@ struct SessionOptions {
   // that accumulate the gradients when doing gradient accumulation.
   //
   // If `true` and if `shouldDelayVarUpdates` is `true`, this option will cause
-  // the schedule priority of the above described ops to be re-overriden to
+  // the schedule priority of the above described ops to be re-overridden to
   // +inf. TODO: Remove with T19212.
   bool scheduleNonWeightUpdateGradientConsumersEarly = false;
 
@@ -1561,7 +1561,7 @@ struct SessionOptions {
    * Enable fast math mode for group norms.
    *
    * Group norms have a fast math mode which changes the implementation to run
-   * faster on IPU but as a consequence is incompatable with other
+   * faster on IPU but as a consequence is incompatible with other
    * implementations (so for running trained weights on host).
    * The default (`false`) is to use the correct, but slightly slower mode.
    */

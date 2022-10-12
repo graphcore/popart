@@ -162,7 +162,7 @@ void createAndRun(bool hostIO = false) {
       BOOST_CHECK(initOpscount == 2);
 
       std::cout << schedule_str << std::endl;
-      // Find occurences of il in schedule_str
+      // Find occurrences of `il` in schedule_str
       int count = 0;
       auto pos  = schedule_str.find("il", 0);
       while (pos != std::string::npos) {

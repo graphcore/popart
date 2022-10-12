@@ -282,7 +282,7 @@ public:
   }
 
   /**
-   * Register any type of operation occuring before the current operation.
+   * Register any type of operation occurring before the current operation.
    * \param opToDecomposeLoopOpType Existing Op to type mapping.
    * \param bop                     Operation, which occurs before the Op
    *                                associated with this class, to register.
@@ -303,7 +303,7 @@ public:
   }
 
   /**
-   * Register any type of operation occuring after the current operation.
+   * Register any type of operation occurring after the current operation.
    * \param opToDecomposeLoopOpType Existing Op to type mapping.
    * \param aop                     Operation, which occurs after the Op
    *                                associated with this class, to register.
@@ -324,7 +324,7 @@ public:
   }
 
   /**
-   * Register all relations the current Op has to operations occuring `before`
+   * Register all relations the current Op has to operations occurring `before`
    * and `after` in the schedule.
    * \param opToDecomposeLoopOpType Existing Op to type mapping.
    */
@@ -357,8 +357,8 @@ public:
 
   /**
    * Check if any s1 is in s0.
-   * \param s0 Set to check for occureces in s1.
-   * \param s1 Set to check occurences of s0 in.
+   * \param s0 Set to check for occurrences in s1.
+   * \param s1 Set to check occurrences of s0 in.
    * \return   True if any element of s1 is in s0.
    */
   bool anyTypes(std::set<DecomposeLoopOpPipelineType> s0,

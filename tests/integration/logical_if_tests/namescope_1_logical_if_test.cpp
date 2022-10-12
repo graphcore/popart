@@ -31,7 +31,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_namescope0) {
   Builder &child2 = child1.createSubgraphBuilder();
   Builder &child3 = child2.createSubgraphBuilder();
 
-  // non-existant name
+  // non-existent name
   BOOST_CHECK_EXCEPTION(
       child3.addInputTensorFromParentGraph("thisNameDoesNotExistInHigherScope"),
       popart::error,

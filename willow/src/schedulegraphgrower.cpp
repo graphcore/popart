@@ -369,7 +369,7 @@ void ShiftGraphGrower::annotateAccumulateOuterFragmentOps() {
     if (schedule == AccumulateOuterFragmentSchedule::OverlapCycleOptimized ||
         schedule == AccumulateOuterFragmentSchedule::OverlapMemoryOptimized) {
       // Use cluster grouping from AccumulateOuterFragmentParallelizer
-      // transform as bins, this should allow parallelization accross IPUs.
+      // transform as bins, this should allow parallelization across IPUs.
       std::vector<std::vector<OpAddress>> bins;
       auto opBins = pg.getIr().getAccumulateOuterFragmentBinConstraints(pg);
       for (auto opBin : opBins) {
@@ -445,7 +445,7 @@ void ShiftGraphGrower::annotatePriorities() {
     auto op_phase       = op->getOptionalExecutionPhase();
     auto op_priority    = op->settings.schedulePriority;
 
-    // Executuion phase -1 to N are reserved
+    // Execution phase -1 to N are reserved
     // -2 : No execution phase set (unusedExecutionPhase)
     // -1 : Load weights of phase 0
     // 0 - N: Compute phase n, load weights of phase n+1

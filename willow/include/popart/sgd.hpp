@@ -152,7 +152,7 @@ std::ostream &operator<<(std::ostream &os,
 //
 // Reduction over Replicas
 // -------------------------
-// Recall, in data parallel trainining, multiple replicas of the model are run
+// Recall, in data parallel training, multiple replicas of the model are run
 // in parallel, each with their own copies of the weights and optimiser state.
 // Before applying the weight update, the replicas reduce their gradients
 // (by summing them) so they always train with identical weights. This
@@ -178,7 +178,7 @@ std::ostream &operator<<(std::ostream &os,
 // Note, because there is gradient accumulation, it is more efficient to
 // all-reduce the accumulator once, than each individual gradient in the loop.
 // The SGD Optimizer class will infer this automatically and set
-// OptimizerReductionType::AccumReduce on the optmimiser Op it creates. If there
+// OptimizerReductionType::AccumReduce on the optimiser Op it creates. If there
 // was no gradient accumulation, the individual gradient would be marked for
 // reduction using OptimizerReductionType::GradReduce.
 //
@@ -384,11 +384,11 @@ std::ostream &operator<<(std::ostream &os,
 // ----------------------------------------------
 // SGDAccumulatorAndMomentum::Combined Caveats
 //
-// 1. Lagged upate of optimizer parameters
+// 1. Lagged update of optimizer parameters
 // During their training loop, the user can dynamically update the optimizer
 // parameters using Session::updateOptimizerFromHost. However, when using
 // SGDAccumulatorAndMomentum::Combined, part of the v update for the next step
-// has already occured using the old parameters. Thus, updating parameters
+// has already occurred using the old parameters. Thus, updating parameters
 // during training is well-defined but not mathematically "correct". We say the
 // update is "lagged" as the update will not come fully into effect until after
 // one update.
@@ -980,7 +980,7 @@ private:
   DampeningScaleFactor1Helper dpsf1helper;
   ScaledMomentum1Helper smm1helper;
 
-  // SGDAccumulatorAndMomentum::Seperate (SGD2)
+  // SGDAccumulatorAndMomentum::Separate (SGD2)
   ScaledLearningRate2Helper slr2helper;
   DampeningScaleFactor2Helper dpsf2helper;
   ScaledMomentum2Helper smm2helper;

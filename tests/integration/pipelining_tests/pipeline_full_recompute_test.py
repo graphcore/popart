@@ -225,7 +225,7 @@ def test_full_recompute_pipelining(explicit):
 
         # Need to be sorted such that if one name includes another,
         # the longer one appears first
-        # Use regexp to catch variants occuring in explicit pipelining
+        # Use regexp to catch variants occurring in explicit pipelining
         expectedStashes = [
             "(.*)Z/Reshape:0_c1",
             "(.*)x_in",

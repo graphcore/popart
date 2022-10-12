@@ -21,12 +21,15 @@
 			"python.defaultInterpreterPath": "~/.virtualenvs/popart-dev",
 			"clangd.arguments": [
 				"-compile-commands-dir=${workspaceFolder}/../build/build/popart"
-			]
+			],
+			"cSpell.language": "en-GB"
 	},
 	"extensions": {
 		"recommendations": [
 			// Intellisense for C++
 			"llvm-vs-code-extensions.vscode-clangd",
+			// Spell checking
+			"streetsidesoftware.code-spell-checker",
 		]
 	}
 }

@@ -72,8 +72,8 @@ Leaky ReLU in
    :external+popart-user-guide:cpp:class:`popart::Op` base class has a number of additional
    virtual methods that may be helpful to advanced users. For Leaky ReLU, we
    have implemented the bare minimum and rely on the default implementations of
-   these virtual functions. For advanced use cases, please read the 
+   these virtual functions. For advanced use cases, please read the
    :external+popart-user-guide:cpp:class:`Op documentation<popart::Op>`.
    Most of these methods are for
    enabling other transforms to work with the op, like how ``getGradOps`` is
-   overriden to enable ``autodiff``.
+   overridden to enable ``autodiff``.

@@ -478,7 +478,7 @@ GraphTestModel4::GraphTestModel4(popart::ReplicatedStreamMode xMode) {
   // TensorType except Stream). This latter tensor is the "stream tensor"
   // attribute of the HostStoreOp.
   //
-  // In this case, no transformation of the original y tensor has occured, so
+  // In this case, no transformation of the original y tensor has occurred, so
   // the anchor remap maps to y, but we follow the general precedent regardless.
   TensorId streamY = ir.getAnchorRemap().getRight(y);
 

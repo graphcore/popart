@@ -3451,7 +3451,7 @@ void Ir::applyInplacePattern(Graph &graph) {
   for (auto &id_op : graph.getOps()) {
     Op *op = id_op.second.get();
 
-    // first see if the user has overriden the default priorities
+    // first see if the user has overridden the default priorities
     std::set<OpType> prioritized;
     for (auto ip : op->settings.inplacePriorityVeto) {
       OpType inplaceId = std::get<0>(ip);

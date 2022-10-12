@@ -53,10 +53,10 @@ static const char *__singlelinedoc_onnx_TensorProto_3 = R"doc()doc";
 
 static const char *__doc_popart_AccumulateOuterFragmentSchedule =
     R"doc(Enum type that determines how the operations in the accumulate outer fragment
-will be scheduled accross virtual graphs (only relevant to pipelined modes).)doc";
+will be scheduled across virtual graphs (only relevant to pipelined modes).)doc";
 
 static const char *__singlelinedoc_popart_AccumulateOuterFragmentSchedule =
-    R"doc(Enum type that determines how the operations in the accumulate outer fragment will be scheduled accross virtual graphs (only relevant to pipelined modes).)doc";
+    R"doc(Enum type that determines how the operations in the accumulate outer fragment will be scheduled across virtual graphs (only relevant to pipelined modes).)doc";
 
 static const char
     *__doc_popart_AccumulateOuterFragmentSchedule_OverlapCycleOptimized =

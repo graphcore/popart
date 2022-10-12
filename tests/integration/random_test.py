@@ -126,7 +126,7 @@ def test_stochastic_rounding_behaviour():
         session.setRandomSeed(1)
         session.run(stepio)
 
-        # Observe that stochastic rounding has occured
+        # Observe that stochastic rounding has occurred
         result0 = np.copy(anchors[out])
         assert np.array_equal(result0, reference) is False
 

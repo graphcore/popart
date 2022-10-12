@@ -81,7 +81,7 @@ void traverse(std::vector<TensorAndCallStack> tensors,
         (visited[t.first].find({}) == visited[t.first].end() &&
          visited[t.first].find(t.second) == visited[t.first].end())) {
       // No generic (no call stack) or call-stack specific visit of t has
-      // occured
+      // occurred
       visited[t.first].insert(t.second);
       deque.push_back(t);
     }
@@ -426,13 +426,13 @@ bool hasDataDependency(Op *const op,
     opToPosition[opS->id] = i++;
   }
 
-  int earliestpotentialDependencyOpPos = 0;
+  int earliestPotentialDependencyOpPos = 0;
   std::set<OpId> depOpIds;
   for (auto &depOp : potentialDependencyOps) {
     depOpIds.insert(depOp->id);
     int positionInSchedule = opToPosition.at(depOp->id);
-    earliestpotentialDependencyOpPos =
-        std::min(positionInSchedule, earliestpotentialDependencyOpPos);
+    earliestPotentialDependencyOpPos =
+        std::min(positionInSchedule, earliestPotentialDependencyOpPos);
   }
 
   std::vector<Tensor *> inputs;
@@ -454,13 +454,13 @@ bool hasDataDependency(Op *const op,
         }
         return true;
       },
-      [&earliestpotentialDependencyOpPos, &opToPosition, &op](
+      [&earliestPotentialDependencyOpPos, &opToPosition, &op](
           Op *traverse, Tensor *t0, Tensor *t1) {
         if (op->getGraph().id != traverse->getGraph().id) {
           return true;
         } else if (opToPosition.count(traverse->id) > 0) {
           int traversePositionSchedule = opToPosition.at(traverse->id);
-          return earliestpotentialDependencyOpPos < traversePositionSchedule;
+          return earliestPotentialDependencyOpPos < traversePositionSchedule;
         }
         return false;
       },
@@ -610,7 +610,7 @@ findMatchingOps(Graph &graph, const OpPreds &preds, const Edges &edges) {
   }
 
   for (auto &edge : edges) {
-    // Add all predicates occuring before the current predicate
+    // Add all predicates occurring before the current predicate
     befores[edge.getTo()] += 1;
   }
 

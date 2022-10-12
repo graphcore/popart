@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(TestBasicGraph) {
   // TensorType except Stream). This latter tensor is the "stream tensor"
   // attribute of the HostStoreOp.
   //
-  // In this case, no transformation of the original y tensor has occured, so
+  // In this case, no transformation of the original y tensor has occurred, so
   // the anchor remap maps to y, but we follow the general precedent regardless.
   TensorId streamY = ir->getAnchorRemap().getRight(y);
 

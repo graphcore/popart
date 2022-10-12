@@ -44,7 +44,7 @@ void runTest(AccumulateOuterFragmentSettings settings,
 
   // Pipeline with two IPUs and two replicas. We should end up with
   // 8 independent weight updates in the accumulate outer fragment
-  // of which the stores and loads should be matched accross IPUs
+  // of which the stores and loads should be matched across IPUs
   // in descending order of size.
 
   TestRunner runner;

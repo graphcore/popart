@@ -67,7 +67,7 @@ def run_model_and_test():
 
     w_h = w_h + np.arange(0, w_h.size, dtype=w_h.dtype).reshape(w_h.shape)
 
-    # Init v. Will be broacast in w += v
+    # Init v. Will be broadcast in w += v
     v_h = np.ones((1,), dtype=np.int32) * 2
 
     with mg, popxl.in_sequence():
@@ -329,7 +329,7 @@ def run_multi_instance_test(
         this function will throw if the poprun subprocess exits with non-zero
         exit code (because of a test failure in one the instances or otherwise).
         You need to scroll up to see the output from the process to see the
-        failure that occured; it will not be part of the exception thrown from
+        failure that occurred; it will not be part of the exception thrown from
         this function.
 
     Args:
@@ -342,7 +342,7 @@ def run_multi_instance_test(
             Defaults to True.
         grouped (bool):
             Whether the variable in the test should have a replica grouping.
-            Will be overriden to True if group_size is set, otherwise defaults
+            Will be overridden to True if group_size is set, otherwise defaults
             to False.
         group_size (Optional[int], optional):
             The group size to use for the replica grouping. Overrides the
@@ -351,13 +351,13 @@ def run_multi_instance_test(
             The stride to use for the replica grouping. Ignore if grouped=False.
         sharded (bool):
             Whether the variable in the test should be sharded (an RTS variable)
-            or not. Overrides remote to True if True. Will be overriden to True
+            or not. Overrides remote to True if True. Will be overridden to True
             if shard_over is set, otherwise will default to False.
         shard_over (Optional[int], optional):
             The shard_over to use for the variable (which is the sharding domain
             size). Overrides sharded to True if set.
         retrieval_mode (Optional[Literal["one_per_group", "all_replicas"]]):
-            The retrieval mode to use for the variable. Defauts to
+            The retrieval mode to use for the variable. Defaults to
             "one_per_group".
 
     Raises:

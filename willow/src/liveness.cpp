@@ -632,7 +632,7 @@ void LivenessAnalyzer::processSubgraphCopyingStrategyIndices(
   }
 
   // Remove all nodes in the indices list from pendingCopies. Achieve this
-  // by constructing a new pendingCopies list and copying nodes accross. The
+  // by constructing a new pendingCopies list and copying nodes across. The
   // alternative would be to erase nodes from the existing list but this may
   // be less efficient.
   PendingCopies newPendingCopies;
@@ -695,7 +695,7 @@ int64_t LivenessAnalyzer::getGlobalSchedulePosition(CallStack ops) const {
   for (Op *op : ops) {
     for (int64_t i : opScheduleMap.at(op)) {
       if (i > index) {
-        // First occurence of op after index
+        // First occurrence of op after index
         index = i;
         break;
       }
