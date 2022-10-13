@@ -152,17 +152,17 @@ std::shared_ptr<DeviceInfo> DeviceManager::createCpuDevice() {
 }
 
 std::shared_ptr<DeviceInfo> DeviceManager::createIpuModelDevice(
-    std::map<std::string, std::string> &options) {
+    const std::map<std::string, std::string> &options) {
   return createHostDevice(DeviceType::IpuModel, options);
 }
 
-std::shared_ptr<DeviceInfo>
-DeviceManager::createSimDevice(std::map<std::string, std::string> &options) {
+std::shared_ptr<DeviceInfo> DeviceManager::createSimDevice(
+    const std::map<std::string, std::string> &options) {
   return createHostDevice(DeviceType::Sim, options);
 }
 
 std::shared_ptr<DeviceInfo> DeviceManager::createOfflineIPUDevice(
-    std::map<std::string, std::string> &options) {
+    const std::map<std::string, std::string> &options) {
   return createHostDevice(DeviceType::OfflineIpu, options);
 }
 

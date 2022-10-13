@@ -546,7 +546,7 @@ public: // methods
    * \return A device.
    */
   std::shared_ptr<DeviceInfo>
-  createIpuModelDevice(std::map<std::string, std::string> &options);
+  createIpuModelDevice(const std::map<std::string, std::string> &options);
 
   /*
    * [For Graphcore internal use only]
@@ -561,7 +561,7 @@ public: // methods
    * \return A simulated `Sim` device.
    */
   std::shared_ptr<DeviceInfo>
-  createSimDevice(std::map<std::string, std::string> &options);
+  createSimDevice(const std::map<std::string, std::string> &options);
 
   /**
    * Create a simulated `OfflineIpu` device for testing purposes.
@@ -578,7 +578,7 @@ public: // methods
    * \return A simulated `OfflineIpu` device.
    */
   std::shared_ptr<DeviceInfo>
-  createOfflineIPUDevice(std::map<std::string, std::string> &options);
+  createOfflineIPUDevice(const std::map<std::string, std::string> &options);
 
   /**
    * Create a simulated `OfflineIpu` device from the description of another
