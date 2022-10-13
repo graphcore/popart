@@ -37,10 +37,11 @@ poplar::Tensor triangularMatrix(const PopOpx &opx,
                                 bool exclusive_,
                                 bool reverse_,
                                 bool transpose_ = false) {
+  auto x = opx.getInTensor(CumSumOp::xInIndex()).getPoplarTensor();
   const poplar::Tensor one =
-      opx.getConst(poplar::FLOAT, {1}, 1.f, "one").getPoplarTensor();
+      opx.getConst(x.elementType(), {1}, 1.f, "one").getPoplarTensor();
   const poplar::Tensor zero =
-      opx.getConst(poplar::FLOAT, {1}, 0.f, "zero").getPoplarTensor();
+      opx.getConst(x.elementType(), {1}, 0.f, "zero").getPoplarTensor();
 
   std::vector<poplar::Tensor> pieces;
   for (int k = 0; k < triangularSize_; k++) {

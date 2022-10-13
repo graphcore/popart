@@ -635,3 +635,52 @@ def test_cumsum_grad_3d_reverse(op_tester):
             return [out, tx.grad, None]
 
         op_tester.run(init_builder, reference, "train")
+
+
+def test_cumsum_1d_fp16(op_tester):
+    x = np.array([1.0, 2.0, 3.0, 4.0, 5.0]).astype(np.float16)
+    axis = np.array(0).astype(np.int32)
+
+    def init_builder(builder):
+        i0 = builder.addInputTensor(x)
+        i1 = builder.aiOnnxOpset11.constant(axis)
+        o = builder.aiOnnxOpset11.cumsum([i0, i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(_):
+        # torch.cumsum do not support np.float16 yet
+        tx = torch.tensor(x.astype(np.float32))
+        out = torch.cumsum(tx, axis.item(0))
+        return [out.type(torch.float16)]
+
+    op_tester.run(init_builder, reference, "infer")
+
+
+def test_cumsum_grad_1d_fp16(op_tester):
+    x = np.array([1.0, 2.0, 3.0, 4.0, 5.0]).astype(np.float16)
+    axis = np.array(0).astype(np.int32)
+
+    def init_builder(builder):
+        i0 = builder.addInputTensor(x)
+        i1 = builder.aiOnnxOpset11.constant(axis)
+        o = builder.aiOnnxOpset11.cumsum([i0, i1])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i0,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        tx = torch.tensor(x.astype(np.float32), requires_grad=True)
+
+        out = torch.cumsum(tx, axis.item(0))
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+
+        out = out.type(torch.float16)
+        tx_grad = tx.grad.type(torch.float16)
+        return [out, tx_grad, None]
+
+    op_tester.run(init_builder, reference, "train")

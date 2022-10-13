@@ -117,6 +117,7 @@ static OpDefinition::DataTypes T = {DataType::UINT32,
                                     DataType::UINT64,
                                     DataType::INT32,
                                     DataType::INT64,
+                                    DataType::FLOAT16,
                                     DataType::FLOAT};
 
 static OpDefinition::DataTypes T2 = {DataType::INT32, DataType::INT64};
