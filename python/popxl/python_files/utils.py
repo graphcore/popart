@@ -7,6 +7,11 @@ import numpy as np
 import popart
 from typing_extensions import Literal
 
+from popxl import float8_143, float8_152, float32, float64
+
+import popart._internal.ir as _ir
+
+
 try:
     import torch
 
@@ -25,50 +30,222 @@ downcast_np_dtypes = {
     np.dtype("float64"): np.dtype("float32"),
 }
 
+# Structured dtype definitions, see
+# https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype
+np_dtype_float8_143 = np.dtype([("float8_143", "u1")])
+np_dtype_float8_152 = np.dtype([("float8_152", "u1")])
+
+
+def _convert_popxl_float8_dtype_to_popart(np_dtype):
+    """Convert a PopXL float8 dtype into the PopART equivalent."""
+    float8_popxl_to_popart_dtype = {
+        float8_143: _ir.DataType.FLOAT8_143,
+        float8_152: _ir.DataType.FLOAT8_152,
+    }
+    return float8_popxl_to_popart_dtype[np_dtype]
+
+
+def _convert_popxl_float8_dtype_to_numpy(np_dtype):
+    """Convert a PopXL float8 dtype into the structured dtype we use for representing float8 data in NumPy."""
+    float8_popxl_to_numpy_dtype = {
+        float8_143: np_dtype_float8_143,
+        float8_152: np_dtype_float8_152,
+    }
+    return float8_popxl_to_numpy_dtype[np_dtype]
+
+
+def _convert_numpy_float8_dtype_to_popxl(np_dtype):
+    """Convert a structured dtype we use for representing float8 data to a PopXL dtype."""
+    if np_dtype == np_dtype_float8_143:
+        return float8_143
+    elif np_dtype == np_dtype_float8_152:
+        return float8_152
+    else:
+        raise RuntimeError("Not a float8 dtype ({np_dtype})")
+
 
 def to_numpy(
     x: "HostScalarTensor",
     dtype: Optional["dtypes.dtype"] = None,
     downcast: bool = True,
     copy: bool = True,
+    log2_scale: int = 0,
+    nan_on_overflow: bool = True,
 ) -> np.ndarray:
     """
     Convert a `HostScalarTensor` to a numpy array and copies the data if enabled.
 
     Args:
-        x (HostScalarTensor):
+        x:
             The data used to initialise the tensor.
-            This can be an np.ndarray, torch.tensor or a value NumPy can use to construct an np.ndarray.
-        dtype (Optional[dtype]):
-            The data type of the tensor to be created. If not specified NumPy will infer the data
-            type and downcast to 32 bits if necessary.
-        downcast (bool):
-            If True and no dtype is provided, 64-bit float/ints will be downcast to 32-bit variants. Defaults to True.
-        copy (bool):
+            This can be an np.ndarray, torch.tensor or a value NumPy can use to
+            construct an np.ndarray.
+        dtype:
+            The data type of the tensor to be created. If not specified NumPy
+            will infer the data type and downcast to 32 bits if necessary. For
+            float8 dtypes automatic inference of dtype is not currently
+            possible, please explicitly specify the dtype.
+        downcast:
+            If True and no dtype is provided, 64-bit float/ints will be downcast
+            to 32-bit variants. Defaults to True.
+        copy:
             If true the objects data is guaranteed to be copied.
+        log2_scale:
+            If dtype is either popxl.float8_143 or popxl.float8_152 then
+            multiply the incoming data by pow2(log2_scale) before casting.
+        nan_on_overflow:
+            If dtype is either popxl.float8_143 or popxl.float8_152 and this
+            flag is set then replace values that cannot be represented by the
+            requested dtype with 'not-a-number' values.
     """
     if torch_imported and isinstance(x, torch.Tensor):
         x = x.detach().numpy()
 
-    if dtype:
-        np_dtype = dtype.as_numpy()
+    # Work out the target dtype.
+    if dtype == float8_143 or dtype == float8_152:
+        # Convert scalars to numpy array.
+        x = np.asarray(x, order="C")
+
+        # There is no native float8 representation in Numpy currently so we use
+        # structured dtypes instead. If not already converted, convert the
+        # user's data to float8 automatically.
+        if x.dtype != _convert_popxl_float8_dtype_to_numpy(dtype):
+            x = host_pow2scale_then_cast(x, dtype, log2_scale, nan_on_overflow)
+
     else:
-        np_dtype = np.obj2sctype(x)
 
-    # Attempt to downcast before constructing the array
-    if not dtype and np_dtype in downcast_np_dtypes and downcast:
-        np_dtype = downcast_np_dtypes[np_dtype]
+        if dtype:
+            np_dtype = dtype.as_numpy()
+        else:
+            np_dtype = np.obj2sctype(x)
 
-    x = np.asarray(x, dtype=np_dtype, order="C")
+        # Attempt to downcast before constructing the array
+        if not dtype and np_dtype in downcast_np_dtypes and downcast:
+            np_dtype = downcast_np_dtypes[np_dtype]
 
-    # Sometimes it is not possible to infer the result type before constructing the array
-    # so check again here to ensure 64-bit values are not returned when downcast=True
-    if not dtype and x.dtype in downcast_np_dtypes and downcast:
-        x = np.array(x, dtype=downcast_np_dtypes[x.dtype], order="C")
-    elif copy:
-        x = x.copy()
+        x = np.asarray(x, dtype=np_dtype, order="C")
+
+        # Sometimes it is not possible to infer the result type before constructing the array
+        # so check again here to ensure 64-bit values are not returned when downcast=True
+        if not dtype and x.dtype in downcast_np_dtypes and downcast:
+            x = np.array(x, dtype=downcast_np_dtypes[x.dtype], order="C")
+        elif copy:
+            x = x.copy()
 
     return x
+
+
+def host_pow2scale_then_cast(
+    src: np.ndarray,
+    dtype: "dtypes.dtype" = None,
+    log2_scale: int = 0,
+    nan_on_overflow: bool = True,
+):
+    """
+    Run a fused operation `cast(src * pow2(log2_scale), dtype)` on the host.
+
+    This is a host-based utility function mainly intended to convert user data
+    into PopXL's NumPy-based representation for float8 data.
+
+    Args:
+        src:
+            The NumPy array of user data to convert. Torch tensors are
+            automatically converted. This must be a NumPy array with dtype being
+            `np.float32` or `np.float64` (or torch equivalent). Other values are
+            not supported.
+        dtype:
+            The PopXL data type to convert to. This must be either  either
+            `popxl.float8_143` or `popxl.float8_152`. Other values are not
+            currently supported.
+        log2_scale:
+            The user's data is multiplied by `pow2(log2_scale)` before casting.
+            This must be an int in the range [-32, 32). Other values are not
+            currently supported.
+        nan_on_overflow:
+            If set, replace values that cannot be represented by the requested
+            dtype with 'not-a-number' values.
+
+    Raises:
+        RuntimeError: If parameters are not supported.
+
+    Returns:
+        np.ndarray: A NumPy array with structured dtype
+            `popxl.utils.np_dtype_float8_143`
+            (`np.dtype([("float8_143", "u1")])`) or
+            `popxl.utils.np_dtype_float8_152`
+            (`np.dtype([("float8_152", "u1")])`) containing float8 data.
+    """
+    if torch_imported and isinstance(src, torch.Tensor):
+        src = src.detach().numpy()
+
+    if src.dtype != np.float32 and src.dtype != np.float64:
+        raise RuntimeError(f"src.dtype {src.dtype} not currently supported.")
+
+    if dtype != float8_143 and dtype != float8_152:
+        raise RuntimeError(f"dtype {dtype} not currently supported.")
+
+    popart_dtype = _convert_popxl_float8_dtype_to_popart(dtype)
+    res = _ir.convertToFloat8AsUInt8(popart_dtype, src, log2_scale, nan_on_overflow)
+    res = res.reshape(src.shape)
+    np_dtype = _convert_popxl_float8_dtype_to_numpy(dtype)
+    res = res.astype(dtype=np_dtype)
+    return res
+
+
+def host_cast_then_pow2scale(
+    src: np.ndarray, dtype: "dtypes.dtype" = None, log2_scale: int = 0
+):
+    """
+    Run a fused operation `cast(X, dtype) * pow2(log2_scale)` on the host.
+
+    This is a host-based utility function mainly intended to convert into
+    PopXL's NumPy-based representation for float8 data back into user data.
+
+    Args:
+        src:
+            A PopXL NumPy-based float8 data array to convert. This must be a
+            NumPy array with with structured dtype
+            `popxl.utils.np_dtype_float8_143`
+            (`np.dtype([("float8_143", "u1")])`) or
+            `popxl.utils.np_dtype_float8_152`
+            (`np.dtype([("float8_152", "u1")])`). Other values are not
+            currently supported.
+        dtype:
+            The PopXL dtype representing the target array type. This must be
+            either `popxl.float32` or `popxl.float64`. Other values are not
+            currently supported.
+        log2_scale:
+            The data is multiplied by `pow2(log2_scale)` after casting. This
+            must be an int in the range [-32, 32). Other values are not
+            currently supported.
+
+    Raises:
+        RuntimeError: If parameters are not supported.
+
+    Returns:
+        np.ndarray: A NumPy array with dtype `np.float32` or `np.float64`.
+    """
+    if src.dtype != np_dtype_float8_143 and src.dtype != np_dtype_float8_152:
+        raise RuntimeError(f"src.dtype {src.dtype} not currently supported.")
+
+    if dtype != float32 and dtype != float64:
+        raise RuntimeError(f"dtype {dtype} not currently supported.")
+
+    popxl_src_dtype = _convert_numpy_float8_dtype_to_popxl(src.dtype)
+    popart_src_dtype = _convert_popxl_float8_dtype_to_popart(popxl_src_dtype)
+
+    # Drop the structured dtype.
+    src = src.astype(np.uint8)
+
+    # Call the appropriate conversion function.
+    if dtype == float32:
+        fun = _ir.convertFromFloat8AsUInt8ToFloat32
+    elif dtype == float64:
+        fun = _ir.convertFromFloat8AsUInt8ToFloat64
+    res = fun(popart_src_dtype, src, log2_scale)
+    res = res.reshape(src.shape)
+
+    return res
 
 
 def _popxl_to_numpy(t: Union["Constant", "Variable"]) -> np.ndarray:
@@ -79,7 +256,7 @@ def _popxl_to_numpy(t: Union["Constant", "Variable"]) -> np.ndarray:
     of retrieval.
 
     Args:
-        t (Tensor): The tensor to retrive the data from.
+        t (Tensor): The tensor to retrieve the data from.
 
     Raises:
         ValueError: If the tensor is not of type [Variable|Constant]
@@ -117,6 +294,10 @@ def _popxl_to_numpy(t: Union["Constant", "Variable"]) -> np.ndarray:
         return np.asarray(t_.dataAsDouble(), t.dtype.as_numpy())
     elif t.dtype == dtypes.bool:
         return np.asarray(t_.dataAsBool(), t.dtype.as_numpy())
+    elif t.dtype == dtypes.float8_143:
+        return np.asarray(t_.dataAsUInt8(), np_dtype_float8_143)
+    elif t.dtype == dtypes.float8_152:
+        return np.asarray(t_.dataAsUInt8(), np_dtype_float8_152)
     else:
         raise ValueError(
             f"Data type {t.dtype} not supported for get_tensor_data retrieval."

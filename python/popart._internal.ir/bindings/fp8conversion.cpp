@@ -21,66 +21,52 @@ namespace ir {
 
 namespace {
 
-/** Convert from host buffer of type float to device data of type
- *  uint8 (a proxy for float8 , since float8 is not available in numpy). Choose
- * to saturate or produce NaNs where values exceed the numeric range of the
- * destination type selected. PopART equivalent of the same poplar function.
+/**
+ * Convert from NumPy array of a floating point type to a NumPy array containing
+ * float8 values (using the dtype `np.uint8` because float8 is not supported in
+ * NumPy). This function is a host-based implementation of `(destType)(src *
+ * pow2(log2Scale))`, performing a multiplication by `pow2(log2Scale)` prior to
+ * casting to float8. Where values exceed the numeric range of the destination
+ * type you can choose to either saturate values or produce NaNs.
  *
- *  \param type        Data type on device which must be DataType::FLOAT8_143 or
- *                     DataType::FLOAT8_152.
- *  \param src         Host data buffer to read.
- *  \param notANumberOnOverflow If True produce NaN when the input values
- *                     exceed the numeric range of the destination type
- *                     selected.
- *                     If False saturate the results.
- * \returns            The converted numpy array in uint8 format.
- */
-
-/** Convert from host buffer of type float to device data of type
- *  uint8 (a proxy for float8 , since float8 is not available in numpy). Choose
- * to saturate or produce NaNs where values exceed the numeric range of the
- * destination type selected. PopART equivalent of the same poplar function.
+ * This is a PopART wrapper around Poplar's `convertToDeviceType`.
  *
- * @tparam T Type to convert from float or double.
- * \param type Data type on device which must be DataType::FLOAT8_143 or
- * DataType::FLOAT8_152.
- * \param src Host data buffer to read.
- * \param scaleBias number to be raised to the power of 2 to scale the input.
+ * @tparam T The floating point type to convert. Must be float or double.
+ * \param destType Data type to convert to. Must be DataType::FLOAT8_143
+ *   or DataType::FLOAT8_152.
+ * \param src The NumPy data to convert.
+ * \param log2Scale The user's data is multiplied by `pow2(log2Scale)` before
+ *   casting.
  * \param notANumberOnOverflow If True produce NaN when the input values exceed
- * the numeric range of the destination type selected. If False saturate the
- * results.
- * \returns py::array_t<uint8_t> The converted numpy array in uint8
- * format.
+ *   the numeric range of the destination type selected. If False saturate the
+ *   results.
+ * \returns The converted NumPy array.
  */
 template <typename T>
-py::array_t<uint8_t> convertToFloat8AsUInt8(const DataType destType,
-                                            py::array_t<T> &src,
-                                            int8_t scaleBias          = 0,
-                                            bool notANumberOnOverflow = true) {
+py::array convertToFloat8AsUInt8(const DataType destType,
+                                 py::array_t<T> &src,
+                                 int8_t log2Scale          = 0,
+                                 bool notANumberOnOverflow = true) {
 
   poplar::QuarterMetadata metadata;
 
   if (destType == DataType::FLOAT8_143) {
+    // In Poplar/Poplibs, cast to quarter negates `log2Scale`.
     metadata = poplar::QuarterMetadata(poplar::QuarterMetadata::Format::F143,
-                                       scaleBias);
+                                       -log2Scale);
+
   } else if (destType == DataType::FLOAT8_152) {
+    // In Poplar/Poplibs, cast to quarter negates `log2Scale`.
     metadata = poplar::QuarterMetadata(poplar::QuarterMetadata::Format::F152,
-                                       scaleBias);
+                                       -log2Scale);
   } else {
     throw error("Unsupported data type {} for conversion to FP8", destType);
   }
 
-  src               = makeContiguous(src);
-  auto arr_obj_prop = src.request();
-  auto vals         = static_cast<T *>(arr_obj_prop.ptr);
+  src       = makeContiguous(src);
+  auto vals = static_cast<T *>(src.request().ptr);
 
-  std::vector<T> vect_arr;
-  vect_arr.reserve(src.size());
-
-  for (unsigned int i = 0; i < src.size(); i++) {
-    vect_arr.push_back(vals[i]);
-  }
-  gccs::ArrayRef<T> ins{vect_arr};
+  gccs::ArrayRef<T> ins{vals, static_cast<size_t>(src.size())};
 
   std::vector<uint8_t> out_vec(src.size(), 0);
   gccs::ArrayRef<uint8_t> dest{out_vec};
@@ -93,45 +79,42 @@ py::array_t<uint8_t> convertToFloat8AsUInt8(const DataType destType,
   return outs;
 }
 
-/** Convert from uint8 (a proxy for float8 , since float8 is not available in
- * numpy) to host type T (float or double). Choose to saturate or produce NaNs
- * where values exceed the numeric range of the destination type selected.
- * PopART equivalent of the same poplar function.
+/**
+ * Convert from a NumPy array with float8 values (with dtype `np.uint8`) to to a
+ * NumPy array with dtype based on host type T (float or double). This function
+ * is a host-based implementation of `(destType)(src) * pow2(log2Scale)`,
+ * performing a multiplication by `pow2(log2Scale)` after casting to the
+ * destination type.
  *
- * @tparam T Type to convert from float or double.
- * \param type Data type on device which must be DataType::FLOAT8_143 or
- * DataType::FLOAT8_152.
- * \param src Host data buffer to read.
- * \param scaleBias number to be raised to the power of 2 to scale the input.
- * \returns py::array_t<T> The converted numpy array in type T format.
+ * This is a PopART wrapper around Poplar's `convertFromDeviceType`.
+ *
+ * @tparam T The floating point type to convert to. Must be float or double.
+ * \param type Data type to convert from. Must be DataType::FLOAT8_143
+ *   or DataType::FLOAT8_152.
+ * \param src The NumPy data to convert.
+ * \param log2Scale The user's data is multiplied by `pow2(log2Scale)` after
+ *   casting.
+ * \returns The converted NumPy array.
  */
 template <typename T>
-py::array_t<T> convertFromFloat8(const DataType srcType,
-                                 py::array_t<uint8_t> &src,
-                                 int8_t scaleBias = 0) {
+py::array convertFromFloat8(const DataType srcType,
+                            py::array_t<uint8_t> &src,
+                            int8_t log2Scale = 0) {
 
   poplar::QuarterMetadata metadata;
 
   if (srcType == DataType::FLOAT8_143) {
     metadata = poplar::QuarterMetadata(poplar::QuarterMetadata::Format::F143,
-                                       scaleBias);
+                                       log2Scale);
   } else if (srcType == DataType::FLOAT8_152) {
     metadata = poplar::QuarterMetadata(poplar::QuarterMetadata::Format::F152,
-                                       scaleBias);
+                                       log2Scale);
   } else {
     throw error("Unsupported data type {} for conversion from FP8", srcType);
   }
 
-  src                 = makeContiguous(src);
-  auto arr_obj_prop   = src.request();
-  const uint8_t *vals = static_cast<const uint8_t *>(arr_obj_prop.ptr);
+  src = makeContiguous(src);
 
-  std::vector<uint8_t> vect_arr;
-  vect_arr.reserve(src.size());
-
-  for (unsigned int i = 0; i < src.size(); i++) {
-    vect_arr.push_back(static_cast<uint8_t>(vals[i]));
-  }
   gccs::ArrayRef<uint8_t> ins{static_cast<unsigned char *>(src.request().ptr),
                               static_cast<size_t>(src.size())};
 
@@ -141,7 +124,6 @@ py::array_t<T> convertFromFloat8(const DataType srcType,
   poplar::convertFromDeviceType(poplar::QUARTER, metadata, ins.data(), dest);
 
   py::array outs = py::cast(out_vec);
-
   return outs;
 }
 
