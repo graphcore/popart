@@ -28,6 +28,7 @@
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
 #include "popart/slicestruct.hpp"
+#include "popart/tensor.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorinfo.hpp"
 
@@ -418,6 +419,21 @@ void BaseSliceOp::connectInTensor(InIndex inIndex, TensorId tenId) {
                     opid,
                     err.what());
       }
+    }
+  }
+  // convert axes to positive number if it is negative number
+  int64_t input_rank = inInfo(getInIndex()).rank();
+  auto tensor        = inTensor(SliceOp::getInIndex());
+  for (auto &axis : axes) {
+    if (axis < 0) {
+      if (-axis > input_rank) {
+        throw error(
+            "slice op input tensor {}, rank {}, axis {} is out of range",
+            tensor->str(),
+            input_rank,
+            axis);
+      }
+      axis = axis + input_rank;
     }
   }
 }

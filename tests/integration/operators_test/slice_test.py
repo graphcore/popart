@@ -525,3 +525,26 @@ def test_slice_flip_grad_2(op_tester):
         ["PreUniRepl", "Slice2SliceSubsample"], enableRuntimeAsserts=False
     )
     op_tester.run(init_builder, reference, "train")
+
+
+def test_slice_negative_axis(op_tester):
+    d1 = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]]).astype(np.float32)
+    starts_data = np.array([1, 0], dtype=np.int64)
+    ends_data = np.array([2, 3], dtype=np.int64)
+    axes_data = np.array([-2, -1], dtype=np.int64)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        axes = builder.aiOnnx.constant(axes_data)
+        starts = builder.aiOnnx.constant(starts_data)
+        ends = builder.aiOnnx.constant(ends_data)
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.slice([i1, starts, ends, axes])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(_):  # ref_data is an unused argument
+        o = d1[1:2, 0:3]
+        return [o]
+
+    op_tester.run(init_builder, reference, "infer")
