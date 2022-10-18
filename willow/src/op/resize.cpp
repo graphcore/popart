@@ -201,10 +201,29 @@ std::vector<float> getScales(const OpCreatorInfo &info) {
   } else if (info.opid == Onnx::Operators::Resize_11) {
     if (info.hasInputTensor(resize11ScalesInIndex) &&
         info.hasInputTensor(resize11SizesInIndex)) {
-      throw error("Resize op has inputs for `sizes` and `scales`. Only one of "
-                  "these tensors should be present. If `size` is needed, "
-                  "please pass an empty string as the name of `scales` in the "
-                  "input list ( resize([X, roi, '', sizes]) ).");
+      // sizes param(optional): The size of the output tensor. The number of
+      // elements of 'sizes' should be the same as the rank of input 'X'. May
+      // only be set if 'scales' is set to an empty tensor.
+      auto scaleElemSize =
+          info.getInputTensor(resize11ScalesInIndex)->info.nelms();
+      auto sizeElemSize =
+          info.getInputTensor(resize11SizesInIndex)->info.nelms();
+      if (scaleElemSize != 0 && sizeElemSize != 0) {
+        throw error(
+            "Resize op has inputs for `sizes` and `scales`. Only one of "
+            "these tensors should be present. If `sizes` is needed, "
+            "please pass an empty string as the name of `scales` in the "
+            "input list ( resize([X, roi, '', sizes]) ). If the proto is not "
+            "generated from the PopART Builder, please confirm that only one "
+            "of the two tensors shall have data.");
+      } else if (scaleElemSize == 0 && sizeElemSize == 0) {
+        throw error("Resize op has  inputs for `sizes` and `scales`,but none "
+                    "of them have data.");
+      } else if (scaleElemSize != 0 && sizeElemSize == 0) {
+        return readScalesInput(resize11ScalesInIndex);
+      } else if (scaleElemSize == 0 && sizeElemSize != 0) {
+        return inferScalesFromSizes(info);
+      }
     }
 
     if (info.hasInputTensor(resize11ScalesInIndex)) {

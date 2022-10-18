@@ -464,3 +464,75 @@ def test_resize_torch_trilinear(op_tester, data_shape, scales):
         return [o.numpy().astype(data.dtype)]
 
     op_tester.run(init_builder, reference, "infer")
+
+
+@pytest.mark.parametrize(
+    "scales_data, size_data",
+    [
+        ([], [2, 2, 2, 2]),
+        ([1.0, 1.0, 2.0, 3.0], []),
+    ],
+)
+def test_resize_with_both_scales_resize_param(op_tester, scales_data, size_data):
+    data = np.random.rand(1, 3, 2, 2).astype(np.float32)
+    roi = np.array([], dtype=np.float32)
+    scales = np.array(scales_data, dtype=np.float16)
+    sizes = np.array(size_data, dtype=np.int64)
+
+    def init_builder(builder):
+        input_tensor = builder.addInputTensor(data)
+        scales_tesor = builder.aiOnnxOpset11.constant(scales, False)
+        sizes_tensor = builder.aiOnnxOpset11.constant(sizes, False)
+        roi_tensor = builder.aiOnnxOpset11.constant(roi, False)
+        out_tensor = builder.aiOnnxOpset11.resize(
+            [input_tensor, roi_tensor, scales_tesor, sizes_tensor]
+        )
+        builder.addOutputTensor(out_tensor)
+        return [out_tensor]
+
+    def reference(_):  # ref_data is an unused argument
+        # Convert sizes to scales.
+        if scales_data == []:
+            for di, do in zip(data.shape, sizes):
+                scales_data.append(do / di)
+
+        o = onnx_resize.interpolate_nd(
+            data, onnx_resize.nearest_coeffs, scale_factors=scales_data
+        )
+        # Check the output shape is correct.
+        return [o.astype(data.dtype)]
+
+    op_tester.run(init_builder, reference, "infer")
+
+
+def test_resize_error_case(op_tester):
+    data = np.random.rand(4, 6).astype(np.float32)
+    roi = np.array([], dtype=np.float32)
+    scales = np.array([1.0, 2.0], dtype=np.float16)
+    sizes = np.array([1, 2], dtype=np.int64)
+
+    def init_builder(builder):
+        input_tensor = builder.addInputTensor(data)
+        scales_tesor = builder.aiOnnxOpset11.constant(scales, False)
+        sizes_tenosr = builder.aiOnnxOpset11.constant(sizes, False)
+        roi_tensor = builder.aiOnnxOpset11.constant(roi, False)
+        out_tensor = builder.aiOnnxOpset11.resize(
+            [input_tensor, roi_tensor, scales_tesor, sizes_tenosr]
+        )
+        builder.addOutputTensor(out_tensor)
+        return [out_tensor]
+
+    def reference(_):  # ref_data is an unused argument
+        # Convert sizes to scales.
+        return []
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(init_builder, reference, "infer")
+    assert (
+        e_info.value.args[0] == "Resize op has inputs for `sizes` and `scales`. "
+        "Only one of these tensors should be present. If `sizes` is needed, "
+        "please pass an empty string as the name of `scales` in the "
+        "input list ( resize([X, roi, '', sizes]) ). If the proto is not "
+        "generated from the PopART Builder, please confirm that only one "
+        "of the two tensors shall have data."
+    )
