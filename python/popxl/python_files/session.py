@@ -20,6 +20,7 @@ from popxl.utils import (
     to_numpy,
 )
 from popxl.tensor import Tensor
+from popxl.dtypes import float8_143, float8_152
 
 d2hStreamBufferMaps = Mapping[DeviceToHostStream, np.ndarray]
 h2dStreamBufferMaps = Mapping[HostToDeviceStream, HostScalarTensor]
@@ -158,9 +159,14 @@ class Session:
         inputs = inputs or {}
         outputs = outputs or {}
 
-        inputs_np: Dict[Tensor, np.ndarray] = {
-            h2d: to_numpy(arr, downcast=downcast_inputs) for h2d, arr in inputs.items()
-        }
+        inputs_np: Dict[Tensor, np.ndarray] = {}
+        for h2d, arr in inputs.items():
+            np_arr = to_numpy(arr, downcast=downcast_inputs)
+            # StepIO doesn't know about the float8 structured dtypes,
+            # so we create any FP8 inputs as uint8 view of the same data.
+            if h2d.dtype == float8_143 or h2d.dtype == float8_152:
+                np_arr = np_arr.view(np.uint8)
+            inputs_np[h2d] = np_arr
 
         self._validate_run_inputs(inputs_np)
         self._validate_run_outputs(outputs)

@@ -6,7 +6,12 @@ import torch
 
 import popxl
 from popxl.testing import get_all_dtypes, get_all_int_dtypes
-from popxl.dtypes import _PT_TO_POPXL, _NP_TO_POPXL
+from popxl.dtypes import (
+    _PT_TO_POPXL,
+    _NP_TO_POPXL,
+    np_dtype_float8_143,
+    np_dtype_float8_152,
+)
 
 
 class Testdtype:
@@ -44,7 +49,7 @@ class Testdtype:
 
     def test_conversion_numpy(self):
         # Numpy does not currently support FP8 formats
-        popxl_fp8_dtypes = {popxl.float8_143, popxl.float8_152}
+        popxl_fp8_dtypes = [popxl.float8_143, popxl.float8_152]
         popxl_dtypes = filter(lambda t: t not in popxl_fp8_dtypes, get_all_dtypes())
         np_dtypes = [eval(f"np.{popxl_dtype.name}") for popxl_dtype in popxl_dtypes]
 
@@ -54,9 +59,9 @@ class Testdtype:
             assert popxl_dtype == popxl.dtype.as_dtype(np_dtype)
             assert popxl_dtype.as_numpy() == np_dtype
 
-        np_uint8 = np.dtype("uint8")
-        for popxl_fp8_type in popxl_fp8_dtypes:
-            assert popxl_fp8_type.as_numpy() == np_uint8
+        np_fp8_dtypes = [np_dtype_float8_143, np_dtype_float8_152]
+        for popxl_fp8_type, np_fp8_dtype in zip(popxl_fp8_dtypes, np_fp8_dtypes):
+            assert popxl_fp8_type.as_numpy() == np_fp8_dtype
 
         with pytest.raises(ValueError):
             popxl.dtype.as_dtype(np.str)

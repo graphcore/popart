@@ -1,16 +1,15 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 import sys
 import time
-from typing import Union, Optional, TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Optional, Sequence, Union
 
 import numpy as np
 import popart
+import popart._internal.ir as _ir
+from popxl import float8_143, float8_152, float32, float64
 from typing_extensions import Literal
 
-from popxl import float8_143, float8_152, float32, float64
-
-import popart._internal.ir as _ir
-
+from popxl.dtypes import np_dtype_float8_143, np_dtype_float8_152
 
 try:
     import torch
@@ -20,7 +19,7 @@ except ModuleNotFoundError:
     torch_imported = False
 
 if TYPE_CHECKING:
-    from popxl.tensor import Constant, Variable, dtypes, HostScalarTensor
+    from popxl.tensor import Constant, HostScalarTensor, Variable, dtypes
 
 HW_DEVICE_CONNECTION_TIMEOUT = int(1e4)
 
@@ -29,11 +28,6 @@ downcast_np_dtypes = {
     np.dtype("uint64"): np.dtype("uint32"),
     np.dtype("float64"): np.dtype("float32"),
 }
-
-# Structured dtype definitions, see
-# https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype
-np_dtype_float8_143 = np.dtype([("float8_143", "u1")])
-np_dtype_float8_152 = np.dtype([("float8_152", "u1")])
 
 
 def _convert_popxl_float8_dtype_to_popart(np_dtype):
@@ -112,10 +106,15 @@ def to_numpy(
         if x.dtype != _convert_popxl_float8_dtype_to_numpy(dtype):
             x = host_pow2scale_then_cast(x, dtype, log2_scale, nan_on_overflow)
 
+        if copy:
+            x = x.copy()
+
     else:
 
         if dtype:
             np_dtype = dtype.as_numpy()
+        elif isinstance(x, np.ndarray):
+            np_dtype = x.dtype
         else:
             np_dtype = np.obj2sctype(x)
 

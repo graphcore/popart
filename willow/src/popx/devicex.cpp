@@ -110,7 +110,14 @@ void Devicex::InputDatastream::read(void *ptr) {
     // match the shape of the data.info. In fact that is a bit wrong now.
 
     // check the type
-    if (srcInfo.dataType() == dstInfo.dataType()) {
+
+    // Because FP8 does not exist on host, check if we are reading UINT8
+    // that the user wants to be interpreted as popart FLOAT8_*
+    bool readingFP8 = dstInfo.dataType() == DataType::FLOAT8_143 ||
+                      dstInfo.dataType() == DataType::FLOAT8_152;
+
+    if (srcInfo.dataType() == dstInfo.dataType() ||
+        (readingFP8 && srcInfo.dataType() == DataType::UINT8)) {
       memcpy(dstAddr, srcAddr, tensor->info.nbytes());
     } else if (srcInfo.dataType() == DataType::INT64 &&
                dstInfo.dataType() == DataType::INT32) {

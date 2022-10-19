@@ -22,30 +22,30 @@ from popxl.dtypes import _NP_TO_POPXL, _PT_TO_POPXL
     [np.arange(4, dtype='float64'), None, False, np.dtype('float64')], # No downcast
     [np.arange(4, dtype='float64'), popxl.float32, False, np.dtype('float32')], # Manual downcast
     [np.arange(4, dtype='float32'), popxl.float64, True, np.dtype('float64')], # Manual upcast
-    [np.arange(4, dtype='float32'), popxl.float8_143, False, popxl.utils.np_dtype_float8_143], # Float8 cast
-    [np.arange(4, dtype='float64'), popxl.float8_152, False, popxl.utils.np_dtype_float8_152], # Float8 cast
+    [np.arange(4, dtype='float32'), popxl.float8_143, False, popxl.dtypes.np_dtype_float8_143], # Float8 cast
+    [np.arange(4, dtype='float64'), popxl.float8_152, False, popxl.dtypes.np_dtype_float8_152], # Float8 cast
     # Torch input
     [torch.arange(4, dtype=torch.float32), None, True, np.dtype('float32')], # No downcast needed
     [torch.arange(4, dtype=torch.float64), None, True, np.dtype('float32')], # Auto downcast float
     [torch.arange(4, dtype=torch.float64), None, False, np.dtype('float64')], # No downcast
     [torch.arange(4, dtype=torch.float64), popxl.float32, False, np.dtype('float32')], # Manual downcast
     [torch.arange(4, dtype=torch.float32), popxl.float64, True, np.dtype('float64')], # Manual upcast
-    [torch.arange(4, dtype=torch.float32), popxl.float8_143, False, popxl.utils.np_dtype_float8_143], # Float8 cast
-    [torch.arange(4, dtype=torch.float64), popxl.float8_152, False, popxl.utils.np_dtype_float8_152], # Float8 cast
+    [torch.arange(4, dtype=torch.float32), popxl.float8_143, False, popxl.dtypes.np_dtype_float8_143], # Float8 cast
+    [torch.arange(4, dtype=torch.float64), popxl.float8_152, False, popxl.dtypes.np_dtype_float8_152], # Float8 cast
     # List input
     [[0.0, 1.0, 2.0, 3.0], None, True, np.dtype('float32')], # Auto downcast float
     [[0, 1, 2, 3], None, True, np.dtype('int32')], # Auto downcast int
     [[0.0, 1.0, 2.0, 3.0], popxl.float32, False, np.dtype('float32')], # ?
-    [[0.0, 1.0, 2.0, 3.0], popxl.float8_143, False, popxl.utils.np_dtype_float8_143], # Float8 cast
-    [[0.0, 1.0, 2.0, 3.0], popxl.float8_152, False, popxl.utils.np_dtype_float8_152], # Float8 cast
+    [[0.0, 1.0, 2.0, 3.0], popxl.float8_143, False, popxl.dtypes.np_dtype_float8_143], # Float8 cast
+    [[0.0, 1.0, 2.0, 3.0], popxl.float8_152, False, popxl.dtypes.np_dtype_float8_152], # Float8 cast
     # Scalar input
     [0.0, None, True, np.dtype('float32')], # Auto downcast float
     [0, None, True, np.dtype('int32')], # Auto downcast int
     [False, None, True, np.dtype('bool')], # Bool input
-    [0.1, popxl.float8_143, False, popxl.utils.np_dtype_float8_143], # Float8 cast
-    [0.2, popxl.float8_152, False, popxl.utils.np_dtype_float8_152], # Float8 cast
+    [0.1, popxl.float8_143, False, popxl.dtypes.np_dtype_float8_143], # Float8 cast
+    [0.2, popxl.float8_152, False, popxl.dtypes.np_dtype_float8_152], # Float8 cast
     # Already converted float8 input.
-    [host_pow2scale_then_cast(np.arange(4, dtype='float32'), popxl.float8_143), popxl.float8_143, False, popxl.utils.np_dtype_float8_143], # Float8 cast
+    [host_pow2scale_then_cast(np.arange(4, dtype='float32'), popxl.float8_143), popxl.float8_143, False, popxl.dtypes.np_dtype_float8_143], # Float8 cast
 ])
 def test_to_numpy(x, dtype, downcast, exp_type):
     """ Test to_numpy output types are correct. """
@@ -84,36 +84,36 @@ def test_to_numpy(x, dtype, downcast, exp_type):
     # src                        , dtype           ,l2s, nanoo, exp_vals
     # ===                        , =====           ,===, =====, ========
     # Test log2_scale for float8_143 + float32.
-    [np.array([0.75], np.float32), popxl.float8_143,  0, False, np.array([0b00111100], popxl.utils.np_dtype_float8_143)],
-    [np.array([0.75], np.float32), popxl.float8_143, -2, False, np.array([0b00101100], popxl.utils.np_dtype_float8_143)],
-    [np.array([0.75], np.float32), popxl.float8_143,  1, False, np.array([0b01000100], popxl.utils.np_dtype_float8_143)],
+    [np.array([0.75], np.float32), popxl.float8_143,  0, False, np.array([0b00111100], popxl.dtypes.np_dtype_float8_143)],
+    [np.array([0.75], np.float32), popxl.float8_143, -2, False, np.array([0b00101100], popxl.dtypes.np_dtype_float8_143)],
+    [np.array([0.75], np.float32), popxl.float8_143,  1, False, np.array([0b01000100], popxl.dtypes.np_dtype_float8_143)],
     # Test log2_scale for float8_152 + float32.
-    [np.array([0.25], np.float32), popxl.float8_152,  0, False, np.array([0b00111000], popxl.utils.np_dtype_float8_152)],
-    [np.array([0.25], np.float32), popxl.float8_152, -3, False, np.array([0b00101100], popxl.utils.np_dtype_float8_152)],
+    [np.array([0.25], np.float32), popxl.float8_152,  0, False, np.array([0b00111000], popxl.dtypes.np_dtype_float8_152)],
+    [np.array([0.25], np.float32), popxl.float8_152, -3, False, np.array([0b00101100], popxl.dtypes.np_dtype_float8_152)],
     # Test log2_scale for float8_143 + float64.
-    [np.array([0.75], np.float64), popxl.float8_143,  0, False, np.array([0b00111100], popxl.utils.np_dtype_float8_143)],
-    [np.array([0.75], np.float64), popxl.float8_143, -2, False, np.array([0b00101100], popxl.utils.np_dtype_float8_143)],
+    [np.array([0.75], np.float64), popxl.float8_143,  0, False, np.array([0b00111100], popxl.dtypes.np_dtype_float8_143)],
+    [np.array([0.75], np.float64), popxl.float8_143, -2, False, np.array([0b00101100], popxl.dtypes.np_dtype_float8_143)],
     # Test log2_scale for float8_152 + float64.
-    [np.array([0.75], np.float64), popxl.float8_143,  1, False, np.array([0b01000100], popxl.utils.np_dtype_float8_143)],
-    [np.array([0.25], np.float64), popxl.float8_152,  0, False, np.array([0b00111000], popxl.utils.np_dtype_float8_152)],
-    [np.array([0.25], np.float64), popxl.float8_152, -3, False, np.array([0b00101100], popxl.utils.np_dtype_float8_152)],
+    [np.array([0.75], np.float64), popxl.float8_143,  1, False, np.array([0b01000100], popxl.dtypes.np_dtype_float8_143)],
+    [np.array([0.25], np.float64), popxl.float8_152,  0, False, np.array([0b00111000], popxl.dtypes.np_dtype_float8_152)],
+    [np.array([0.25], np.float64), popxl.float8_152, -3, False, np.array([0b00101100], popxl.dtypes.np_dtype_float8_152)],
     # Test nan_on_overflow for float8_143 + float32.
-    [np.array([250.], np.float32), popxl.float8_143,  0, False, np.array([0b01111111], popxl.utils.np_dtype_float8_143)],
-    [np.array([250.], np.float32), popxl.float8_143,  0, True,  np.array([0b10000000], popxl.utils.np_dtype_float8_143)],
+    [np.array([250.], np.float32), popxl.float8_143,  0, False, np.array([0b01111111], popxl.dtypes.np_dtype_float8_143)],
+    [np.array([250.], np.float32), popxl.float8_143,  0, True,  np.array([0b10000000], popxl.dtypes.np_dtype_float8_143)],
     # Test nan_on_overflow for float8_152 + float32.
-    [np.array([70000.], np.float32), popxl.float8_152,  0, False, np.array([0b01111111], popxl.utils.np_dtype_float8_152)],
-    [np.array([70000.], np.float32), popxl.float8_152,  0, True,  np.array([0b10000000], popxl.utils.np_dtype_float8_152)],
+    [np.array([70000.], np.float32), popxl.float8_152,  0, False, np.array([0b01111111], popxl.dtypes.np_dtype_float8_152)],
+    [np.array([70000.], np.float32), popxl.float8_152,  0, True,  np.array([0b10000000], popxl.dtypes.np_dtype_float8_152)],
     # Test nan_on_overflow for float8_143 + float64.
-    [np.array([250.], np.float64), popxl.float8_143,  0, False, np.array([0b01111111], popxl.utils.np_dtype_float8_143)],
-    [np.array([250.], np.float64), popxl.float8_143,  0, True,  np.array([0b10000000], popxl.utils.np_dtype_float8_143)],
+    [np.array([250.], np.float64), popxl.float8_143,  0, False, np.array([0b01111111], popxl.dtypes.np_dtype_float8_143)],
+    [np.array([250.], np.float64), popxl.float8_143,  0, True,  np.array([0b10000000], popxl.dtypes.np_dtype_float8_143)],
     # Test nan_on_overflow for float8_152 + float64.
-    [np.array([70000.], np.float64), popxl.float8_152,  0, False, np.array([0b01111111], popxl.utils.np_dtype_float8_152)],
-    [np.array([70000.], np.float64), popxl.float8_152,  0, True,  np.array([0b10000000], popxl.utils.np_dtype_float8_152)],
+    [np.array([70000.], np.float64), popxl.float8_152,  0, False, np.array([0b01111111], popxl.dtypes.np_dtype_float8_152)],
+    [np.array([70000.], np.float64), popxl.float8_152,  0, True,  np.array([0b10000000], popxl.dtypes.np_dtype_float8_152)],
     # Test it works with torch inputs.
-    [torch.tensor([0.75], dtype=torch.float32), popxl.float8_143,  0, False, np.array([0b00111100], popxl.utils.np_dtype_float8_143)],
+    [torch.tensor([0.75], dtype=torch.float32), popxl.float8_143,  0, False, np.array([0b00111100], popxl.dtypes.np_dtype_float8_143)],
     # Test it works with multiple elements and a funky shape.
     # pylint: disable=too-many-function-args
-    [np.array([0.75,0.1875,1.5], np.float32).reshape((1,3,1)), popxl.float8_143,  0, False, np.array([0b00111100, 0b00101100, 0b01000100], popxl.utils.np_dtype_float8_143).reshape(1,3,1)],
+    [np.array([0.75,0.1875,1.5], np.float32).reshape((1,3,1)), popxl.float8_143,  0, False, np.array([0b00111100, 0b00101100, 0b01000100], popxl.dtypes.np_dtype_float8_143).reshape(1,3,1)],
     # pylint: enable=too-many-function-args
 ])
 def test_host_pow2scale_then_cast(src, dtype, log2_scale, nan_on_overflow, exp_vals):
@@ -154,17 +154,13 @@ def test_to_numpy_copy(src, dtype, copy):
         t = torch.ones((2, 2), dtype=dtype)
     elif src == "np":
         t = np.ones((2, 2), dtype=dtype)
-    else:
-        v = dtype(1)
-        t = [[v, v], [v, v]]
 
     result = to_numpy(t, copy=copy)
     if src == "pt":
         t_np = t.detach().numpy()
     elif src == "np":
         t_np = t
-    else:
-        t_np = np.asarray(t)
+
     should_alias = not copy and not (t_np.dtype in downcast_np_dtypes.keys())
     assert np.shares_memory(t_np, result) == should_alias
 

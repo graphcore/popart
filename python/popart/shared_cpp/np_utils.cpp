@@ -18,17 +18,19 @@ std::map<std::string, DataType> initNpTypeMap() {
   std::map<std::string, DataType> M;
   // see tensorinfo.hpp for the complete list of
   // DataTypes (defined originally in ONNX)
-  M["float16"] = DataType::FLOAT16;
-  M["float32"] = DataType::FLOAT;
-  M["uint8"]   = DataType::UINT8;
-  M["uint16"]  = DataType::UINT16;
-  M["uint32"]  = DataType::UINT32;
-  M["uint64"]  = DataType::UINT64;
-  M["int8"]    = DataType::INT8;
-  M["int16"]   = DataType::INT16;
-  M["int32"]   = DataType::INT32;
-  M["int64"]   = DataType::INT64;
-  M["bool"]    = DataType::BOOL;
+  M["float16"]                = DataType::FLOAT16;
+  M["float32"]                = DataType::FLOAT;
+  M["uint8"]                  = DataType::UINT8;
+  M["[('float8_143', 'u1')]"] = DataType::FLOAT8_143;
+  M["[('float8_152', 'u1')]"] = DataType::FLOAT8_152;
+  M["uint16"]                 = DataType::UINT16;
+  M["uint32"]                 = DataType::UINT32;
+  M["uint64"]                 = DataType::UINT64;
+  M["int8"]                   = DataType::INT8;
+  M["int16"]                  = DataType::INT16;
+  M["int32"]                  = DataType::INT32;
+  M["int64"]                  = DataType::INT64;
+  M["bool"]                   = DataType::BOOL;
   return M;
 }
 

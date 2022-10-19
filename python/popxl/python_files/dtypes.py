@@ -305,6 +305,11 @@ class dtype:
         return self
 
 
+# Structured dtype definitions, see
+# https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype
+np_dtype_float8_143 = np.dtype([("float8_143", "u1")])
+np_dtype_float8_152 = np.dtype([("float8_152", "u1")])
+
 # fmt: off
 # Fixed point types
 # Args: name, is_complex, is_int, is_floating_point, is_signed, np_type, pt_type, py_type, pb_type
@@ -319,8 +324,8 @@ uint32 = dtype._factory('uint32', False, True, False, False, 'uint32', None, Non
 uint64 = dtype._factory('uint64', False, True, False, False, 'uint64', None, None, _ir.DataType.UINT64)
 
 # Floating point types
-float8_143 = dtype._factory('float8_143', False, False, True, True, 'uint8', 'uint8', None, _ir.DataType.FLOAT8_143)
-float8_152 = dtype._factory('float8_152', False, False, True, True, 'uint8', 'uint8', None, _ir.DataType.FLOAT8_152)
+float8_143 = dtype._factory('float8_143', False, False, True, True, np_dtype_float8_143, None, None, _ir.DataType.FLOAT8_143)
+float8_152 = dtype._factory('float8_152', False, False, True, True, np_dtype_float8_152, None, None, _ir.DataType.FLOAT8_152)
 float16 = dtype._factory('float16', False, False, True, True, 'float16', 'float16', None, _ir.DataType.FLOAT16)
 float32 = dtype._factory('float32', False, False, True, True, 'float32', 'float32', builtins.float, _ir.DataType.FLOAT)
 float64 = dtype._factory('float64', False, False, True, True, 'float64', 'float64', None, _ir.DataType.DOUBLE)
@@ -337,11 +342,3 @@ double = float64
 
 # Delete the `dtype` factory from the `dtype` class.
 del dtype._factory
-
-# Cover the edge cases of FP8 not having equivalent numpy/pytorch dtypes.
-# The dynamic creation of the to-popXL dicts will overwrite numpy and
-# pytorch uint8 mappings, so we reset here
-_NP_TO_POPXL[np.dtype("uint8")] = uint8
-
-if torch is not None:
-    _PT_TO_POPXL[torch.uint8] = uint8
