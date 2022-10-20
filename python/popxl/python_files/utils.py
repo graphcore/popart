@@ -63,8 +63,8 @@ def to_numpy(
     dtype: Optional["dtypes.dtype"] = None,
     downcast: bool = True,
     copy: bool = True,
-    log2_scale: int = 0,
-    nan_on_overflow: bool = True,
+    log2_scale: int = None,
+    nan_on_overflow: bool = None,
 ) -> np.ndarray:
     """
     Convert a `HostScalarTensor` to a numpy array and copies the data if enabled.
@@ -90,13 +90,28 @@ def to_numpy(
         nan_on_overflow:
             If dtype is either popxl.float8_143 or popxl.float8_152 and this
             flag is set then replace values that cannot be represented by the
-            requested dtype with 'not-a-number' values.
+            requested dtype with np.nan values.
+
+    Raises:
+        RuntimeError: If parameters are not supported.
+
+    Returns:
+        np.ndarray: A NumPy array.
     """
     if torch_imported and isinstance(x, torch.Tensor):
         x = x.detach().numpy()
 
     # Work out the target dtype.
     if dtype == float8_143 or dtype == float8_152:
+
+        # If unset, don't scale.
+        if log2_scale is None:
+            log2_scale = 0
+
+        # If unset, use nans.
+        if nan_on_overflow is None:
+            nan_on_overflow = True
+
         # Convert scalars to numpy array.
         x = np.asarray(x, order="C")
 
@@ -110,6 +125,24 @@ def to_numpy(
             x = x.copy()
 
     else:
+
+        # Throw if log2_scale is used but we ignore it.
+        if log2_scale is not None:
+            raise RuntimeError(
+                "Non-default value for 'log2scale' is not supported for dtypes "
+                " that are not popxl.float8_143 or popxl.float8_152"
+            )
+
+        # Throw if log2_scale is used but we ignore it.
+        if nan_on_overflow is not None:
+            raise RuntimeError(
+                "Non-default value for 'nan_on_overflow' is not supported for "
+                " dtypes that are not popxl.float8_143 or popxl.float8_152"
+            )
+
+        # If unset, use nans.
+        if nan_on_overflow is not None:
+            nan_on_overflow = True
 
         if dtype:
             np_dtype = dtype.as_numpy()
@@ -162,7 +195,7 @@ def host_pow2scale_then_cast(
             currently supported.
         nan_on_overflow:
             If set, replace values that cannot be represented by the requested
-            dtype with 'not-a-number' values.
+            dtype with np.nan values.
 
     Raises:
         RuntimeError: If parameters are not supported.
@@ -176,6 +209,9 @@ def host_pow2scale_then_cast(
     """
     if torch_imported and isinstance(src, torch.Tensor):
         src = src.detach().numpy()
+
+    if not isinstance(src, np.ndarray):
+        src = np.asarray(src, order="C")
 
     if src.dtype != np.float32 and src.dtype != np.float64:
         raise RuntimeError(f"src.dtype {src.dtype} not currently supported.")

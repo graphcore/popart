@@ -6,6 +6,7 @@ from typing import Any, Mapping
 import numpy as np
 import popart._internal.ir as _ir
 
+
 try:
     import torch
 except ModuleNotFoundError:

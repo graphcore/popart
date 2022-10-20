@@ -19,6 +19,7 @@ from popxl.utils import (
     _popxl_to_numpy,
     to_numpy,
 )
+
 from popxl.tensor import Tensor
 from popxl.dtypes import float8_143, float8_152
 
@@ -389,7 +390,7 @@ class Session:
             ValueError: If the input array shape does not match that of the associated
                 tensor.
 
-            NotImplementedError: If the retreval mode of the variable is "all_replicas.
+            NotImplementedError: If the retrieval mode of the variable is "all_replicas.
                 This is currently not supported.
 
         Args:
@@ -407,6 +408,12 @@ class Session:
                 )
 
             if isinstance(data, numbers.Number):
+                if tensor.dtype in [float8_143, float8_152]:
+                    raise TypeError(
+                        f"Data for variable {tensor.id} must be passed in as an"
+                        f" np.array with dtype {tensor.dtype.as_numpy()} (see"
+                        f" popxl.utils.host_pow2scale_then_cast)"
+                    )
                 data = np.array(data).astype(tensor.dtype.as_numpy())
             if data.dtype != tensor.dtype.as_numpy():
                 raise TypeError(

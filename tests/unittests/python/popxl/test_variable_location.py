@@ -131,7 +131,7 @@ def test_replia_sharded_variable_gather():
 
 
 @tu.requires_ipu_model
-def test_remote_replia_sharded_reuse_buffer():
+def test_remote_replica_sharded_reuse_buffer():
     ir = popxl.Ir()
     ir.replication_factor = 2
     ir.num_host_transfers = 1

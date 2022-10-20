@@ -43,6 +43,7 @@ add_popart_py_unit_test(test_session_remote_buffers VARIANTS Hw LABELS multicard
 add_popart_py_unit_test(test_replica_grouping VARIANTS IpuModel2)
 add_popart_py_unit_test(test_replica_sharding VARIANTS Hw LABELS multicard)
 add_popart_py_unit_test(test_print_tensor VARIANTS IpuModel2)
+add_popart_py_unit_test(test_float8_variables VARIANTS IpuModel2)
 # Cannot run on CI as needs to dynamically create/destroy various types of
 # partitions.
 add_popart_py_unit_test(test_multi_instance_vs_rts

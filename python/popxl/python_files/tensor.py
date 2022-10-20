@@ -801,6 +801,8 @@ def variable(
     downcast: bool = True,
     replica_grouping: Optional[ReplicaGrouping] = None,
     retrieval_mode: Optional[Literal["one_per_group", "all_replicas"]] = None,
+    log2_scale: int = None,
+    nan_on_overflow: bool = None,
 ) -> Variable:
     """
     Create a variable tensor that is initialised with data during graph creation.
@@ -818,15 +820,17 @@ def variable(
             a = popxl.variable(0)
 
     Args:
-        data (HostScalarTensor):
+        data:
             The data used to initialise the tensor.
             This can be an np.ndarray, or a value NumPy can use to construct an np.ndarray.
-        dtype (Optional[dtype]):
-            The data type of the tensor to be created. If not specified NumPy will infer the data
-            type and downcast to 32 bits if necessary.
-        name (Optional[str]):
+        dtype:
+            The data type of the tensor to be created. If not specified NumPy
+            will infer the data type and downcast to 32 bits if necessary. For
+            float8 dtypes automatic inference of dtype is not currently
+            possible, please explicitly specify the dtype.
+        name:
             The name of the tensor. Defaults to `None`.
-        downcast (bool):
+        downcast:
             If True and no dtype is provided, 64-bit float/ints will be downcast to 32-bit variants. Defaults to True.
         replica_grouping:
             The grouping of replicas to use when getting and setting variable
@@ -836,13 +840,20 @@ def variable(
             with a shared value and by default, when retrieving values from
             replicas, only one value is returned per group. By default all
             replicas are in one group.
-        retrieval_mode (Optional[Literal["one_per_group", "all_replicas"]]):
+        retrieval_mode:
             One of:
 
             - "one_per_group": Return only the first replica's variable per group.
             - "all_replicas": Return all replica's variables in every group.
 
             Defaults to None.
+        log2_scale:
+            If dtype is either popxl.float8_143 or popxl.float8_152 then
+            multiply the incoming data by pow2(log2_scale) before casting.
+        nan_on_overflow:
+            If dtype is either popxl.float8_143 or popxl.float8_152 and this
+            flag is set then replace values that cannot be represented by the
+            requested dtype with np.nan values.
 
     Raises:
         RuntimeError: If a non-default replica group is used
@@ -864,7 +875,14 @@ def variable(
         )
 
     # `addVarInit` will copy the data so it's not required here
-    np_data = to_numpy(data, dtype, downcast, copy=False)
+    np_data = to_numpy(
+        data,
+        dtype,
+        downcast,
+        copy=False,
+        log2_scale=log2_scale,
+        nan_on_overflow=nan_on_overflow,
+    )
     popxl_dt = dtypes.dtype.as_dtype(np_data)
 
     info = _ir.TensorInfo(popxl_dt._pb_dtype, np_data.shape)
@@ -890,25 +908,29 @@ def remote_variable(
     retrieval_mode: Optional[
         Literal["one_per_group", "all_replicas"]
     ] = "one_per_group",
+    log2_scale: int = None,
+    nan_on_overflow: bool = None,
 ) -> Variable:
     """Create a variable Tensor that is stored in remote memory.
 
     Args:
-        data (HostScalarTensor):
+        data:
             The data used to initialise the tensor.
             This can be an np.ndarray, or a value numpy can use to construct an np.ndarray.
-        remote_buffer (RemoteBuffer):
+        remote_buffer:
             The remote buffer to store the variable.
-        offset (int):
+        offset:
             The offset into the entries of the remote buffer to store the variable. Defaults to 0
-        dtype (Optional[dtype]):
-            The data type of the tensor to be created, if not specified Numpy will infer the data
-            type and be downcasted to 32 bits if necessary.
-        name (Optional[str]):
+        dtype:
+            The data type of the tensor to be created, if not specified Numpy
+            will infer the data type and be downcasted to 32 bits if necessary.
+            For float8 dtypes automatic inference of dtype is not currently
+            possible, please explicitly specify the dtype.
+        name:
             The name of the tensor. Defaults to `None`.
-        downcast (bool):
+        downcast:
             If no dtype is provided 64 bit float/ints will be downcasted to 32 bit variants. Default to True.
-        replica_grouping (Optional[ReplicaGrouping]):
+        replica_grouping:
             The grouping of replicas to use when getting and setting variable
             values. Generally it makes sense to group replicas together that
             are guaranteed to agree on value based on the collective operations
@@ -916,7 +938,7 @@ def remote_variable(
             with a shared value and by default, when retrieving values from
             replicas, only one value is returned per group. By default all
             replicas are in one group.
-        retrieval_mode (Optional[Literal["one_per_group", "all_replicas"]]):
+        retrieval_mode:
             One of:
 
             - "one_per_group": Return only the first replica's variable per group, this is the
@@ -924,6 +946,13 @@ def remote_variable(
             - "all_replicas": Return all replica's variables in every group.
 
             Defaults to "one_per_group".
+        log2_scale:
+            If dtype is either popxl.float8_143 or popxl.float8_152 then
+            multiply the incoming data by pow2(log2_scale) before casting.
+        nan_on_overflow:
+            If dtype is either popxl.float8_143 or popxl.float8_152 and this
+            flag is set then replace values that cannot be represented by the
+            requested dtype with np.nan values.
 
     Raises:
         RuntimeError: If a non-default replica group is used.
@@ -933,7 +962,16 @@ def remote_variable(
         Variable: The remote variable.
     """
 
-    var = variable(data, dtype, name, downcast, replica_grouping, retrieval_mode)
+    var = variable(
+        data,
+        dtype,
+        name,
+        downcast,
+        replica_grouping,
+        retrieval_mode,
+        log2_scale=log2_scale,
+        nan_on_overflow=nan_on_overflow,
+    )
 
     var._pb_tensor.setTensorLocationInfo(
         _ir.TensorLocation(_ir.TensorStorage.OffChip, _ir.ReplicatedTensorSharding.Off),
@@ -954,6 +992,8 @@ def remote_replica_sharded_variable(
     retrieval_mode: Optional[
         Literal["one_per_group", "all_replicas"]
     ] = "one_per_group",
+    log2_scale: int = None,
+    nan_on_overflow: bool = None,
 ) -> Variable:
     """Create a variable Tensor that is stored in remote memory.
        The variable is scattered in equal shards across replicas (replicated tensor sharding (RTS)
@@ -968,19 +1008,19 @@ def remote_replica_sharded_variable(
        ReduceScatter operation.
 
     Args:
-        data (HostScalarTensor):
+        data:
             The data used to initialise the tensor.
             This can be an np.ndarray, or a value numpy can use to construct an np.ndarray.
         remote_buffer (RemoteBuffer): The handle to the remote buffer.
         offset (int): The offset to index the tensor shard in the remote tensor.
-        dtype (Optional[dtype]):
+        dtype:
             The data type of the tensor to be created, if not specified Numpy will infer the data
             type and be downcasted to 32 bits if necessary.
-        name (Optional[str]):
+        name:
             The name of the tensor. Defaults to `None`.
-        downcast (bool):
+        downcast:
             If no dtype is provided 64 bit float/ints will be downcasted to 32 bit variants. Default to True.
-        replica_grouping (Optional[ReplicaGrouping]):
+        replica_grouping:
             The grouping of replicas to use when getting and setting variable
             values. Generally it makes sense to group replicas together that
             are guaranteed to agree on value based on the collective operations
@@ -988,7 +1028,7 @@ def remote_replica_sharded_variable(
             with a shared value and by default, when retrieving values from
             replicas, only one value is returned per group. By default all
             replicas are in one group.
-        retrieval_mode (Optional[Literal["one_per_group", "all_replicas"]]):
+        retrieval_mode:
             One of:
 
             - "one_per_group": Return only the first replica's variable per group, this is the
@@ -996,6 +1036,13 @@ def remote_replica_sharded_variable(
             - "all_replicas": Return all replica's variables in every group.
 
             Defaults to "one_per_group".
+        log2_scale:
+            If dtype is either popxl.float8_143 or popxl.float8_152 then
+            multiply the incoming data by pow2(log2_scale) before casting.
+        nan_on_overflow:
+            If dtype is either popxl.float8_143 or popxl.float8_152 and this
+            flag is set then replace values that cannot be represented by the
+            requested dtype with np.nan values.
 
     Raises:
         RuntimeError: If a non-default replica group is used.
@@ -1015,9 +1062,14 @@ def remote_replica_sharded_variable(
         )
 
     # Set the meta_shape for the RemoteBuffer, this will be required later in ops.remote_load
-    np_dtype = dtype.as_numpy() if dtype is not None else None
-    np_data: np.ndarray = np.array(data, dtype=np_dtype)
-
+    np_data: np.ndarray = to_numpy(
+        data,
+        dtype,
+        downcast,
+        copy=False,
+        log2_scale=log2_scale,
+        nan_on_overflow=nan_on_overflow,
+    )
     if replica_grouping and replica_grouping.num_groups > 1:
         required_shape = np_data.shape[1:]
     else:
@@ -1031,7 +1083,7 @@ def remote_replica_sharded_variable(
         )
 
     var = remote_variable(
-        data,
+        np_data,
         remote_buffer,
         offset,
         dtype,
@@ -1158,6 +1210,8 @@ def replica_sharded_variable(
     retrieval_mode: Optional[
         Literal["one_per_group", "all_replicas"]
     ] = "one_per_group",
+    log2_scale: int = None,
+    nan_on_overflow: bool = None,
 ) -> Tuple[Variable, Tensor]:
     """
     Scatter a tensor in equal shards across replicas (data parallelism) of the same model/graph.
@@ -1166,17 +1220,19 @@ def replica_sharded_variable(
     present on each IPU. Does not store the full tensor in remote memory.
 
     Args:
-        data (HostScalarTensor):
+        data:
             The data used to initialise the tensor.
             This can be an np.ndarray, or a value numpy can use to construct an np.ndarray.
-        dtype (Optional[dtype]):
-            The data type of the tensor to be created, if not specified Numpy will infer the data
-            type and be downcasted to 32 bits if necessary.
-        name (Optional[str]):
+        dtype:
+            The data type of the tensor to be created, if not specified Numpy
+            will infer the data type and be downcasted to 32 bits if necessary.
+            For float8 dtypes automatic inference of dtype is not currently
+            possible, please explicitly specify the dtype.
+        name:
             The name of the tensor. Defaults to `None`.
-        downcast (bool):
+        downcast:
             If no dtype is provided 64 bit float/ints will be downcasted to 32 bit variants. Default to True.
-        replica_grouping (Optional[ReplicaGrouping]):
+        replica_grouping:
             The grouping of replicas to use when getting and setting variable
             values. Generally it makes sense to group replicas together that
             are guaranteed to agree on value based on the collective operations
@@ -1184,7 +1240,7 @@ def replica_sharded_variable(
             with a shared value and by default, when retrieving values from
             replicas, only one value is returned per group. By default all
             replicas are in one group.
-        shard_over (Optional[int], optional):
+        shard_over:
             The number of replicas in each replica group to shard over. Defaults
             to all replicas in the group. Note, when there are multiple
             instances, this group can span instances.
@@ -1203,6 +1259,13 @@ def replica_sharded_variable(
             - "all_replicas": Return all replica's variables in every group.
 
             Defaults to "one_per_group".
+        log2_scale:
+            If dtype is either popxl.float8_143 or popxl.float8_152 then
+            multiply the incoming data by pow2(log2_scale) before casting.
+        nan_on_overflow:
+            If dtype is either popxl.float8_143 or popxl.float8_152 and this
+            flag is set then replace values that cannot be represented by the
+            requested dtype with np.nan values.
 
     Returns:
         Tuple[Variable, Tensor]:
@@ -1213,6 +1276,15 @@ def replica_sharded_variable(
     """
 
     import popxl.ops as ops
+
+    data = to_numpy(
+        data,
+        dtype,
+        downcast,
+        copy=False,
+        log2_scale=log2_scale,
+        nan_on_overflow=nan_on_overflow,
+    )
 
     _dtype = dtype or dtypes.dtype.as_dtype(dtype)
     buffer = replica_sharded_buffer(data.shape, _dtype, replica_grouping, shard_over)

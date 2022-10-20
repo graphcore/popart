@@ -204,6 +204,8 @@ void bindTensor(py::module &m) {
            [](Tensor &self) { return getTensorData<uint32_t>(self); })
       .def("dataAsUInt16",
            [](Tensor &self) { return getTensorData<uint16_t>(self); })
+      .def("dataAsUInt8",
+           [](Tensor &self) { return getTensorData<uint8_t>(self); })
       .def("dataAsBool", [](Tensor &self) { return getTensorData<bool>(self); })
       .def(
           "writeTensorData",
