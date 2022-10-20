@@ -29,4 +29,5 @@ limited degree manipulate) PopART IRs.
     api/tensors
     api/tensor-locations
     api/transforms
+    api/utils
     api/available_ops
