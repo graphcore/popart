@@ -84,6 +84,7 @@ add_unit_test(unittest_op_conv op/conv.cpp)
 add_unit_test(unittest_op_dynamicop op/dynamicop.cpp SUPPORT_LIBS ir-query-test-util)
 add_unit_test(unittest_op_sgd2combo op/sgd2combo.cpp)
 add_unit_test(unittest_op_varupdate op/varupdate.cpp)
+add_unit_test(unittest_op_printtnesor op/printtensor.cpp)
 
 add_unit_test(unittest_ir_deonnxing_regression_tests ir/deonnxing_regression_tests.cpp)
 add_unit_test(unittest_ir_tensor_accessors ir/tensor_accessors.cpp)

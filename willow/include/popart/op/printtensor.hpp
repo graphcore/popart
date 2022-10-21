@@ -36,7 +36,7 @@ public:
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void appendOutlineAttributes(OpSerialiserBase &os) const final;
   bool canBeReplacedByIdentity() const final { return !printSelf; }
-  bool hasSideEffect() const override { return true; }
+  bool hasSideEffect() const override { return printSelf; }
 
   bool shouldPrint() const { return printSelf; }
   const std::string &getTitle() const { return title; }
