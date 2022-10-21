@@ -117,7 +117,7 @@ std::set<BaseType *, POpCmp> ContiguateCollectivesTransform::lookForMatchingOps(
 
         // Both must have the same collective operation type on the same group
         bool groupCheck =
-            candidate->getGCLCommGroup() == baseOp->getGCLCommGroup();
+            candidate->getReplicaGrouping() == baseOp->getReplicaGrouping();
         bool collTypeCheck             = checkCollectiveOp(baseOp, candidate);
         auto &requiredExecutionContext = baseOp->settings.executionContext;
         bool executionContextCheck =

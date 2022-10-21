@@ -591,6 +591,21 @@ static const OpTy *findFirstOp(const std::unique_ptr<SessionTy> &session) {
   return static_cast<const OpTy *>(*iter);
 }
 
+static ReplicaGrouping GroupTypeAll(int replicationFactor) {
+  return ReplicaGrouping(replicationFactor, 1, replicationFactor);
+}
+
+static ReplicaGrouping GroupTypeConsecutive(int replicationFactor,
+                                            int groupSize) {
+  return ReplicaGrouping(replicationFactor, 1, groupSize);
+}
+
+static ReplicaGrouping GroupTypeOrthogonal(int replicationFactor,
+                                           int groupSize) {
+  return ReplicaGrouping(
+      replicationFactor, replicationFactor / groupSize, groupSize);
+}
+
 BOOST_AUTO_TEST_CASE(ReplicatedAllGatherTest_CommGroup_All) {
   const int numIPUs           = 2;
   const int replicationFactor = 2;
@@ -669,7 +684,8 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllGatherTest_CommGroup_All) {
 
     const popart::ReplicatedAllGatherOp *allGather =
         findFirstOp<popart::ReplicatedAllGatherOp>(session);
-    BOOST_TEST(allGather->getGCLCommGroup().type == popart::CommGroupType::All);
+    BOOST_CHECK_EQUAL(allGather->getReplicaGrouping(),
+                      GroupTypeAll(replicationFactor));
   }
 }
 
@@ -790,25 +806,18 @@ BOOST_AUTO_TEST_CASE(ReplicatedScatterAndReduceCommGroupTest) {
       // Check operations have correct attributes set
       const popart::ReplicatedReduceScatterOp *reduceScatter =
           findFirstOp<popart::ReplicatedReduceScatterOp>(session);
-      BOOST_CHECK(reduceScatter->getGCLCommGroup().type ==
-                  popart::CommGroupType::Consecutive);
-      BOOST_CHECK(reduceScatter->getGCLCommGroup().replicaGroupSize ==
-                  groupSize);
-
+      BOOST_CHECK_EQUAL(reduceScatter->getReplicaGrouping(),
+                        GroupTypeConsecutive(replicationFactor, groupSize));
       if (useInplace) {
         const popart::ReplicatedAllReduceInplaceOp *allReduce =
             findFirstOp<popart::ReplicatedAllReduceInplaceOp>(session);
-        BOOST_CHECK(allReduce->getGCLCommGroup().type ==
-                    popart::CommGroupType::Orthogonal);
-        BOOST_CHECK(allReduce->getGCLCommGroup().replicaGroupSize ==
-                    replicationFactor / groupSize);
+        BOOST_CHECK_EQUAL(allReduce->getReplicaGrouping(),
+                          GroupTypeOrthogonal(replicationFactor, groupSize));
       } else {
         const popart::ReplicatedAllReduceOp *allReduce =
             findFirstOp<popart::ReplicatedAllReduceOp>(session);
-        BOOST_CHECK(allReduce->getGCLCommGroup().type ==
-                    popart::CommGroupType::Orthogonal);
-        BOOST_CHECK(allReduce->getGCLCommGroup().replicaGroupSize ==
-                    replicationFactor / groupSize);
+        BOOST_CHECK_EQUAL(allReduce->getReplicaGrouping(),
+                          GroupTypeOrthogonal(replicationFactor, groupSize));
       }
 
       // Prefix sum of all replicas indices * replica index offsets

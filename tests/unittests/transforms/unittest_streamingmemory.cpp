@@ -75,17 +75,10 @@ BOOST_AUTO_TEST_CASE(BasicReplicatedTensorShardingTest) {
 
     auto &ir = model.getIr();
 
-    DeviceManager &dm = DeviceManager::createDeviceManager();
-    std::map<std::string, std::string> deviceOpts;
-    deviceOpts["numIPUs"] = "4";
-    auto device           = dm.createOfflineIPUDevice(deviceOpts);
-
-    BOOST_REQUIRE_NE(device.get(), nullptr);
-
+    auto &dm    = DeviceManager::createDeviceManager();
+    auto device = dm.createOfflineIPUDevice({{"numIPUs", "4"}});
+    BOOST_REQUIRE(device);
     ir.setDeviceInfo(*device);
-
-    BOOST_REQUIRE_EQUAL(std::to_string(ir.getDeviceInfo()->getNumIpus()),
-                        deviceOpts["numIPUs"]);
 
     ir.applyTransform(StreamingMemory::id(1), ir.getMainGraph());
     ir.applyTransform(StreamingMemory::id(2), ir.getMainGraph());
@@ -101,20 +94,21 @@ BOOST_AUTO_TEST_CASE(BasicReplicatedTensorShardingTest) {
         tw_ir.hasGraph(ir.getMainGraph().id, Require::MustBeTrue);
     auto &graph = tw_mainGraph->unwrap().get();
 
+    const auto aGroupOfTypeAll =
+        ReplicaGrouping(options.getGlobalReplicationFactor());
+
     switch (testOptimizer) {
     case TestOptimizer::SGD0: {
       graphutils::OpPreds preds{
           [](const Op *op) { return op->isConvertibleTo<InitOp>(); },
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
-            return rop &&
-                   rop->getGCLCommGroup() == CommGroup(CommGroupType::All, 0);
+            return rop && rop->getReplicaGrouping() == aGroupOfTypeAll;
           },
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedReduceScatterOp *>(op);
-            return rop &&
-                   rop->getGCLCommGroup() == CommGroup(CommGroupType::All, 0);
+            return rop && rop->getReplicaGrouping() == aGroupOfTypeAll;
           },
           [](const Op *op) { return op->isConvertibleTo<SGD0VarUpdateOp>(); }};
       graphutils::Edges edges{{0, 1}, {1, 2}, {1, 4}, {3, 4}};
@@ -132,15 +126,13 @@ BOOST_AUTO_TEST_CASE(BasicReplicatedTensorShardingTest) {
           [](const Op *op) { return op->isConvertibleTo<InitOp>(); },
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
-            return rop &&
-                   rop->getGCLCommGroup() == CommGroup(CommGroupType::All, 0);
+            return rop && rop->getReplicaGrouping() == aGroupOfTypeAll;
           },
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedReduceScatterOp *>(op);
-            return rop &&
-                   rop->getGCLCommGroup() == CommGroup(CommGroupType::All, 0);
+            return rop && rop->getReplicaGrouping() == aGroupOfTypeAll;
           },
           [](const Op *op) { return op->isConvertibleTo<AccumulateOp>(); },
           [](const Op *op) { return op->isConvertibleTo<SGD1AcclUpdateOp>(); },
@@ -161,15 +153,13 @@ BOOST_AUTO_TEST_CASE(BasicReplicatedTensorShardingTest) {
           [](const Op *op) { return op->isConvertibleTo<InitOp>(); },
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
-            return rop &&
-                   rop->getGCLCommGroup() == CommGroup(CommGroupType::All, 0);
+            return rop && rop->getReplicaGrouping() == aGroupOfTypeAll;
           },
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedReduceScatterOp *>(op);
-            return rop &&
-                   rop->getGCLCommGroup() == CommGroup(CommGroupType::All, 0);
+            return rop && rop->getReplicaGrouping() == aGroupOfTypeAll;
           },
           [](const Op *op) {
             return op->isConvertibleTo<SGD2PartialAcclUpdateOp>();
@@ -201,15 +191,13 @@ BOOST_AUTO_TEST_CASE(BasicReplicatedTensorShardingTest) {
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 3
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 4
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 5
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
-            return rop &&
-                   rop->getGCLCommGroup() == CommGroup(CommGroupType::All, 0);
+            return rop && rop->getReplicaGrouping() == aGroupOfTypeAll;
           }, // 6
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedReduceScatterOp *>(op);
-            return rop &&
-                   rop->getGCLCommGroup() == CommGroup(CommGroupType::All, 0);
+            return rop && rop->getReplicaGrouping() == aGroupOfTypeAll;
           }, // 7
           [](const Op *op) {
             return op->isConvertibleTo<AdamUpdaterOp>();
@@ -262,15 +250,13 @@ BOOST_AUTO_TEST_CASE(BasicReplicatedTensorShardingTest) {
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 3
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 4
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 5
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
-            return rop &&
-                   rop->getGCLCommGroup() == CommGroup(CommGroupType::All, 0);
+            return rop && rop->getReplicaGrouping() == aGroupOfTypeAll;
           }, // 6
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedReduceScatterOp *>(op);
-            return rop &&
-                   rop->getGCLCommGroup() == CommGroup(CommGroupType::All, 0);
+            return rop && rop->getReplicaGrouping() == aGroupOfTypeAll;
           }, // 7
           [](const Op *op) {
             return op->isConvertibleTo<AdamUpdaterOp>();
@@ -287,10 +273,9 @@ BOOST_AUTO_TEST_CASE(BasicReplicatedTensorShardingTest) {
           [](const Op *op) {
             return op->isConvertibleTo<LambSquareOp>();
           }, // 14
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllReduceInplaceOp *>(op);
-            return rop &&
-                   rop->getGCLCommGroup() == CommGroup(CommGroupType::All, 0);
+            return rop && rop->getReplicaGrouping() == aGroupOfTypeAll;
           } // 15
       };
       graphutils::Edges edges{
@@ -345,18 +330,20 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
   options.globalReplicaOffset               = 0;
   options.globalReplicationFactor           = 8;
 
+  const auto shardDomainSize = options.replicatedGraphCount;
+
   options.weightTensorLocationSettings.minElementsForReplicatedTensorSharding =
       4;
   options.weightTensorLocationSettings.location.replicatedTensorSharding =
       ReplicatedTensorSharding::On;
   options.weightTensorLocationSettings.location.shardingDomain =
-      CommGroup(CommGroupType::Consecutive, 4);
+      CommGroup(CommGroupType::Consecutive, shardDomainSize);
   options.optimizerStateTensorLocationSettings
       .minElementsForReplicatedTensorSharding = 4;
   options.optimizerStateTensorLocationSettings.location
       .replicatedTensorSharding = ReplicatedTensorSharding::On;
   options.optimizerStateTensorLocationSettings.location.shardingDomain =
-      CommGroup(CommGroupType::Consecutive, 4);
+      CommGroup(CommGroupType::Consecutive, shardDomainSize);
 
   std::set<TestOptimizer> testOptimizers{TestOptimizer::SGD0,
                                          TestOptimizer::SGD1,
@@ -369,17 +356,10 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
 
     auto &ir = model.getIr();
 
-    DeviceManager &dm = DeviceManager::createDeviceManager();
-    std::map<std::string, std::string> deviceOpts;
-    deviceOpts["numIPUs"] = "4";
-    auto device           = dm.createOfflineIPUDevice(deviceOpts);
-
-    BOOST_REQUIRE_NE(device.get(), nullptr);
-
+    auto &dm    = DeviceManager::createDeviceManager();
+    auto device = dm.createOfflineIPUDevice({{"numIPUs", "4"}});
+    BOOST_REQUIRE(device);
     ir.setDeviceInfo(*device);
-
-    BOOST_REQUIRE_EQUAL(std::to_string(ir.getDeviceInfo()->getNumIpus()),
-                        deviceOpts["numIPUs"]);
 
     ir.applyTransform(StreamingMemory::id(1), ir.getMainGraph());
     ir.applyTransform(StreamingMemory::id(2), ir.getMainGraph());
@@ -395,25 +375,34 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
         tw_ir.hasGraph(ir.getMainGraph().id, Require::MustBeTrue);
     auto &graph = tw_mainGraph->unwrap().get();
 
+    auto orthogonalGroupSize =
+        options.getGlobalReplicationFactor() / shardDomainSize;
+    auto orthogonalStride = shardDomainSize;
+
+    const auto aConsecutiveGroup = ReplicaGrouping(
+        options.getGlobalReplicationFactor(), 1, shardDomainSize);
+
+    const auto anOrthogonalGroup =
+        ReplicaGrouping(options.getGlobalReplicationFactor(),
+                        orthogonalStride,
+                        orthogonalGroupSize);
+
     switch (testOptimizer) {
     case TestOptimizer::SGD0: {
       graphutils::OpPreds preds{
           [](const Op *op) { return op->isConvertibleTo<InitOp>(); },
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
-            return rop && rop->getGCLCommGroup() ==
-                              CommGroup(CommGroupType::Consecutive, 4);
+            return rop && rop->getReplicaGrouping() == aConsecutiveGroup;
           },
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedReduceScatterOp *>(op);
-            return rop && rop->getGCLCommGroup() ==
-                              CommGroup(CommGroupType::Consecutive, 4);
+            return rop && rop->getReplicaGrouping() == aConsecutiveGroup;
           },
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllReduceOp *>(op);
-            return rop && rop->getGCLCommGroup() ==
-                              CommGroup(CommGroupType::Orthogonal, 2);
+            return rop && rop->getReplicaGrouping() == anOrthogonalGroup;
           },
           [](const Op *op) { return op->isConvertibleTo<SGD0VarUpdateOp>(); }};
       graphutils::Edges edges{{0, 1}, {1, 2}, {1, 5}, {3, 4}, {4, 5}};
@@ -431,20 +420,17 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
           [](const Op *op) { return op->isConvertibleTo<InitOp>(); },
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
-            return rop && rop->getGCLCommGroup() ==
-                              CommGroup(CommGroupType::Consecutive, 4);
+            return rop && rop->getReplicaGrouping() == aConsecutiveGroup;
           },
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedReduceScatterOp *>(op);
-            return rop && rop->getGCLCommGroup() ==
-                              CommGroup(CommGroupType::Consecutive, 4);
+            return rop && rop->getReplicaGrouping() == aConsecutiveGroup;
           },
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllReduceOp *>(op);
-            return rop && rop->getGCLCommGroup() ==
-                              CommGroup(CommGroupType::Orthogonal, 2);
+            return rop && rop->getReplicaGrouping() == anOrthogonalGroup;
           },
           [](const Op *op) { return op->isConvertibleTo<AccumulateOp>(); },
           [](const Op *op) { return op->isConvertibleTo<SGD1AcclUpdateOp>(); },
@@ -472,20 +458,17 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
           [](const Op *op) { return op->isConvertibleTo<InitOp>(); },
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
-            return rop && rop->getGCLCommGroup() ==
-                              CommGroup(CommGroupType::Consecutive, 4);
+            return rop && rop->getReplicaGrouping() == aConsecutiveGroup;
           },
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedReduceScatterOp *>(op);
-            return rop && rop->getGCLCommGroup() ==
-                              CommGroup(CommGroupType::Consecutive, 4);
+            return rop && rop->getReplicaGrouping() == aConsecutiveGroup;
           },
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllReduceOp *>(op);
-            return rop && rop->getGCLCommGroup() ==
-                              CommGroup(CommGroupType::Orthogonal, 2);
+            return rop && rop->getReplicaGrouping() == anOrthogonalGroup;
           },
           [](const Op *op) {
             return op->isConvertibleTo<SGD2PartialAcclUpdateOp>();
@@ -518,15 +501,13 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 3
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 4
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 5
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
-            return rop && rop->getGCLCommGroup() ==
-                              CommGroup(CommGroupType::Consecutive, 4);
+            return rop && rop->getReplicaGrouping() == aConsecutiveGroup;
           }, // 6
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedReduceScatterOp *>(op);
-            return rop && rop->getGCLCommGroup() ==
-                              CommGroup(CommGroupType::Consecutive, 4);
+            return rop && rop->getReplicaGrouping() == aConsecutiveGroup;
           }, // 7
           [](const Op *op) {
             return op->isConvertibleTo<AdamUpdaterOp>();
@@ -540,10 +521,9 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
           },                                                               // 11
           [](const Op *op) { return op->isConvertibleTo<ScaleOp>(); },     // 12
           [](const Op *op) { return op->isConvertibleTo<ScaledAddOp>(); }, // 13
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllReduceOp *>(op);
-            return rop && rop->getGCLCommGroup() ==
-                              CommGroup(CommGroupType::Orthogonal, 2);
+            return rop && rop->getReplicaGrouping() == anOrthogonalGroup;
           } // 14
       };
       graphutils::Edges edges{
@@ -585,15 +565,13 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 3
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 4
           [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 5
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
-            return rop && rop->getGCLCommGroup() ==
-                              CommGroup(CommGroupType::Consecutive, 4);
+            return rop && rop->getReplicaGrouping() == aConsecutiveGroup;
           }, // 6
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedReduceScatterOp *>(op);
-            return rop && rop->getGCLCommGroup() ==
-                              CommGroup(CommGroupType::Consecutive, 4);
+            return rop && rop->getReplicaGrouping() == aConsecutiveGroup;
           }, // 7
           [](const Op *op) {
             return op->isConvertibleTo<AdamUpdaterOp>();
@@ -610,15 +588,13 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
           [](const Op *op) {
             return op->isConvertibleTo<LambSquareOp>();
           }, // 14
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllReduceInplaceOp *>(op);
-            return rop && rop->getGCLCommGroup() ==
-                              CommGroup(CommGroupType::Consecutive, 4);
+            return rop && rop->getReplicaGrouping() == aConsecutiveGroup;
           }, // 15
-          [](const Op *op) {
+          [&](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllReduceOp *>(op);
-            return rop && rop->getGCLCommGroup() ==
-                              CommGroup(CommGroupType::Orthogonal, 2);
+            return rop && rop->getReplicaGrouping() == anOrthogonalGroup;
           } // 16
       };
       graphutils::Edges edges{

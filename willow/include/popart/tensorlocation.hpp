@@ -150,7 +150,7 @@ public:
                  ReplicatedTensorSharding replicatedTensorSharding,
                  CommGroup shardingDomain);
 
-  // Construct a TensorsorLocation from a previously serialised instance
+  // Construct a TensorLocation from a previously serialised instance
   // (not currently part of public API).
   TensorLocation(std::vector<int64_t> serialized);
 

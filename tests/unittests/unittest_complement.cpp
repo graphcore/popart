@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(Complement) {
 
       CommGroup superSet = {type, (unsigned int)size};
 
-      // crosschecks
+      // cross-checks
       for (auto &type_ : cgts) {
         for (auto &size_ : sizes) {
           if ((type_ == CommGroupType::All || type_ == CommGroupType::None) &&
@@ -84,4 +84,62 @@ BOOST_AUTO_TEST_CASE(Complement) {
       }
     }
   }
+}
+
+const auto numReplicas = 32;
+
+BOOST_AUTO_TEST_CASE(GetTransposedReplicaGroupingWithSuperSet_All) {
+  auto givenGroupNone = ReplicaGrouping(numReplicas, 1, 1);
+  auto givenSuperAll  = ReplicaGrouping(numReplicas);
+
+  auto result =
+      getTransposedReplicaGroupingWithSuperSet(givenGroupNone, givenSuperAll);
+  BOOST_CHECK_EQUAL(result, ReplicaGrouping(numReplicas));
+}
+
+BOOST_AUTO_TEST_CASE(GetTransposedReplicaGroupingWithSuperSet_GroupSizeOne) {
+  auto givenGroupNone = ReplicaGrouping(numReplicas, 1, 1);
+  auto givenSuperNone = ReplicaGrouping(numReplicas, 2, 1);
+
+  auto result =
+      getTransposedReplicaGroupingWithSuperSet(givenGroupNone, givenSuperNone);
+  BOOST_CHECK_EQUAL(result, ReplicaGrouping(numReplicas, 1, 1));
+}
+
+BOOST_AUTO_TEST_CASE(
+    GetTransposedReplicaGroupingWithSuperSet_GroupEqualsSuperSet) {
+  auto givenGroupNone = ReplicaGrouping(numReplicas, 2, 2);
+  auto givenSuperNone = ReplicaGrouping(numReplicas, 2, 2);
+
+  auto result =
+      getTransposedReplicaGroupingWithSuperSet(givenGroupNone, givenSuperNone);
+  BOOST_CHECK_EQUAL(result, ReplicaGrouping(numReplicas, 1, 1));
+}
+
+BOOST_AUTO_TEST_CASE(
+    GetTransposedReplicaGroupingWithSuperSet_WithDifferingNumReplicas_ShouldThrow) {
+  auto givenGroup = ReplicaGrouping(numReplicas, 1, 1);
+  auto givenSuper = ReplicaGrouping(numReplicas * 2, 1, 1);
+  BOOST_CHECK_EXCEPTION(
+      getTransposedReplicaGroupingWithSuperSet(givenGroup, givenSuper),
+      popart::error,
+      [](auto &e) {
+        return std::string(e.what()).find(
+                   "Expected the number of replicas in the"
+                   " groups to be equal.") != std::string::npos;
+      });
+}
+
+BOOST_AUTO_TEST_CASE(
+    GetTransposedReplicaGroupingWithSuperSet_UnsupportedGrouping_ShouldThrow) {
+  auto givenGroup = ReplicaGrouping(numReplicas, 1, 1);
+  auto givenSuper = ReplicaGrouping(numReplicas, 2, numReplicas / 2);
+  BOOST_CHECK_EXCEPTION(
+      getTransposedReplicaGroupingWithSuperSet(givenGroup, givenSuper),
+      popart::error,
+      [](auto &e) {
+        return std::string(e.what()).find(
+                   "Could not return a supported ReplicaGrouping transpose") !=
+               std::string::npos;
+      });
 }

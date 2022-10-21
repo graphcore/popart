@@ -7,6 +7,7 @@
         "arcanist",
         "ascontiguousarray",
         "astype",
+        "backpropagate",
         "backpropagation",
         "cppcheck",
         "devicex",
@@ -19,6 +20,7 @@
         "inplacing",
         "ipus",
         "maniphest",
+        "matmul",
         "nesterov",
         "numpy",
         "onnx",
@@ -33,6 +35,7 @@
         "recomputation",
         "relu",
         "schedulable",
+        "serialiser",
         "sharded",
         "softmax",
         "wontfix"

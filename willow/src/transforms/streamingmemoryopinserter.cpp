@@ -974,17 +974,26 @@ void StreamingMemoryOpInserter::RTSAllReduceToScatter(
     // Keep settings that the ReplicatedAllReduce, that is being
     // replaced, had.
     tensorConfig.settings = replicatedAllReduce->settings;
+    auto globalReplicationFactor =
+        graph.getIr().getSessionOptions().getGlobalReplicationFactor();
+    auto replicaGrouping =
+        tensorConfig.location.shardingDomain.toReplicaGrouping(
+            globalReplicationFactor);
 
-    CommGroup complementaryGroup = getComplementCommGroupWithSuperSet(
-        graph.getIr(),
-        tensorConfig.location.shardingDomain,
+    auto complementaryGroup = getTransposedReplicaGroupingWithSuperSet(
+        replicaGrouping,
         tensorConfig.rootVarTensor->getVariableSettings()
-            .getSharedVariableDomain());
+            .getSharedVariableDomain()
+            .toReplicaGrouping(globalReplicationFactor));
 
+    // This logic was reverse-engineered from the old CommGroup code.
+    // See streammode_tests/grouped_initialization_test.py if simplifying.
     bool needsAllReduce =
-        complementaryGroup.replicaGroupSize > 1 &&
-        (complementaryGroup.type == CommGroupType::Orthogonal ||
-         complementaryGroup.type == CommGroupType::Consecutive);
+        complementaryGroup.getGroupSize() > 1 &&
+        complementaryGroup.getGroupSize() !=
+            complementaryGroup.getNumReplicas() &&
+        (complementaryGroup.getStride() == 1 ||
+         complementaryGroup.getStride() == complementaryGroup.getNumGroups());
 
     TensorId scatterOutId =
         needsAllReduce ? graph.getIr().createIntermediateTensorId(outId)
@@ -1007,7 +1016,7 @@ void StreamingMemoryOpInserter::RTSAllReduceToScatter(
                                            scatterOutId);
       replicatedAllReduce->connectOutTensor(
           ReplicatedAllReduceOp::getOutIndex(), outId);
-      replicatedAllReduce->setGCLCommGroup(complementaryGroup);
+      replicatedAllReduce->setReplicaGrouping(complementaryGroup);
       replicatedAllReduce->setup();
     } else {
       replicatedAllReduce->getGraph().eraseOp(replicatedAllReduce->id);
@@ -1280,7 +1289,9 @@ void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
                                   indices.second,
                                   shardingDomain);
 
-        op->configureForReplicatedTensorSharding({indices}, shardingDomain);
+        auto replicaGrouping = shardingDomain.toReplicaGrouping(
+            graph.getIr().getSessionOptions().getGlobalReplicationFactor());
+        op->configureForReplicatedTensorSharding({indices}, replicaGrouping);
         // Add output tensors as RTS tensors
         for (auto outIndex : indices.second) {
           TensorId outId = op->outId(outIndex);
@@ -2040,9 +2051,11 @@ ReplicatedAllGatherOp *StreamingMemoryOpInserter::insertReplicatedAllGatherOp(
 
   // Execute replicated allgather to collect the full weight
   // tensor from the individual replicas
+  const auto globalRf =
+      graph.getIr().getSessionOptions().getGlobalReplicationFactor();
   auto allGatherOp = std::make_unique<ReplicatedAllGatherOp>(
       Onnx::CustomOperators::ReplicatedAllGather,
-      group,
+      group.toReplicaGrouping(globalRf),
       tensorConfig.settings,
       gatherInfo);
   allGather = allGatherOp.get();
@@ -2133,10 +2146,12 @@ StreamingMemoryOpInserter::insertReplicatedReduceScatterOp(
       context,
       collectiveOp);
 
+  const auto globalRf =
+      graph.getIr().getSessionOptions().getGlobalReplicationFactor();
   auto replicatedReduceScatterOp = std::make_unique<ReplicatedReduceScatterOp>(
       Onnx::CustomOperators::ReplicatedReduceScatter,
       collectiveOp,
-      group,
+      group.toReplicaGrouping(globalRf),
       true,
       tensorConfig.settings);
   auto replicatedReduceScatter = replicatedReduceScatterOp.get();

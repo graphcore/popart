@@ -918,6 +918,7 @@ RemoteRTSTestModel::RemoteRTSTestModel(popart::SessionOptions options) {
   gSettings.optimizerOp = true;
 
   auto repFactor = options.replicatedGraphCount;
+  auto globalRf  = options.getGlobalReplicationFactor();
 
   // Non-sharded shapes. The first three are intentionally the same, but only
   // the first and the third will be in the same RTS domain
@@ -996,7 +997,7 @@ RemoteRTSTestModel::RemoteRTSTestModel(popart::SessionOptions options) {
           logging::format("D{}_scattered", i)}},
         Onnx::CustomOperators::ReplicatedReduceScatter,
         CollectiveOperator::Add,
-        CommGroup(CommGroupType::All, 0),
+        ReplicaGrouping(globalRf),
         true,
         gSettings);
 
@@ -1311,7 +1312,7 @@ ExplicitPipelineTestModel0::ExplicitPipelineTestModel0(
     hostLoadOp->setPipelineStage(0);
     hostLoadOp->setVirtualGraphId(0);
 
-    // Insert copy betweeen IO and compute tiles
+    // Insert copy between IO and compute tiles
     if (inputExStrategy.at(i).tileSet() == TileSet::IO) {
       auto ioTileCopyOp = subgraph.createConnectedOp<IoTileCopyOp>(
           {{IoTileCopyOp::getInIndex(), addScope(subgraph, input)}},
@@ -1411,10 +1412,10 @@ ExplicitPipelineTestModel0::ExplicitPipelineTestModel0(
                      fwdAliasRegions,
                      bwdAliasRegions);
 
-    // IOCOt: Ouptut of the copy from compute to IO tiles
+    // IOCOt: Output of the copy from compute to IO tiles
     TensorId iocoutput = "IOCOt_" + std::to_string(i);
 
-    // Insert copy betweeen IO and compute tiles
+    // Insert copy between IO and compute tiles
     if (outputExStrategy.at(i).tileSet() == TileSet::IO) {
       auto ioTileCopyOp = subgraph.createConnectedOp<IoTileCopyOp>(
           {{IoTileCopyOp::getInIndex(), addScope(subgraph, output)}},

@@ -115,7 +115,7 @@ MergeCollectivesTransform::constructMultiOp<MultiReplicatedAllReduceOp,
     std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet,
     std::vector<ReplicatedAllReduceOp *> matchingOps) const {
 
-  CommGroup group                   = baseOp->getGCLCommGroup();
+  auto replicaGrouping              = baseOp->getReplicaGrouping();
   CollectiveOperator collectiveType = baseOp->getCollectiveOp();
 
   // Grow a partial alias model which covers all affected inputs
@@ -155,7 +155,7 @@ MergeCollectivesTransform::constructMultiOp<MultiReplicatedAllReduceOp,
   // Construct the multi collective operation
   auto multiOp = std::make_unique<MultiReplicatedAllReduceOp>(
       collectiveType,
-      group,
+      replicaGrouping,
       popart::Op::Settings(baseOp->getGraph(),
                            "MultiReplicatedAllReduceOp",
                            baseOp->debugInfo.getId()),
@@ -176,7 +176,7 @@ MergeCollectivesTransform::constructMultiOp<MultiReplicatedReduceScatterOp,
     std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet,
     std::vector<ReplicatedReduceScatterOp *> matchingOps) const {
 
-  CommGroup group                   = baseOp->getGCLCommGroup();
+  auto replicaGrouping              = baseOp->getReplicaGrouping();
   CollectiveOperator collectiveType = baseOp->getCollectiveOp();
 
   std::vector<bool> rearrangeForCollective;
@@ -188,7 +188,7 @@ MergeCollectivesTransform::constructMultiOp<MultiReplicatedReduceScatterOp,
   // Construct the multi collective operation
   auto multiOp = std::make_unique<MultiReplicatedReduceScatterOp>(
       collectiveType,
-      group,
+      replicaGrouping,
       popart::Op::Settings(baseOp->getGraph(),
                            "MultiReplicatedReduceScatterOp"),
       outInfoFromBaseOps,
@@ -208,7 +208,7 @@ MergeCollectivesTransform::constructMultiOp<MultiReplicatedAllGatherOp,
     std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet,
     std::vector<ReplicatedAllGatherOp *> matchingOps) const {
 
-  CommGroup group = baseOp->getGCLCommGroup();
+  auto replicaGrouping = baseOp->getReplicaGrouping();
 
   std::vector<bool> undoRearrangeForCollective;
   for (ReplicatedAllGatherOp *op : matchingOps) {
@@ -218,7 +218,7 @@ MergeCollectivesTransform::constructMultiOp<MultiReplicatedAllGatherOp,
 
   // Construct the multi collective operation
   auto multiOp = std::make_unique<MultiReplicatedAllGatherOp>(
-      group,
+      replicaGrouping,
       popart::Op::Settings(baseOp->getGraph(), "MultiReplicatedAllGatherOp"),
       outInfoFromBaseOps,
       undoRearrangeForCollective,
@@ -240,7 +240,7 @@ Op *MergeCollectivesTransform::attemptToMergeOnOp(
   // The collectives must also match in the other properties
   auto requiredDataType =
       baseOp->inTensor(baseOp->getInIndex())->info.data_type();
-  auto requiredGCLGroup          = baseOp->getGCLCommGroup();
+  auto requiredReplicaGroup      = baseOp->getReplicaGrouping();
   auto &requiredExecutionContext = baseOp->settings.executionContext;
 
   // Keep iterating through the schedule until the next
@@ -253,7 +253,7 @@ Op *MergeCollectivesTransform::attemptToMergeOnOp(
       bool dtypeCheck =
           candidate->inTensor(candidate->getInIndex())->info.data_type() ==
           requiredDataType;
-      bool groupCheck      = candidate->getGCLCommGroup() == requiredGCLGroup;
+      bool groupCheck = candidate->getReplicaGrouping() == requiredReplicaGroup;
       bool collectiveCheck = collectiveOpCheck(baseOp, candidate);
       bool executionContextCheck =
           candidate->settings.executionContext == requiredExecutionContext;

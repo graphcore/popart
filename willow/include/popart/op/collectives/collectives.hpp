@@ -77,12 +77,18 @@ public:
   virtual bool isCollectiveLinkedIndexTensor(Tensor *t) const;
 
   // TODO(T67766): Delete.
-  [[deprecated]] void setGCLCommGroup(CommGroup group) {
+  [[deprecated(
+      "CommGroup has been deprecated in favour of ReplicaGrouping. Please see"
+      " setReplicaGrouping for equivalent functionality.")]] void
+  setGCLCommGroup(CommGroup group) {
     grouping_ = group.toReplicaGrouping(
         getIr().getSessionOptions().getGlobalReplicationFactor());
   }
   // TODO(T67766): Delete.
-  [[deprecated]] CommGroup getGCLCommGroup() const {
+  [[deprecated(
+      "CommGroup has been deprecated in favour of ReplicaGrouping. Please see"
+      " getReplicaGrouping for equivalent functionality.")]] CommGroup
+  getGCLCommGroup() const {
     return CommGroup(grouping_);
   }
 
@@ -257,12 +263,15 @@ extractReplicaGroupingFromVector(const std::vector<int64_t> &vec);
  * span all replicas
  */
 // TODO(T67766): Delete.
-[[deprecated]] CommGroup getComplementCommGroup(const Ir &ir, CommGroup group);
+[[deprecated(
+    "CommGroup has been deprecated in favour of ReplicaGrouping. Please see"
+    " ReplicaGrouping.getTranspose() for equivalent functionality.")]] CommGroup
+getComplementCommGroup(const Ir &ir, CommGroup group);
 
 /**
  * Calculates the complementary group such that the input group and the
  * complement returned spans all replicas within the superSet. If the superSet
- * is all it derefers to getComplementCommGroup. Will throw error if superSet is
+ * is all, it defers to getComplementCommGroup. Will throw error if superSet is
  * not All or if it is equal to the group.
  *
  * \param ir       Handle to get replication factor.
@@ -271,10 +280,28 @@ extractReplicaGroupingFromVector(const std::vector<int64_t> &vec);
  * \return         commGroup complement of group within superSet.
  */
 // TODO(T67766): Delete.
-[[deprecated]] CommGroup getComplementCommGroupWithSuperSet(const Ir &ir,
-                                                            CommGroup group,
-                                                            CommGroup superSet);
+[[deprecated("CommGroup has been deprecated in favour of ReplicaGrouping."
+             " Please see getTransposedReplicaGroupingWithSuperSet for"
+             " equivalent functionality.")]] CommGroup
+getComplementCommGroupWithSuperSet(const Ir &ir,
+                                   CommGroup group,
+                                   CommGroup superSet);
 
+/**
+ * Calculates the transpose (complementary) group such that the input group and
+ * the group returned span all replicas within the superSet.
+ *
+ * If the superSet has a single group, it simply returns the transpose of
+ * `grouping`. Alternatively, both groups have to be size 1 or the groups be
+ * identical, otherwise the case is not supported and the function will throw.
+ *
+ * \param group       The ReplicaGrouping we want the complement of.
+ * \param superSet    The set to find the complement within.
+ * \return            ReplicaGrouping complement of group within superSet.
+ */
+ReplicaGrouping
+getTransposedReplicaGroupingWithSuperSet(ReplicaGrouping grouping,
+                                         ReplicaGrouping superSet);
 } // namespace popart
 
 #endif // POPART_WILLOW_INCLUDE_POPART_OP_COLLECTIVES_COLLECTIVES_HPP_

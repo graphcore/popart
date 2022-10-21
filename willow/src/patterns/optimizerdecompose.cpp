@@ -340,11 +340,14 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
   if (accumReduce) {
     bool runningReplica = runningMeanReduction(graph);
     Tensor *t           = graph.getTensors().get(weightId);
-    CommGroup cg        = t->getVariableSettings().getSharedVariableDomain();
-    auto reduceOpUp     = std::make_unique<ReplicatedAllReduceInplaceOp>(
+    auto globalRf =
+        graph.getIr().getSessionOptions().getGlobalReplicationFactor();
+    auto replicaGrouping =
+        t->getVariableSettings().getReplicaGrouping(globalRf);
+    auto reduceOpUp = std::make_unique<ReplicatedAllReduceInplaceOp>(
         Onnx::CustomOperators::ReplicatedAllReduceInplace,
         runningReplica ? CollectiveOperator::Mean : CollectiveOperator::Add,
-        cg,
+        replicaGrouping,
         Op::Settings(
             graph, combo->name() + "_reduce", combo->settings.debugInfoId));
     auto reduceOp = reduceOpUp.get();
@@ -420,11 +423,14 @@ TensorId OptimizerDecompose::gradReduce(Graph &graph,
                                         TensorId outputId) const {
   bool runningMean = runningMeanReduction(graph);
   Tensor *t        = graph.getTensors().get(weightId);
-  CommGroup cg     = t->getVariableSettings().getSharedVariableDomain();
-  auto reduceOpUp  = std::make_unique<ReplicatedAllReduceOp>(
+
+  auto globalRf =
+      graph.getIr().getSessionOptions().getGlobalReplicationFactor();
+  auto replicaGrouping = t->getVariableSettings().getReplicaGrouping(globalRf);
+  auto reduceOpUp      = std::make_unique<ReplicatedAllReduceOp>(
       Onnx::CustomOperators::ReplicatedAllReduce,
       runningMean ? CollectiveOperator::Mean : CollectiveOperator::Add,
-      cg,
+      replicaGrouping,
       Op::Settings(
           graph, combo->name() + "_reduce", combo->settings.debugInfoId));
   auto reduceOp = reduceOpUp.get();

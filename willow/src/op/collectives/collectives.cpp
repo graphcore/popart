@@ -285,6 +285,37 @@ ReplicaGrouping extractReplicaGroupingFromAttrs(const Attributes &attrs,
   return extractReplicaGroupingFromVector(vec);
 }
 
+ReplicaGrouping
+getTransposedReplicaGroupingWithSuperSet(ReplicaGrouping grouping,
+                                         ReplicaGrouping superSet) {
+
+  if (superSet.getNumReplicas() != grouping.getNumReplicas()) {
+    throw internal_error("Could not calculate a ReplicaGrouping transpose of"
+                         " {} within the super-set: {}. Expected the number of"
+                         " replicas in the groups to be equal.",
+                         grouping,
+                         superSet);
+  }
+
+  if (superSet.getNumGroups() == 1) {
+    return grouping.getTranspose();
+  }
+
+  // The only other case implemented is if the super-set is group size 1
+  if ((superSet.getGroupSize() == 1 && grouping.getGroupSize() == 1) ||
+      grouping == superSet) {
+    return ReplicaGrouping(grouping.getNumReplicas(), 1, 1);
+  }
+
+  // While there are legitimate logical transposes in all cases where the
+  // super-set is larger than the group, we still throw because they are not
+  // supported in further logic.
+  throw internal_error("Could not return a supported ReplicaGrouping transpose"
+                       " of {} within the super-set: {}",
+                       grouping,
+                       superSet);
+}
+
 CommGroup getComplementCommGroup(const Ir &ir, CommGroup group) {
   auto numReplicas = ir.getSessionOptions().getGlobalReplicationFactor();
   switch (group.type) {
