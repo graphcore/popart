@@ -46,6 +46,8 @@ list(
   ${popart_op_headers_dir}/scatter.hpp
   ${popart_op_headers_dir}/shapeddropout.hpp
   ${popart_op_headers_dir}/cast.hpp
+  ${popart_op_headers_dir}/castthenpow2scale.hpp
+  ${popart_op_headers_dir}/pow2scalethencast.hpp
   ${popart_op_headers_dir}/collectives/collectives.hpp
   ${popart_op_headers_dir}/collectives/replicatedallgather.hpp
   ${popart_op_headers_dir}/collectives/replicatedallreduce.hpp
@@ -230,7 +232,7 @@ add_popart_python_module(
   bindings/bwdgraphinfo.cpp
   bindings/commgroup.cpp
   bindings/util.cpp
-  bindings/fp8conversion.cpp
+  bindings/float8conversion.cpp
   # Transforms
   bindings/transforms/transform.cpp
   bindings/transforms/prune.cpp

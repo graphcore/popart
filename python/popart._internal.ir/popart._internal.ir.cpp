@@ -7,7 +7,7 @@
 #include "bindings/bwdgraphinfo.hpp"
 #include "bindings/commgroup.hpp"
 #include "bindings/debugcontext.hpp"
-#include "bindings/fp8conversion.hpp"
+#include "bindings/float8conversion.hpp"
 #include "bindings/graph.hpp"
 #include "bindings/graphid.hpp"
 #include "bindings/ir.hpp"
@@ -91,7 +91,7 @@ PYBIND11_MODULE(popart_internal_ir, m) {
   bindTopoCons(m);
   bindPrintTensorFmt(m);
   bindFloatFormat(m);
-  bindFp8conversion(m);
+  bindFloat8conversion(m);
   // Ops
   {
     op::_bindAll(m);

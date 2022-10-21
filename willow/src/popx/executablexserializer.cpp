@@ -187,7 +187,7 @@ popart::cap::DataType toCapnpDataType(popart::DataType type) {
     return popart::cap::DataType::STRING;
   case popart::DataType::UNDEFINED:
     return popart::cap::DataType::UNDEFINED;
-  // TODO: T69675 add support for FP8 popef serialisation.
+  // TODO: T69675 add support for FLOAT8 popef serialisation.
   case popart::DataType::FLOAT8_143:
   case popart::DataType::FLOAT8_152:
     return popart::cap::DataType::UNDEFINED;

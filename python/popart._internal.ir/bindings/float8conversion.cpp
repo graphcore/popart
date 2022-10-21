@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #include <../popart/shared_cpp/np_utils.hpp>
-#include <bindings/fp8conversion.hpp>
+#include <bindings/float8conversion.hpp>
 #include <initializer_list>
 #include <pybind11/cast.h>
 #include <pybind11/functional.h> // IWYU pragma: keep
@@ -60,7 +60,7 @@ py::array convertToFloat8AsUInt8(const DataType destType,
     metadata = poplar::QuarterMetadata(poplar::QuarterMetadata::Format::F152,
                                        -log2Scale);
   } else {
-    throw error("Unsupported data type {} for conversion to FP8", destType);
+    throw error("Unsupported data type {} for conversion to float8", destType);
   }
 
   src       = makeContiguous(src);
@@ -110,7 +110,7 @@ py::array convertFromFloat8(const DataType srcType,
     metadata = poplar::QuarterMetadata(poplar::QuarterMetadata::Format::F152,
                                        log2Scale);
   } else {
-    throw error("Unsupported data type {} for conversion from FP8", srcType);
+    throw error("Unsupported data type {} for conversion from float8", srcType);
   }
 
   src = makeContiguous(src);
@@ -129,7 +129,7 @@ py::array convertFromFloat8(const DataType srcType,
 
 } // namespace
 
-void bindFp8conversion(py::module &m) {
+void bindFloat8conversion(py::module &m) {
   {
     m.def("convertToFloat8AsUInt8", &convertToFloat8AsUInt8<float>);
     m.def("convertToFloat8AsUInt8", &convertToFloat8AsUInt8<double>);

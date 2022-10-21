@@ -4106,8 +4106,9 @@ poplar::Type popType(const TensorInfo &info) {
   case DataType::UINT8: {
     return poplar::UNSIGNED_CHAR;
   }
-  // Note: popart FP8 tensors are kept internally as UINT8 to avoid to mantain
-  // associated metadata tensors. See poplar::QuarterMetadata for details.
+  // Note: popart FLOAT8 tensors are kept internally as UINT8 to avoid to
+  // mantain associated metadata tensors. See poplar::QuarterMetadata for
+  // details.
   case DataType::FLOAT8_143:
   case DataType::FLOAT8_152: {
     return poplar::UNSIGNED_CHAR;

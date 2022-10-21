@@ -3,7 +3,7 @@ from .abs import abs
 from .add import add, add_
 from .pool import average_pool, max_pool
 from .call import call, call_with_info, CallSiteInfo
-from .cast import cast
+from .cast import cast, pow2scale_then_cast, cast_then_pow2scale
 from .concat import concat, concat_
 from .conditional import conditional, conditional_with_info
 from .conv import conv, PadType
@@ -99,6 +99,8 @@ __all__ = [
     "CallSiteInfo",
     # cast.py
     "cast",
+    "pow2scale_then_cast",
+    "cast_then_pow2scale",
     # concat.py
     "concat",
     "concat_",

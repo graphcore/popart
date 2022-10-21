@@ -116,7 +116,7 @@ public:
                                    const std::string &name) const;
 
   using PopOpx::grow;
-  void grow(snap::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const override;
   virtual void grow(poplar::program::Sequence &) const;
 };
 

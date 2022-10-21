@@ -72,7 +72,11 @@ ONNX_NAMESPACE::TensorProto_DataType getTPDataType(DataType data_type) {
   case DataType::STRING: {
     return ONNX_NAMESPACE::TensorProto_DataType_STRING;
   }
-  case DataType::UNDEFINED: {
+  case DataType::UNDEFINED:
+  // Note: Until we have float8 support in ONNX, we must return
+  // TensorProto_DataType_UNDEFINED for these 2 popart data types.
+  case DataType::FLOAT8_143:
+  case DataType::FLOAT8_152: {
     return ONNX_NAMESPACE::TensorProto_DataType_UNDEFINED;
   }
   default:

@@ -227,6 +227,48 @@ auto tensorRemapShapeInferenceFun = [](popart::ShapeInferenceContext &ctx) {
   propagateShapeFromInputToOutput(ctx, 0, 0);
 };
 
+auto castThenPow2ScaleOpShapeInferenceFun =
+    [](popart::ShapeInferenceContext &ctx) {
+      auto shape = ctx.inShape(0);
+      if (ctx.hasAttribute("to")) {
+        auto dtype = ctx.getAttribute<std::string>("to");
+
+        if (dtype == "FLOAT8_143") {
+          auto tinfo     = TensorInfo(DataType::FLOAT8_143, shape);
+          ctx.outInfo(0) = tinfo;
+        } else if (dtype == "FLOAT8_152") {
+          auto tinfo     = TensorInfo(DataType::FLOAT8_152, shape);
+          ctx.outInfo(0) = tinfo;
+        } else {
+          throw popart::error("Unknown data type attribute: {}", dtype);
+        }
+
+      } else {
+        throw popart::error("DataType attribute `to` not found.");
+      }
+    };
+
+auto pow2ScaleThenCastOpShapeInferenceFun =
+    [](popart::ShapeInferenceContext &ctx) {
+      auto shape = ctx.inShape(0);
+      if (ctx.hasAttribute("to")) {
+        auto dtype = ctx.getAttribute<std::string>("to");
+
+        if (dtype == "FLOAT16") {
+          auto tinfo     = TensorInfo(DataType::FLOAT16, shape);
+          ctx.outInfo(0) = tinfo;
+        } else if (dtype == "FLOAT") {
+          auto tinfo     = TensorInfo(DataType::FLOAT, shape);
+          ctx.outInfo(0) = tinfo;
+        } else {
+          throw popart::error("Unknown data type attribute: {}", dtype);
+        }
+
+      } else {
+        throw popart::error("DataType attribute `to` not found.");
+      }
+    };
+
 // Shape inference is the process of infering the shape of the outputs of
 // a node in the ONNX graph. It is run each time a new node is added to the
 // model. It is executed inside BuilderImpl::runShapeInference via one of two
@@ -269,4 +311,11 @@ static popart::RegisterShapeInferenceFunction
     tensorRemapRegister(popart::Onnx::CustomOperators::TensorRemap_1,
                         tensorRemapShapeInferenceFun);
 
+static popart::RegisterShapeInferenceFunction
+    float8CastFromRegister(popart::Onnx::CustomOperators::CastThenPow2Scale,
+                           pow2ScaleThenCastOpShapeInferenceFun);
+
+static popart::RegisterShapeInferenceFunction
+    float8CastToRegister(popart::Onnx::CustomOperators::Pow2ScaleThenCast,
+                         castThenPow2ScaleOpShapeInferenceFun);
 } // namespace popart
