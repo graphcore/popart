@@ -432,9 +432,6 @@ void BackwardsGraphCreatorHelper::doPrune(
                 canRemove = false;
               }
             }
-            if (producer->hasSideEffect()) {
-              canRemove = false;
-            }
             if (canRemove) {
               producer->disconnectAllOutputs();
             }
@@ -452,7 +449,7 @@ void BackwardsGraphCreatorHelper::doPrune(
     const auto opIds = graph.getOpIds();
     for (const auto id : opIds) {
       const auto op = graph.getOp(id);
-      if (op->output->n() == 0 && !op->hasSideEffect()) {
+      if (op->output->n() == 0) {
         op->disconnectAllInputs();
         graph.eraseOp(id);
         continueLoop = true;

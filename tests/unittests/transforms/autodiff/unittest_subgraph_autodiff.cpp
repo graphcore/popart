@@ -439,7 +439,7 @@ struct SimpleUnaryTestCase {
   static constexpr VGraphId vgid = 1;
 };
 
-SimpleUnaryTestCase initSimpleUnaryTestCase(Ir &ir) {
+template <typename T> SimpleUnaryTestCase initSimpleUnaryTestCase(Ir &ir) {
   // We will set vgid for the fwd ops, then test the bwd ops have the same vgid.
   ir.getSessionOptions().virtualGraphMode = VirtualGraphMode::Manual;
   constexpr VGraphId vgid                 = SimpleUnaryTestCase::vgid;
@@ -466,9 +466,9 @@ SimpleUnaryTestCase initSimpleUnaryTestCase(Ir &ir) {
 
   sg.addInput(sg_t0, ti);
 
-  sg.createConnectedOp<UnaryOp>({{UnaryOp::getInIndex(), sg_t0}},
-                                {{UnaryOp::getOutIndex(), sg_t1}},
-                                Op::Settings{sg, "Unary"})
+  sg.createConnectedOp<T>({{T::getInIndex(), sg_t0}},
+                          {{T::getOutIndex(), sg_t1}},
+                          Op::Settings{sg, "Unary"})
       ->setVirtualGraphId(vgid);
 
   sg.markAsOutput(sg_t1);
@@ -487,6 +487,14 @@ SimpleUnaryTestCase initSimpleUnaryTestCase(Ir &ir) {
                              std::move(sg_t1)};
 }
 
+// UnaryOp where hasSideEffect==true. Its grad op hasSideEffect==false
+class HasSideEffectOp : public UnaryOp {
+public:
+  HasSideEffectOp(const Op::Settings &settings) : UnaryOp(settings) {}
+
+  bool hasSideEffect() const override { return true; }
+};
+
 } // namespace unaryOpTest
 
 /**
@@ -497,15 +505,23 @@ SimpleUnaryTestCase initSimpleUnaryTestCase(Ir &ir) {
  *
  * Additionally, test that if we set UnaryOp's vgid, the gradsum op for t0' will
  * have the same vgid.
+ *
+ * The test is paramtrised with UnaryOp and HasSideEffectOp. Both cases should
+ * have the same outcome. When autodiff is applied to an op that
+ * hasSideEffect==true, it should not affect the logic of when subgraph autodiff
+ * internally prunes the cloned forward op in the backward graph after growing
+ * gradients. Previous autodiff implementations failed here, so this is a
+ * regression test to ensure this edge case is covered.
  */
-BOOST_AUTO_TEST_CASE(TestSimpleUnaryOp) {
+using FwdOpTypes = std::tuple<UnaryOp, unaryOpTest::HasSideEffectOp>;
+BOOST_AUTO_TEST_CASE_TEMPLATE(TestSimpleUnaryOp, FwdOp, FwdOpTypes) {
   using namespace unaryOpTest;
 
   auto test = [](const bool specifyRequiredGrads,
                  const AutodiffStitchStrategy stitchStrat) {
     Ir ir;
 
-    const SimpleUnaryTestCase tc = initSimpleUnaryTestCase(ir);
+    const SimpleUnaryTestCase tc = initSimpleUnaryTestCase<FwdOp>(ir);
     auto &t0                     = tc.t0;
     auto &t1                     = tc.t1;
     auto &sg_t0                  = tc.sg_t0;
@@ -558,7 +574,7 @@ BOOST_AUTO_TEST_CASE(TestSimpleUnaryOp) {
         },
         Require::MustBeTrue);
 
-    /* Test sg has correct inputs, outputs, and UnaryOp inside it. */
+    /* Test sg has correct inputs, outputs, and FwdOp inside it. */
 
     auto tw_sg = tw_ir.hasGraph(sg.id, Require::MustBeTrue);
 
@@ -567,11 +583,10 @@ BOOST_AUTO_TEST_CASE(TestSimpleUnaryOp) {
     // Note extra outputs may have been added to the fwd graph due to stitching.
     tw_sg->outputs().hasExactIds({sg_t1}, Require::MustBeTrue);
 
-    auto tw_unary = tw_sg->ops().hasOp<UnaryOp>(
+    auto tw_unary = tw_sg->ops().hasOp<FwdOp>(
         [&](auto &tw_unary) -> bool {
-          return tw_unary.inputs().hasIdAtIndex(UnaryOp::getInIndex(), sg_t0) &&
-                 tw_unary.outputs().hasIdAtIndex(UnaryOp::getOutIndex(),
-                                                 sg_t1) &&
+          return tw_unary.inputs().hasIdAtIndex(FwdOp::getInIndex(), sg_t0) &&
+                 tw_unary.outputs().hasIdAtIndex(FwdOp::getOutIndex(), sg_t1) &&
                  hasVgid(tw_unary, vgid);
         },
         Require::MustBeTrue);
@@ -630,12 +645,15 @@ BOOST_AUTO_TEST_CASE(TestSimpleUnaryOp) {
             .hasIndex(UnaryGradOp::getOutIndex(), Require::MustBeTrue)
             ->tensor();
 
-    tw_edge_grad.consumers().hasOp<SumOp>(
+    tw_edge_grad.consumers().template hasOp<SumOp>(
         [&](auto &tw_sum) -> bool {
           return tw_sum.outputs().hasExactIds({bg_t0_grad}) &&
                  hasVgid(tw_sum, vgid);
         },
         Require::MustBeTrue);
+
+    // Check to make sure the original fwd op is not in the bwd graph
+    auto tw_not_in_graph = tw_bg->ops().hasOp<FwdOp>(Require::MustBeFalse);
   };
 
   // For this test, all these cases yield the exact same graph.
