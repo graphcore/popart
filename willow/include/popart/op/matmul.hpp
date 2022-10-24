@@ -25,6 +25,20 @@ enum class MatMulPartialsType { HALF, FLOAT };
 std::string toString(const MatMulPartialsType &);
 std::ostream &operator<<(std::ostream &, const MatMulPartialsType &);
 
+/**
+ * The matmul op supports inputs of IR datatype FLOAT8_143 and FLOAT8_152.
+ * Inputs of this are a special case because they type require an additional
+ * scalar INT32 tensor input known as the `log2Scale`. This argument may
+ * only be used if and only if the two matmul operands are one of the
+ * FLOAT8_* types.
+ *
+ * If the matmul inputs are valid FLOAT8 and log2Scale inputs then the
+ * matmul is considered a 'pow2 scaled matmul'. A pow2 scaled matmul
+ * is an operation of the form `result := A @ B * 2^(log2scale)` where
+ * @ is the matrix multiply op. In this case, the output and partials type
+ * must be FLOAT16. Note that the multiplication by 2^(log2scale) is handled
+ * by Poplar and is not listed as an Op in the IR.
+ */
 class MatMulBaseOp : public Op {
 public:
   // The phase of the matmul. Needed so when grad matmuls are
@@ -123,10 +137,12 @@ public:
 
   static InIndex getLhsInIndex() { return 0; }
   static InIndex getRhsInIndex() { return 1; }
+  static InIndex getLog2ScaleInIndex() { return 2; }
   static OutIndex getOutIndex() { return 0; }
 
   const Tensor *lhsIn() const;
   const Tensor *rhsIn() const;
+  const Tensor *log2ScaleIn() const;
   const Tensor *out() const;
 
   // Return the expanded shape of the inputs & output to matmul
@@ -142,6 +158,13 @@ public:
 
   // Follow the numpy matmul broadcasting rules for the output shape
   Shape npMatMulOut(Shape lhs, Shape rhs);
+
+  bool isPow2ScaledMatMul() const;
+  bool isFloat8(InIndex idx) const;
+
+  std::set<InIndex> optionalInputs() const override {
+    return {getLog2ScaleInIndex()};
+  }
 
 private:
   // Verifies the input shapes are valid and throws and exception if not

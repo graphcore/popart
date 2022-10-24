@@ -115,7 +115,7 @@ def test_matmul_serialization_invalid_factor():
             )
 
     assert e_info.value.args[0].startswith(
-        "Invalid serialisation factor 3 for output channels dim 4. output_channels dim should be a multple of the serialisation factor"
+        "Invalid serialisation factor 3 for output channels dim 4. output_channels dim should be a multiple of the serialisation factor"
     )
 
 

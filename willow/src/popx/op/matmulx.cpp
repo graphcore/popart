@@ -10,15 +10,21 @@
 #include <iterator>
 #include <numeric>
 #include <set>
+#include <snap/Program.hpp>
 #include <snap/Tensor.hpp>
 #include <snap/poplin/MatMul.hpp>
 #include <string>
 #include <utility>
 #include <vector>
+#include <poplar/ArrayRef.hpp>
+#include <poplar/MetadataCreation.hpp>
 #include <poplar/OptionFlags.hpp>
+#include <poplar/Program.hpp>
 #include <poplar/StringRef.hpp>
 #include <poplar/Type.hpp>
 #include <poplin/MatMul.hpp>
+#include <popops/ElementWise.hpp>
+#include <popops/Expr.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/matmul.hpp>
@@ -39,6 +45,8 @@
 #include "popart/popx/popopx.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/vendored/optional.hpp"
+
+namespace pe = popops::expr;
 
 namespace snap {
 namespace program {
@@ -114,6 +122,55 @@ std::vector<std::size_t> MatMulOpx::onnxShapeToPoplar(const Shape &shape) {
 std::vector<std::size_t> MatMulOpx::getOutputShape() const {
   auto matmul = getMatMulOp();
   return MatMulOpx::onnxShapeToPoplar(matmul->outInfo(0).shape());
+}
+
+poplar::program::Sequence
+MatMulOpx::createAssertLog2ScaleInRangeProg(poplar::Tensor &log2ScaleTensor,
+                                            int lower,
+                                            int upper) const {
+  poplar::program::Sequence seq;
+
+  // x >= upper or x < lower
+  auto outsideRange = pe::Or(pe::Gte(pe::_1, pe::Const(upper)),
+                             pe::Lt(pe::_1, pe::Const(lower)));
+
+  auto errorBranch = poplar::program::ErrorProgram(
+      logging::format(
+          "runtime error in {}. Log2 scale is not in the range [{}, {}). ",
+          getOp<MatMulOp>().debugName(),
+          lower,
+          upper),
+      log2ScaleTensor,
+      debugContext("log2ScaleAssert"));
+
+  auto notInRange = popops::map(graph(), outsideRange, {log2ScaleTensor}, seq);
+
+  seq.add(poplar::program::If(
+      notInRange, errorBranch, poplar::program::Sequence(), debugContext()));
+
+  return seq;
+}
+
+poplar::Tensor
+MatMulOpx::prepareQuarterInputTensor(popart::DataType format,
+                                     poplar::Tensor &x,
+                                     poplar::Tensor &log2Scale,
+                                     poplar::program::Sequence &prog) const {
+  auto poplarFormat = format == popart::DataType::FLOAT8_143
+                          ? poplar::QuarterMetadata::Format::F143
+                          : poplar::QuarterMetadata::Format::F152;
+
+  auto metadata = poplar::createVariableMetadataTensor(
+      graph().getPoplarGraph(), poplarFormat, log2Scale, prog, debugContext());
+
+  // We can't directly reinterpret UINT8 tensors as QUARTER, so we have
+  // to workaround using copy-cloning. Poplar elides this.
+  auto float8Tensor =
+      graph().getPoplarGraph().clone(poplar::QUARTER, metadata, x);
+  prog.add(poplar::program::Copy(
+      x, float8Tensor.reinterpret(poplar::UNSIGNED_CHAR)));
+
+  return float8Tensor;
 }
 
 static std::pair<snap::Tensor, snap::Tensor>
@@ -408,11 +465,33 @@ void MatMulOpx::verifyCacheSizeUnchanged(size_t beforeCacheSize) const {
 // with shape [2, 3, 1, 5, 6, 8, 9]. We would expect an output tensor with shape
 // [2, 3, 4, 5, 6, 7, 9].
 void MatMulOpx::grow(snap::program::Sequence &prog) const {
-
   auto &matmul = getOp<MatMulOp>();
 
   auto a = getInTensor(MatMulOp::getLhsInIndex());
   auto b = getInTensor(MatMulOp::getRhsInIndex());
+
+  if (matmul.isPow2ScaledMatMul()) {
+    auto log2ScaleTensor = getInTensor(MatMulOp::getLog2ScaleInIndex());
+
+    auto assertSeq = createAssertLog2ScaleInRangeProg(
+        log2ScaleTensor.getPoplarTensor(), -32, 31);
+    prog.getPoplarSequence().add(assertSeq);
+
+    auto lhs = prepareQuarterInputTensor(matmul.lhsIn()->info.dataType(),
+                                         a.getPoplarTensor(),
+                                         log2ScaleTensor.getPoplarTensor(),
+                                         prog.getPoplarSequence());
+
+    auto zeroScale = graph().addConstant(poplar::SIGNED_CHAR, {}, 0);
+    auto rhs       = prepareQuarterInputTensor(matmul.rhsIn()->info.dataType(),
+                                         b.getPoplarTensor(),
+                                         zeroScale.getPoplarTensor(),
+                                         prog.getPoplarSequence());
+
+    // Wrap back up into snap Tensors before matmul
+    a = snap::Tensor(lhs, graph());
+    b = snap::Tensor(rhs, graph());
+  }
 
   // Makes both input tensors at least rank 3
   //
@@ -474,7 +553,8 @@ void MatMulOpx::grow(snap::program::Sequence &prog) const {
 
   auto opts = dv_p->lowering().matmulOptions;
   appendPoplarOptionsForOp(matmul, opts);
-  auto outputType = getOutputType(combinedBroadcastTs.first);
+
+  poplar::Type outputType = popType(matmul.out()->info.dataType());
 
   auto cacheSize = dv_p->matmulCache.size();
   auto outTensor =
@@ -622,34 +702,59 @@ MatMulOpx::createInputTensor(InIndex index,
   auto opts = dv_p->lowering().matmulOptions;
   appendPoplarOptionsForOp(matmul, opts);
 
+  auto convertToQuarterIfFloat8 = [](popart::DataType type) {
+    if (type == popart::DataType::FLOAT8_143 ||
+        type == popart::DataType::FLOAT8_152) {
+      return poplar::QUARTER;
+    }
+    return popType(type);
+  };
+
+  auto reinterpretAsUInt8IfQuarter = [](snap::Tensor t) {
+    if (t.elementType() == poplar::QUARTER) {
+      return t.reinterpret(poplar::UNSIGNED_CHAR);
+    }
+    return t;
+  };
+
   if (index == MatMulOp::getLhsInIndex()) {
-    auto result = snap::poplin::createMatMulGroupedInputLHS(
-        graph(),
-        popType(getMatMulOp()->lhsIn()->info.dataType()),
-        popType(getMatMulOp()->lhsIn()->info.dataType()),
-        lhsShape,
-        rhsShape,
-        dnai,
-        opts,
-        &dv_p->matmulCache);
+    auto inType =
+        convertToQuarterIfFloat8(getMatMulOp()->lhsIn()->info.dataType());
+    auto outType = inType == poplar::QUARTER
+                       ? poplar::HALF
+                       : popType(getMatMulOp()->lhsIn()->info.dataType());
+    auto result = snap::poplin::createMatMulGroupedInputLHS(graph(),
+                                                            inType,
+                                                            outType,
+                                                            lhsShape,
+                                                            rhsShape,
+                                                            dnai,
+                                                            opts,
+                                                            &dv_p->matmulCache);
 
     result = result.reshape(lhsShapeP);
     result = result.dimShuffle(invertPermutation(permutation));
+    result = reinterpretAsUInt8IfQuarter(result);
 
     return result.reshape(matmul.lhsIn()->info.shape_szt());
   } else if (index == MatMulOp::getRhsInIndex()) {
-    auto result = snap::poplin::createMatMulGroupedInputRHS(
-        graph(),
-        popType(getMatMulOp()->lhsIn()->info.dataType()),
-        popType(getMatMulOp()->lhsIn()->info.dataType()),
-        lhsShape,
-        rhsShape,
-        dnai,
-        opts,
-        &dv_p->matmulCache);
+    auto inType =
+        convertToQuarterIfFloat8(getMatMulOp()->rhsIn()->info.dataType());
+    auto outType = inType == poplar::QUARTER
+                       ? poplar::HALF
+                       : popType(getMatMulOp()->rhsIn()->info.dataType());
+    auto result = snap::poplin::createMatMulGroupedInputRHS(graph(),
+                                                            inType,
+                                                            outType,
+                                                            lhsShape,
+                                                            rhsShape,
+                                                            dnai,
+                                                            opts,
+                                                            &dv_p->matmulCache);
 
     result = result.reshape(rhsShapeP);
     result = result.dimShuffle(invertPermutation(permutation));
+    result = reinterpretAsUInt8IfQuarter(result);
 
     return result.reshape(matmul.rhsIn()->info.shape_szt());
   } else {
@@ -657,9 +762,12 @@ MatMulOpx::createInputTensor(InIndex index,
   }
 }
 
-InputCreatorType MatMulOpx::getInputCreatorType(InIndex) const {
+InputCreatorType MatMulOpx::getInputCreatorType(InIndex index) const {
   const MatMulOp *op = dynamic_cast<const MatMulOp *>(op_p);
-  if (op->getCanCreateInputs()) {
+  // assume that we don't need to create log2 scale input tensor
+  // for an FP8 matmul
+  bool isScaleBiasIndex = index == op->getLog2ScaleInIndex();
+  if (op->getCanCreateInputs() && !isScaleBiasIndex) {
     return InputCreatorType::CanCreate;
   } else {
     return InputCreatorType::Deadend;

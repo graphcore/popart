@@ -69,7 +69,7 @@ using SubgraphIndex = int;
 using SubgraphPartIndex = int;
 /// Identifies a part of an Opx grow function.
 using OpxGrowPartId = int;
-/// The position at which a tensor is output by an Op.
+/// The position at which a tensor is input by an Op.
 using InIndex = int;
 /// The position at which a tensor is output by an Op.
 using OutIndex = int;

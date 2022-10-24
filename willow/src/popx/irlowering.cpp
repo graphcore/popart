@@ -2762,9 +2762,15 @@ void IrLowering::prePlanMatMuls() {
       auto matMulOp  = dynamic_cast<MatMulOp *>(op);
       auto matMulOpx = dynamic_cast<MatMulOpx *>(getOpx(op->id));
 
-      poplin::MatMulParams matMulParams;
-      auto inputType = popType(matMulOp->lhsIn()->info.dataType());
-      auto dummyLhs  = dummyGraph.addVariable(
+      poplar::Type inputType;
+      // preplanMatmuls does not accept unsigned char. convert to QUARTER here.
+      if (matMulOp->isPow2ScaledMatMul()) {
+        inputType = poplar::QUARTER;
+      } else {
+        inputType = popType(matMulOp->lhsIn()->info.dataType());
+      }
+
+      auto dummyLhs = dummyGraph.addVariable(
           inputType, matMulOp->lhsIn()->info.shape_szt());
       auto dummyRhs = dummyGraph.addVariable(
           inputType, matMulOp->rhsIn()->info.shape_szt());
@@ -2772,8 +2778,16 @@ void IrLowering::prePlanMatMuls() {
       auto inputs = MatMulOpx::groupedMatMulInputsFromOpxInputs(
           *matMulOp, dummyLhs, dummyRhs);
 
+      poplar::Type outputType;
+      if (matMulOp->isPow2ScaledMatMul()) {
+        outputType = poplar::HALF;
+      } else {
+        outputType = matMulOpx->getOutputType(inputs.first);
+      }
+
+      poplin::MatMulParams matMulParams;
       matMulParams.inputType  = inputType;
-      matMulParams.outputType = matMulOpx->getOutputType(inputs.first);
+      matMulParams.outputType = outputType;
       matMulParams.aShape     = inputs.first.shape();
       matMulParams.bShape     = inputs.second.shape();
       allMatMulParams.push_back(matMulParams);

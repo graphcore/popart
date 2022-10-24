@@ -37,9 +37,14 @@ namespace {
 Tensor *configureMatMulOp(MatMulOp *op,
                           const TensorId lhsTensorId,
                           const TensorId rhsTensorId,
+                          const TensorId log2ScaleBiasIndex,
                           const TensorId outTensorId) {
   op->connectInTensor(MatMulOp::getLhsInIndex(), lhsTensorId);
   op->connectInTensor(MatMulOp::getRhsInIndex(), rhsTensorId);
+  if (!log2ScaleBiasIndex.empty()) {
+    op->connectInTensor(MatMulOp::getLog2ScaleInIndex(), log2ScaleBiasIndex);
+  }
+
   op->createAndConnectOutTensor(MatMulOp::getOutIndex(), outTensorId);
   op->setup();
   return op->outTensor(MatMulOp::getOutIndex());
@@ -191,6 +196,20 @@ bool MatMulPattern::apply(Op *op) const {
   // expand the rhs input by reshaping it
   configureReshapeOp(rhsReshapeOp, rhsShape, rhs->id);
 
+  // before we disconnect the inputs, check if log2 scale was
+  // provided for the FP8 matmul. An empty tensor Id is used
+  // to indicate no scale bias tensor was provided.
+  auto getLog2BiasIdIfPresent = [matmulOp](InIndex idx) {
+    TensorId ret = {};
+    if (matmulOp->hasInput(idx)) {
+      ret = matmulOp->inTensor(idx)->id;
+    }
+    return ret;
+  };
+
+  const TensorId log2ScaleIndex =
+      getLog2BiasIdIfPresent(matmulOp->getLog2ScaleInIndex());
+
   // disconnect the mat mul from it's original inputs & output
   matmulOp->disconnectAllInputs();
   matmulOp->disconnectAllOutputs();
@@ -199,6 +218,7 @@ bool MatMulPattern::apply(Op *op) const {
   configureMatMulOp(matmulOp,
                     lhsReshapeOp->outTensor(ReshapeOp::getOutIndex())->id,
                     rhsReshapeOp->outTensor(ReshapeOp::getOutIndex())->id,
+                    log2ScaleIndex,
                     matmulOp->getIr().createIntermediateTensorId(out->id));
 
   // Reshape the output back the the user defined shape

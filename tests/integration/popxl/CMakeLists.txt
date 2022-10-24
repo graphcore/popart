@@ -38,6 +38,7 @@ add_popart_py_unit_test(test_write_variables_data_cache VARIANTS Hw)
 add_popart_py_unit_test(test_session_passed_device VARIANTS Hw)
 add_popart_py_unit_test(test_shaped_dropout VARIANTS IpuModel2)
 add_popart_py_unit_test(test_fp8_hostcopy VARIANTS IpuModel2)
+add_popart_py_unit_test(test_matmul_pow2scaled VARIANTS IpuModel2)
 # Running remote buffer test on POD system (multicard) to test interactions with GW
 add_popart_py_unit_test(test_session_remote_buffers VARIANTS Hw LABELS multicard)
 add_popart_py_unit_test(test_replica_grouping VARIANTS IpuModel2)

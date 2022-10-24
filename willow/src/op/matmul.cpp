@@ -105,6 +105,10 @@ std::unique_ptr<Op> MatMulOp::clone() const {
 }
 
 std::vector<std::unique_ptr<Op>> MatMulOp::getGradOps() {
+  if (isPow2ScaledMatMul()) {
+    throw error("Using a scaled matmul in a backwards pass is currently not "
+                "supported.");
+  }
   std::vector<std::unique_ptr<Op>> upops;
   upops.emplace_back(std::make_unique<MatMulLhsGradOp>(*this));
   upops.emplace_back(std::make_unique<MatMulRhsGradOp>(*this));
@@ -114,6 +118,10 @@ std::vector<std::unique_ptr<Op>> MatMulOp::getGradOps() {
 const Tensor *MatMulOp::lhsIn() const { return inTensor(getLhsInIndex()); }
 
 const Tensor *MatMulOp::rhsIn() const { return inTensor(getRhsInIndex()); }
+
+const Tensor *MatMulOp::log2ScaleIn() const {
+  return inTensor(getLog2ScaleInIndex());
+}
 
 const Tensor *MatMulOp::out() const { return outTensor(getOutIndex()); }
 
@@ -223,6 +231,34 @@ Shape MatMulOp::npMatMulOut(Shape lhs, Shape rhs) {
 }
 
 void MatMulOp::setup() {
+  bool lhsIsFloat8  = isFloat8(MatMulOp::getLhsInIndex());
+  bool rhsIsFloat8  = isFloat8(MatMulOp::getRhsInIndex());
+  bool hasLog2Scale = hasInput(getLog2ScaleInIndex());
+
+  if (lhsIsFloat8 != rhsIsFloat8) {
+    throw error("Invalid combination of operand types: {} and {}. If using a "
+                "FLOAT8_* input, both matmul inputs must be of type FLOAT8_*.",
+                lhsIn()->info.dataType(),
+                rhsIn()->info.dataType());
+  }
+
+  if (!lhsIsFloat8 && !rhsIsFloat8 && hasLog2Scale) {
+    throw error("Log2 scale input not accepted for non FLOAT8_* inputs. ");
+  }
+
+  if (lhsIsFloat8 && rhsIsFloat8) {
+    if (!hasLog2Scale) {
+      throw error("Log2 scale input must be provided for FLOAT8_* inputs. ");
+    } else if (log2ScaleIn()->info.rank() > 0) {
+      throw error("Log2 scale input must be a scalar tensor");
+    } else if (auto type = log2ScaleIn()->info.dataType();
+               type != DataType::INT32) {
+      throw error(
+          "Invalid log2 scale input type {}. Log2 scale input tensor must "
+          "be of type INT32. ",
+          type);
+    };
+  }
 
   if (phase == Phase::Fwd) {
     if (getSerialiseSettings().mode !=
@@ -247,7 +283,7 @@ void MatMulOp::setup() {
 
         if (inputChannelsDim % getSerialiseSettings().factor != 0) {
           throw error("Invalid serialisation factor {} for input channels dim "
-                      "{}. input_channels dim should be a multple of the "
+                      "{}. input_channels dim should be a multiple of the "
                       "serialisation factor ",
                       getSerialiseSettings().factor,
                       inputChannelsDim);
@@ -260,7 +296,7 @@ void MatMulOp::setup() {
 
         if (reducingChannelsDim % getSerialiseSettings().factor != 0) {
           throw error("Invalid serialisation factor {} for reducing dimension "
-                      "{}. reducing_dim dim should be a multple of the "
+                      "{}. reducing_dim dim should be a multiple of the "
                       "serialisation factor ",
                       getSerialiseSettings().factor,
                       reducingChannelsDim);
@@ -274,7 +310,7 @@ void MatMulOp::setup() {
         logging::op::info("{}", rhsIn()->info.shape());
         if (outputChannelsDim % getSerialiseSettings().factor != 0) {
           throw error("Invalid serialisation factor {} for output channels dim "
-                      "{}. output_channels dim should be a multple of the "
+                      "{}. output_channels dim should be a multiple of the "
                       "serialisation factor ",
                       getSerialiseSettings().factor,
                       outputChannelsDim);
@@ -284,12 +320,49 @@ void MatMulOp::setup() {
   }
 
   auto type = lhsIn()->info.dataType();
-  if (outputType)
+  if (isPow2ScaledMatMul()) {
+    // Check the output Type and partial type are FLOAT16/HAlF
+    // if doing an FP8 matmul
+    if (outputType && *outputType != DataType::FLOAT16) {
+      throw error("Invalid output type: {}. Output type must be {} for "
+                  "FLOAT8_* matmul operands. ",
+                  *outputType,
+                  DataType::FLOAT16);
+    }
+    if (partialsType != MatMulPartialsType::HALF) {
+      throw error("Invalid partials type: {}. Partials type must be {} for "
+                  "FLOAT8_* matmul operands. ",
+                  partialsType,
+                  MatMulPartialsType::HALF);
+    }
+    type = DataType::FLOAT16;
+  } else if (outputType) {
+    // Not doing an FP8 matmul, set output type to whatever the user set
     type = *outputType;
+  }
 
   // Define the shape of the output tensor
   outInfo(0) = {type,
                 npMatMulOut(lhsIn()->info.shape(), rhsIn()->info.shape())};
+}
+
+bool MatMulOp::isPow2ScaledMatMul() const {
+  bool lhsIsFloat8 = isFloat8(MatMulOp::getLhsInIndex());
+  bool rhsIsFloat8 = isFloat8(MatMulOp::getRhsInIndex());
+  if (hasInput(getLog2ScaleInIndex())) {
+    auto log2ScaleInfo           = log2ScaleIn()->info;
+    bool log2ScaleHasCorrectType = log2ScaleInfo.dataType() == DataType::INT32;
+    bool log2ScaleIsScalar       = log2ScaleInfo.rank() == 0;
+
+    return lhsIsFloat8 && rhsIsFloat8 && log2ScaleHasCorrectType &&
+           log2ScaleIsScalar;
+  }
+  return false;
+}
+
+bool MatMulOp::isFloat8(InIndex idx) const {
+  auto type = inTensor(idx)->info.dataType();
+  return type == DataType::FLOAT8_143 || type == DataType::FLOAT8_152;
 }
 
 MatMulLhsGradOp::MatMulLhsGradOp(const MatMulOp &fwdOp)
@@ -405,6 +478,8 @@ static OpDefinition::DataTypes T = {DataType::UINT32,
                                     DataType::UINT64,
                                     DataType::INT32,
                                     DataType::INT64,
+                                    DataType::FLOAT8_143,
+                                    DataType::FLOAT8_152,
                                     DataType::FLOAT16,
                                     DataType::FLOAT};
 
@@ -412,6 +487,7 @@ static OpDefinition
     matmulOpDef({OpDefinition::Inputs({
                      {"A", T},
                      {"B", T},
+                     {"L2S", {DataType::INT32}},
                  }),
                  OpDefinition::Outputs({{"Y", T}}),
                  OpDefinition::Attributes({

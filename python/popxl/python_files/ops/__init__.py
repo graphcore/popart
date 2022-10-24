@@ -42,7 +42,7 @@ from .logical_not import logical_not
 from .logical_or import logical_or
 from .logsum import logsum
 from .logsumexp import logsumexp
-from .matmul import matmul
+from .matmul import matmul, matmul_pow2scaled
 from .max import max, maximum
 from .mean import mean
 from .median import median
@@ -188,6 +188,7 @@ __all__ = [
     "logsumexp",
     # matmul.py
     "matmul",
+    "matmul_pow2scaled",
     # max.py
     "max",
     "maximum",
