@@ -7,7 +7,8 @@
     "boost",
     "protobuf",
     "capnproto",
-    "trompeloeil"
+    "trompeloeil",
+    "snap"
   ],
   "optional_dependencies": [
       "popef",

@@ -26,6 +26,7 @@
 #   pva
 #   gcl
 #   popir
+#   snap
 #   popdist
 #
 # If the popart component is requested, we require these additional
@@ -119,6 +120,7 @@ _safe_find_dependency(libpvti)
 _safe_find_dependency(pva)
 _safe_find_dependency(gcl)
 _safe_find_dependency(popir)
+_safe_find_dependency(snap)
 _safe_find_dependency(gccs)
 _safe_find_dependency(popdist)
 
