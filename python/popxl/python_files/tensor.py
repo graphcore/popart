@@ -1310,6 +1310,8 @@ def constant(
     dtype: Optional[dtypes.dtype] = None,
     name: Optional[str] = None,
     downcast: bool = True,
+    log2_scale: int = None,
+    nan_on_overflow: bool = None,
 ) -> Constant:
     """
     Return a constant tensor.
@@ -1334,22 +1336,55 @@ def constant(
             b = a + 1
 
     Args:
-        data (HostScalarTensor):
+        data:
             The data used to initialise the tensor.
             This can be an np.array, or a value numpy can use to construct an np.ndarray.
-        dtype (Optional[dtype]):
+        dtype:
             The data type of the tensor to be created. If not specified, NumPy will infer the data
-            type and downcast to 32 bits if necessary.
-        name (Optional[str]):
+            type and downcast to 32 bits if necessary. For float8 dtypes automatic
+            inference of dtype is not currently possible, please explicitly specify the dtype.
+        name:
             The name of the tensor. Defaults to `None`.
-        downcast (bool):
-            Whether or not to downcast the data to the given dtype.
+        downcast:
+            Whether or not to downcast the data to the given dtype. For
+            float8 dtypes automatic inference of dtype is not currently
+            possible, please explicitly specify the dtype.
+        log2_scale:
+            The user's data is multiplied by `pow2(log2Scale)` before casting.
+            Only applicable when using float 8 data types.
+        nan_on_overflow:
+            If True produce NaN when the input values exceed the numeric range of the
+            destination type selected. If False saturate the results. Only applicable
+            when using float 8 data types.
+
+    Raises:
+        TypeError: If a float 8 tensor is passed without a corresponding dtype.
+
+    Returns:
+        Tensor: The constant required.
     """
     g = gcg()
     pb_g = g._pb_graph
 
+    if isinstance(data, np.ndarray) and (
+        data.dtype == dtypes.np_dtype_float8_143
+        or data.dtype == dtypes.np_dtype_float8_152
+    ):
+        # You must explicitly set the data type when creating a float 8 constant.
+        if dtype is None:
+            raise TypeError(
+                f"Please explicitly set the data type when calling {__name__}"
+            )
+
     # `addConstInit` will copy the data so it's not required here
-    np_data = to_numpy(data, dtype, downcast, copy=False)
+    np_data = to_numpy(
+        data,
+        dtype,
+        downcast,
+        copy=False,
+        log2_scale=log2_scale,
+        nan_on_overflow=nan_on_overflow,
+    )
     popxl_dt = dtypes.dtype.as_dtype(np_data)
     info = _ir.TensorInfo(popxl_dt._pb_dtype, np_data.shape)
     pb_id = g._create_tensor_id(name)

@@ -1288,6 +1288,8 @@ PriTask IrLowering::setInitTensorValTask(Tensor *tensor) {
       setInitVal<int8_t>(tensor);
       break;
     }
+    case DataType::FLOAT8_143:
+    case DataType::FLOAT8_152:
     case DataType::UINT8: {
       setInitVal<uint8_t>(tensor);
       break;

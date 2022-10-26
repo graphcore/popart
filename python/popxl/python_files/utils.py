@@ -73,7 +73,9 @@ def to_numpy(
         x:
             The data used to initialise the tensor.
             This can be an np.ndarray, torch.tensor or a value NumPy can use to
-            construct an np.ndarray.
+            construct an np.ndarray. If dtype is of float8 type this must be a
+            np.float32 or float64 type, torch equivalent, or native type equivalent.
+            Other values are not supported.
         dtype:
             The data type of the tensor to be created. If not specified NumPy
             will infer the data type and downcast to 32 bits if necessary. For
@@ -94,6 +96,9 @@ def to_numpy(
 
     Raises:
         RuntimeError: If parameters are not supported.
+
+        TypeError: If dtype is of float8 type and x is not of type
+        np.float32 or float64, torch equivalent, or native type equivalent.
 
     Returns:
         np.ndarray: A NumPy array.
@@ -119,6 +124,13 @@ def to_numpy(
         # structured dtypes instead. If not already converted, convert the
         # user's data to float8 automatically.
         if x.dtype != _convert_popxl_float8_dtype_to_numpy(dtype):
+            # But if inferred type is not float64 or float32, throw an error.
+            if x.dtype != np.float64 and x.dtype != np.float32:
+                raise TypeError(
+                    f"Type {x.dtype} is not supported for float 8 tensors."
+                    "Please use float32 or float64 types."
+                )
+
             x = host_pow2scale_then_cast(x, dtype, log2_scale, nan_on_overflow)
 
         if copy:

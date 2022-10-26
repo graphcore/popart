@@ -4,6 +4,7 @@ import pytest
 
 import popart._internal.ir as _ir
 import popxl
+from popxl.dtypes import dtype
 from popxl.tensor import Variable, Constant
 from popxl.errors import UndefinedValue
 from popxl.utils import downcast_np_dtypes
@@ -305,3 +306,48 @@ class TestTensorSpec:
         with popxl.Ir().main_graph:
             spec = popxl.TensorSpec((1, 2), popxl.int32)
             popxl.graph_input(**spec, name="w")
+
+
+@pytest.mark.parametrize("dtype", [popxl.float8_143, popxl.float8_152])
+@pytest.mark.parametrize("log2_scale", [-2, -1, 0, 1, 2])
+@pytest.mark.parametrize("nan_on_overflow", [True, False])
+class TestFloat8Constant:
+    """Test creation of float 8 constants."""
+
+    def test_create_from_scalar(
+        self, dtype: dtype, log2_scale: int, nan_on_overflow: bool
+    ):
+        ir = popxl.Ir()
+        main = ir.main_graph
+
+        with main:
+            c = popxl.constant(
+                2.0,
+                dtype,
+                log2_scale=log2_scale,
+                nan_on_overflow=nan_on_overflow,
+                name="constant_fp8",
+            )
+            assert isinstance(c, Constant)
+            assert c.shape == tuple()
+            assert c.dtype == dtype
+
+    @pytest.mark.parametrize("np_type", [np.float32, np.float64])
+    def test_create_from_array(
+        self, dtype: dtype, log2_scale: int, nan_on_overflow: bool, np_type: np.dtype
+    ):
+        ir = popxl.Ir()
+        main = ir.main_graph
+
+        with main:
+            data = np.array([int(1), 24, 0.34, float(343.23)]).astype(np_type)
+            c = popxl.constant(
+                data,
+                dtype,
+                log2_scale=log2_scale,
+                nan_on_overflow=nan_on_overflow,
+                name="constant_fp8",
+            )
+            assert isinstance(c, Constant)
+            assert c.shape == data.shape
+            assert c.dtype == dtype

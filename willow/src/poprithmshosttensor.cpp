@@ -16,6 +16,8 @@ poprithms::ndarray::DType getPoprithmsDType(popart::DataType t) {
   case DataType::BOOL:
     return poprithms::ndarray::DType::Boolean;
 
+  case DataType::FLOAT8_143:
+  case DataType::FLOAT8_152:
   case DataType::UINT8:
     return poprithms::ndarray::DType::Unsigned8;
 
