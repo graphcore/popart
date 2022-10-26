@@ -154,10 +154,10 @@ functions and operations for 8-bit floats.
      - Description
 
    * - :py:func:`~popxl.utils.host_pow2scale_then_cast`
-     - Host-based conversion from 32/64-bit floating point data to a 8-bit floating point representation.
+     - Host-based conversion from 16/32/64-bit floating point data to a 8-bit floating point representation.
 
    * - :py:func:`~popxl.utils.host_cast_then_pow2scale`
-     - Host-based conversion from a 8-bit floating point representation back to 32/64-bit floating point data.
+     - Host-based conversion from a 8-bit floating point representation back to 16/32/64-bit floating point data.
 
    * - :py:func:`~popxl.utils.pow2scale_then_cast`
      - Operation to convert from 16-bit floating point to 8-bit floating point.

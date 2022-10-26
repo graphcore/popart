@@ -111,12 +111,33 @@ def float32_to_float8_152(
 @pytest.mark.parametrize(
     "format_", [popart.DataType.FLOAT8_143, popart.DataType.FLOAT8_152]
 )
-@pytest.mark.parametrize("dtype_from", [np.float32, np.float64])
-@pytest.mark.parametrize("dtype_to", [np.float32, np.float64])
+@pytest.mark.parametrize("dtype_from", [np.float16, np.float32, np.float64])
+@pytest.mark.parametrize("dtype_to", [np.float16, np.float32, np.float64])
 @pytest.mark.parametrize("log2_scale", [-1, 0, 1])
 class TestFP8Conversion:
-    def conversion_func_to(self, dtype_to: np.dtype) -> Callable:
+    def conversion_func_from(self, dtype_from: np.dtype) -> Callable:
         """Get the correct python fp8 conversion function (casting to fp8).
+
+        Args:
+            dtype_from (np.dtype): Data type to cast to.
+
+        Raises:
+            TypeError: If an unrecognised data type is passed.
+
+        Returns:
+            Callable: The correct conversion function.
+        """
+        if dtype_from == np.float16:
+            return _ir.convertFromFloat16ToFloat8AsUInt8
+        elif dtype_from == np.float32:
+            return _ir.convertFromFloat32ToFloat8AsUInt8
+        elif dtype_from == np.float64:
+            return _ir.convertFromFloat64ToFloat8AsUInt8
+        else:
+            raise TypeError(f"Unsupported type {dtype_from}")
+
+    def conversion_func_to(self, dtype_to: np.dtype) -> Callable:
+        """Get the correct python fp8 conversion function (casting from fp8).
 
         Args:
             dtype_to (np.dtype): Data type to cast to.
@@ -127,10 +148,18 @@ class TestFP8Conversion:
         Returns:
             Callable: The correct conversion function.
         """
-        if dtype_to == np.float32:
-            return _ir.convertFromFloat8AsUInt8ToFloat32
+        if dtype_to == np.float16:
+            return lambda src_type, src, log2_scale=0: _ir.convertFromFloat8AsUInt8ToFloat16(
+                src_type, src, np.dtype("float16"), log2_scale
+            )
+        elif dtype_to == np.float32:
+            return lambda src_type, src, log2_scale=0: _ir.convertFromFloat8AsUInt8ToFloat32(
+                src_type, src, np.dtype("float32"), log2_scale
+            )
         elif dtype_to == np.float64:
-            return _ir.convertFromFloat8AsUInt8ToFloat64
+            return lambda src_type, src, log2_scale=0: _ir.convertFromFloat8AsUInt8ToFloat64(
+                src_type, src, np.dtype("float64"), log2_scale
+            )
         else:
             raise TypeError(f"Unsupported type {dtype_to}")
 
@@ -164,7 +193,7 @@ class TestFP8Conversion:
 
         assert a1.flags["C_CONTIGUOUS"]
 
-        b1 = _ir.convertToFloat8AsUInt8(format_, a1, log2_scale, False)
+        b1 = self.conversion_func_from(dtype_from)(format_, a1, log2_scale, False)
 
         # atol of 1 due to 1 bit potential error.
         if format_ == popart.DataType.FLOAT8_143:
@@ -218,7 +247,7 @@ class TestFP8Conversion:
         a1 = np.random.randn(*shape).T.astype(dtype_from)
         transposed_shape = a1.shape
 
-        b1 = _ir.convertToFloat8AsUInt8(format_, a1, log2_scale, False)
+        b1 = self.conversion_func_from(dtype_from)(format_, a1, log2_scale, False)
         assert not a1.flags["C_CONTIGUOUS"]
 
         # atol of 1 due to 1 bit potential error.

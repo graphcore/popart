@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Optional, Sequence, Union
 import numpy as np
 import popart
 import popart._internal.ir as _ir
-from popxl import float8_143, float8_152, float32, float64
+from popxl import float8_143, float8_152, float16, float32, float64
 from typing_extensions import Literal
 
 from popxl.dtypes import np_dtype_float8_143, np_dtype_float8_152
@@ -71,11 +71,11 @@ def to_numpy(
 
     Args:
         x:
-            The data used to initialise the tensor.
-            This can be an np.ndarray, torch.tensor or a value NumPy can use to
-            construct an np.ndarray. If dtype is of float8 type this must be a
-            np.float32 or float64 type, torch equivalent, or native type equivalent.
-            Other values are not supported.
+            The data used to initialise the tensor. This can be an np.ndarray,
+            torch.tensor or a value NumPy can use to construct an np.ndarray. If
+            dtype is of float8 type this must be a np.float16, np.float32 or
+            float64 type, torch equivalent, or native type equivalent. Other
+            values are not supported.
         dtype:
             The data type of the tensor to be created. If not specified NumPy
             will infer the data type and downcast to 32 bits if necessary. For
@@ -97,7 +97,7 @@ def to_numpy(
     Raises:
         RuntimeError: If parameters are not supported.
 
-        TypeError: If dtype is of float8 type and x is not of type
+        TypeError: If dtype is of float8 type and x is not of type np.float16,
         np.float32 or float64, torch equivalent, or native type equivalent.
 
     Returns:
@@ -125,10 +125,10 @@ def to_numpy(
         # user's data to float8 automatically.
         if x.dtype != _convert_popxl_float8_dtype_to_numpy(dtype):
             # But if inferred type is not float64 or float32, throw an error.
-            if x.dtype != np.float64 and x.dtype != np.float32:
+            if x.dtype not in [np.float16, np.float32, np.float64]:
                 raise TypeError(
                     f"Type {x.dtype} is not supported for float 8 tensors."
-                    "Please use float32 or float64 types."
+                    "Please use float16, float32 or float64 types."
                 )
 
             x = host_pow2scale_then_cast(x, dtype, log2_scale, nan_on_overflow)
@@ -195,8 +195,8 @@ def host_pow2scale_then_cast(
         src:
             The NumPy array of user data to convert. Torch tensors are
             automatically converted. This must be a NumPy array with dtype being
-            `np.float32` or `np.float64` (or torch equivalent). Other values are
-            not supported.
+            `np.float16`, `np.float32` or `np.float64` (or torch equivalent).
+            Other values are not supported.
         dtype:
             The PopXL data type to convert to. This must be either  either
             `popxl.float8_143` or `popxl.float8_152`. Other values are not
@@ -225,14 +225,24 @@ def host_pow2scale_then_cast(
     if not isinstance(src, np.ndarray):
         src = np.asarray(src, order="C")
 
-    if src.dtype != np.float32 and src.dtype != np.float64:
-        raise RuntimeError(f"src.dtype {src.dtype} not currently supported.")
-
     if dtype != float8_143 and dtype != float8_152:
         raise RuntimeError(f"dtype {dtype} not currently supported.")
 
     popart_dtype = _convert_popxl_float8_dtype_to_popart(dtype)
-    res = _ir.convertToFloat8AsUInt8(popart_dtype, src, log2_scale, nan_on_overflow)
+    if src.dtype == np.float16:
+        res = _ir.convertFromFloat16ToFloat8AsUInt8(
+            popart_dtype, src, log2_scale, nan_on_overflow
+        )
+    elif src.dtype == np.float32:
+        res = _ir.convertFromFloat32ToFloat8AsUInt8(
+            popart_dtype, src, log2_scale, nan_on_overflow
+        )
+    elif src.dtype == np.float64:
+        res = _ir.convertFromFloat64ToFloat8AsUInt8(
+            popart_dtype, src, log2_scale, nan_on_overflow
+        )
+    else:
+        raise RuntimeError(f"src.dtype {src.dtype} not currently supported.")
     res = res.reshape(src.shape)
     np_dtype = _convert_popxl_float8_dtype_to_numpy(dtype)
     res = res.astype(dtype=np_dtype)
@@ -258,9 +268,9 @@ def host_cast_then_pow2scale(
             (`np.dtype([("float8_152", "u1")])`). Other values are not
             currently supported.
         dtype:
-            The PopXL dtype representing the target array type. This must be
-            either `popxl.float32` or `popxl.float64`. Other values are not
-            currently supported.
+            The PopXL dtype representing the target array type. This must be one
+            of `popxl.float16`, `popxl.float32` or `popxl.float64`. Other values
+            are not currently supported.
         log2_scale:
             The data is multiplied by `pow2(log2_scale)` after casting. This
             must be an int in the range [-32, 32). Other values are not
@@ -270,13 +280,10 @@ def host_cast_then_pow2scale(
         RuntimeError: If parameters are not supported.
 
     Returns:
-        np.ndarray: A NumPy array with dtype `np.float32` or `np.float64`.
+        np.ndarray: A NumPy array with dtype `np.float16`, `np.float32` or `np.float64`.
     """
     if src.dtype != np_dtype_float8_143 and src.dtype != np_dtype_float8_152:
         raise RuntimeError(f"src.dtype {src.dtype} not currently supported.")
-
-    if dtype != float32 and dtype != float64:
-        raise RuntimeError(f"dtype {dtype} not currently supported.")
 
     popxl_src_dtype = _convert_numpy_float8_dtype_to_popxl(src.dtype)
     popart_src_dtype = _convert_popxl_float8_dtype_to_popart(popxl_src_dtype)
@@ -285,11 +292,21 @@ def host_cast_then_pow2scale(
     src = src.astype(np.uint8)
 
     # Call the appropriate conversion function.
-    if dtype == float32:
-        fun = _ir.convertFromFloat8AsUInt8ToFloat32
+    if dtype == float16:
+        res = _ir.convertFromFloat8AsUInt8ToFloat16(
+            popart_src_dtype, src, np.dtype("float16"), log2_scale
+        )
+    elif dtype == float32:
+        res = _ir.convertFromFloat8AsUInt8ToFloat32(
+            popart_src_dtype, src, np.dtype("float32"), log2_scale
+        )
     elif dtype == float64:
-        fun = _ir.convertFromFloat8AsUInt8ToFloat64
-    res = fun(popart_src_dtype, src, log2_scale)
+        res = _ir.convertFromFloat8AsUInt8ToFloat64(
+            popart_src_dtype, src, np.dtype("float64"), log2_scale
+        )
+    else:
+        raise RuntimeError(f"dtype {dtype} not currently supported.")
+
     res = res.reshape(src.shape)
 
     return res

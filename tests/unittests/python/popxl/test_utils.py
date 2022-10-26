@@ -83,6 +83,13 @@ def test_to_numpy(x, dtype, downcast, exp_type):
     #
     # src                        , dtype           ,l2s, nanoo, exp_vals
     # ===                        , =====           ,===, =====, ========
+    # Test log2_scale for float8_143 + float16.
+    [np.array([0.75], np.float16), popxl.float8_143,  0, False, np.array([0b00111100], popxl.dtypes.np_dtype_float8_143)],
+    [np.array([0.75], np.float16), popxl.float8_143, -2, False, np.array([0b00101100], popxl.dtypes.np_dtype_float8_143)],
+    [np.array([0.75], np.float16), popxl.float8_143,  1, False, np.array([0b01000100], popxl.dtypes.np_dtype_float8_143)],
+    # Test log2_scale for float8_152 + float16.
+    [np.array([0.25], np.float16), popxl.float8_152,  0, False, np.array([0b00111000], popxl.dtypes.np_dtype_float8_152)],
+    [np.array([0.25], np.float16), popxl.float8_152, -3, False, np.array([0b00101100], popxl.dtypes.np_dtype_float8_152)],
     # Test log2_scale for float8_143 + float32.
     [np.array([0.75], np.float32), popxl.float8_143,  0, False, np.array([0b00111100], popxl.dtypes.np_dtype_float8_143)],
     [np.array([0.75], np.float32), popxl.float8_143, -2, False, np.array([0b00101100], popxl.dtypes.np_dtype_float8_143)],
@@ -97,6 +104,12 @@ def test_to_numpy(x, dtype, downcast, exp_type):
     [np.array([0.75], np.float64), popxl.float8_143,  1, False, np.array([0b01000100], popxl.dtypes.np_dtype_float8_143)],
     [np.array([0.25], np.float64), popxl.float8_152,  0, False, np.array([0b00111000], popxl.dtypes.np_dtype_float8_152)],
     [np.array([0.25], np.float64), popxl.float8_152, -3, False, np.array([0b00101100], popxl.dtypes.np_dtype_float8_152)],
+    # Test nan_on_overflow for float8_143 + float16.
+    [np.array([250.], np.float16), popxl.float8_143,  0, False, np.array([0b01111111], popxl.dtypes.np_dtype_float8_143)],
+    [np.array([250.], np.float16), popxl.float8_143,  0, True,  np.array([0b10000000], popxl.dtypes.np_dtype_float8_143)],
+    # Test nan_on_overflow for float8_152 + float16.
+    [np.array([70000.], np.float16), popxl.float8_152,  0, False, np.array([0b01111111], popxl.dtypes.np_dtype_float8_152)],
+    [np.array([70000.], np.float16), popxl.float8_152,  0, True,  np.array([0b10000000], popxl.dtypes.np_dtype_float8_152)],
     # Test nan_on_overflow for float8_143 + float32.
     [np.array([250.], np.float32), popxl.float8_143,  0, False, np.array([0b01111111], popxl.dtypes.np_dtype_float8_143)],
     [np.array([250.], np.float32), popxl.float8_143,  0, True,  np.array([0b10000000], popxl.dtypes.np_dtype_float8_143)],
@@ -122,7 +135,7 @@ def test_host_pow2scale_then_cast(src, dtype, log2_scale, nan_on_overflow, exp_v
     assert isinstance(out, np.ndarray)
     assert np.array_equal(out, exp_vals)
 
-@pytest.mark.parametrize("dtype_from", [popxl.float32, popxl.float64])
+@pytest.mark.parametrize("dtype_from", [popxl.float16, popxl.float32, popxl.float64])
 @pytest.mark.parametrize("dtype_to", [popxl.float8_143, popxl.float8_152])
 @pytest.mark.parametrize("shape", [(1, 5), (16,),  (3, 4), (1,), (2, 9, 2, 1)])
 @pytest.mark.parametrize("log2_scale", [-1, 0, 1])
