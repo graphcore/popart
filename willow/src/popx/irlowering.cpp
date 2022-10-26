@@ -14,7 +14,6 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <snap/CompileGraph.hpp>
 #include <snap/DataStream.hpp>
 #include <snap/Graph.hpp>
 #include <snap/Program.hpp>
@@ -3522,13 +3521,12 @@ IrLowering::getExecutable(const ProfileCacher &ProfileCacher) {
       logging::devicex::info("Starting compilation");
 
       DebugInfo di{{}, "popart"};
-      auto executable = snap::compileGraph(graph(),
-                                           progs_.progs(),
-                                           engineOptions,
-                                           std::ref(progressLogger),
-                                           {{di.getPathName(), di.getId()},
-                                            getPoplarGraphDebugName()})
-                            .releaseExecutable();
+      auto executable = poplar::compileGraph(
+          graph(),
+          toPoplarProgs(progs_.progs()),
+          engineOptions,
+          std::ref(progressLogger),
+          {{di.getPathName(), di.getId()}, getPoplarGraphDebugName()});
 
       logging::devicex::info("Graph compiled");
       ProfileCacher.storeProfilesToCache();
