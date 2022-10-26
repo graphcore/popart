@@ -150,14 +150,23 @@ functions and operations for 8-bit floats.
    :name: popxl_ops_available_float8_api
    :class: longtable
 
-   * - API Function
+   * - API function
      - Description
 
    * - :py:func:`~popxl.utils.host_pow2scale_then_cast`
-     - Host-based conversion from 32/64-bit floating point data to our 8-bit floating point representation. 
+     - Host-based conversion from 32/64-bit floating point data to a 8-bit floating point representation.
 
    * - :py:func:`~popxl.utils.host_cast_then_pow2scale`
-     - Host-based conversion from our 8-bit floating point representation back to 32/64-bit floating point data. 
+     - Host-based conversion from a 8-bit floating point representation back to 32/64-bit floating point data.
+
+   * - :py:func:`~popxl.utils.pow2scale_then_cast`
+     - Operation to convert from 16-bit floating point to 8-bit floating point.
+
+   * - :py:func:`~popxl.utils.cast_then_pow2scale`
+     - Operation to convert from 8-bit floating point to 16-bit floating point.
+
+   * - :py:func:`~popxl.utils.matmul_pow2scaled`
+     - Operation to perform a matmul on 8-bit floating point data resulting in 16-bit floating point output.
 
 Note that for device-based operations that support 8-bit float operands the
 `log2_scale` operand is also a tensor parameter in its own right. This means you
