@@ -55,6 +55,7 @@ def test_expandcast(op_tester, expand_shape, inplace):
         if include_pattern:
             patterns.append("ExpandCast")
         op_tester.setPatterns(patterns, enableRuntimeAsserts=False)
+        op_tester.options.engineOptions["debug.retainDebugInformation"] = "true"
 
         session = op_tester.run(init_builder, reference, "train")
 

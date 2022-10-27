@@ -41,6 +41,7 @@ def test_per_op_partials():
         return [o]
 
     session = PopartTestSession()
+    session.options.engineOptions["debug.retainDebugInformation"] = "true"
 
     # check both convs are using half partials
     partials_type[0] = "HALF"
@@ -100,6 +101,7 @@ def test_per_op_partials_train():
 
     session = PopartTestSession()
     session.mode = "train"
+    session.options.engineOptions["debug.retainDebugInformation"] = "true"
 
     # check both convs are using half partials
     partials_type[0] = "HALF"
@@ -142,6 +144,7 @@ def test_global_partials():
         return [o]
 
     session = PopartTestSession()
+    session.options.engineOptions["debug.retainDebugInformation"] = "true"
 
     # check convs are using half partials
     session.options.partialsTypeMatMuls = "half"

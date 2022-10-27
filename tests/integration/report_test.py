@@ -142,6 +142,7 @@ def test_compilation_report():
     options = popart.SessionOptions()
     options.engineOptions["autoReport.directory"] = tempDir.name
     options.engineOptions["autoReport.outputGraphProfile"] = "true"
+    options.engineOptions["debug.retainDebugInformation"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
         session = popart.InferenceSession(
@@ -177,6 +178,7 @@ def test_compilation_report_deprecated():
     options = popart.SessionOptions()
     options.engineOptions["autoReport.directory"] = tempDir.name
     options.engineOptions["autoReport.outputGraphProfile"] = "true"
+    options.engineOptions["debug.retainDebugInformation"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
         session = popart.InferenceSession(
@@ -205,10 +207,13 @@ def test_compilation_report_cbor():
     proto = builder.getModelProto()
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
+    options = popart.SessionOptions()
+    options.engineOptions = {"autoReport.outputGraphProfile": "true"}
+    options.engineOptions["debug.retainDebugInformation"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
         session = popart.InferenceSession(
-            fnModel=proto, dataFlow=dataFlow, deviceInfo=device
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device, userOptions=options
         )
 
         _ = session.initAnchorArrays()
@@ -238,6 +243,7 @@ def test_execution_report():
     options = popart.SessionOptions()
     options.engineOptions["autoReport.directory"] = tempDir.name
     options.engineOptions["autoReport.all"] = "true"
+    options.engineOptions["debug.retainDebugInformation"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
         session = popart.InferenceSession(
@@ -278,6 +284,7 @@ def test_execution_report_new():
     options = popart.SessionOptions()
     options.engineOptions["autoReport.directory"] = tempDir.name
     options.engineOptions["autoReport.all"] = "true"
+    options.engineOptions["debug.retainDebugInformation"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
         session = popart.InferenceSession(
@@ -315,11 +322,15 @@ def test_execution_report_reset():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
+    tempDir = tempfile.TemporaryDirectory()
     opts.engineOptions = {"debug.instrument": "true"}
+    opts.engineOptions["autoReport.directory"] = tempDir.name
+    opts.engineOptions["autoReport.outputGraphProfile"] = "true"
+    opts.engineOptions["debug.retainDebugInformation"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
         session = popart.InferenceSession(
-            fnModel=proto, dataFlow=dataFlow, deviceInfo=device
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device, userOptions=opts
         )
 
         anchors = session.initAnchorArrays()
@@ -352,10 +363,12 @@ def test_execution_report_cbor():
     proto = builder.getModelProto()
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
+    options = popart.SessionOptions()
+    options.engineOptions["debug.retainDebugInformation"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
         session = popart.InferenceSession(
-            fnModel=proto, dataFlow=dataFlow, deviceInfo=device
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device, userOptions=options
         )
 
         anchors = session.initAnchorArrays()
@@ -387,6 +400,7 @@ def test_no_compile():
 
     opts = popart.SessionOptions()
     opts.compileEngine = False
+    opts.engineOptions["debug.retainDebugInformation"] = "true"
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
@@ -420,11 +434,14 @@ def test_serialized_graph_report():
 
     proto = builder.getModelProto()
 
+    options = popart.SessionOptions()
+    options.engineOptions["debug.retainDebugInformation"] = "true"
+
     dataFlow = popart.DataFlow(1, {out: popart.AnchorReturnType("All")})
 
     with tu.create_test_device() as device:
         session = popart.InferenceSession(
-            fnModel=proto, dataFlow=dataFlow, deviceInfo=device
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device, userOptions=options
         )
 
         _ = session.initAnchorArrays()

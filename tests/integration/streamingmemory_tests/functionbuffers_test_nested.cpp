@@ -267,11 +267,12 @@ std::pair<std::vector<float>, uint64_t> runTestCase(bool codeCopy) {
       ir->getAnchorRemap().getRight(act));
 
   // Set IR state required for lowering.
-  auto &opts                   = ir->getSessionOptions();
-  opts.aliasZeroCopy           = true;
-  opts.enableExplicitMainLoops = true;
-  opts.explicitRecomputation   = true;
-  opts.useHostCopyOps          = true;
+  auto &opts                                         = ir->getSessionOptions();
+  opts.aliasZeroCopy                                 = true;
+  opts.enableExplicitMainLoops                       = true;
+  opts.explicitRecomputation                         = true;
+  opts.useHostCopyOps                                = true;
+  opts.engineOptions["debug.retainDebugInformation"] = "true";
 
   ir->updateVertices();
 

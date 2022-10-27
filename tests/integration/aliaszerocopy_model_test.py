@@ -109,6 +109,7 @@ def test_streamingmemory_momentum(tmpdir):
         tempDir = tempfile.TemporaryDirectory()
         options.engineOptions["autoReport.directory"] = tempDir.name
         options.engineOptions["autoReport.all"] = "true"
+        options.engineOptions["debug.retainDebugInformation"] = "true"
 
         request_ipus = 2
 

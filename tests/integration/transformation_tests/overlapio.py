@@ -196,6 +196,7 @@ def run_model(
     # If `False` works, `True` should work too
     opts.rearrangeAnchorsOnHost = False
     opts.rearrangeStreamsOnHost = False
+    opts.engineOptions["debug.retainDebugInformation"] = "true"
 
     # Set session options to generate the report
     tu.set_autoreport_options(opts, tmpdir, output_execution_profile=True)

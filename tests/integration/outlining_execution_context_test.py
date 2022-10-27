@@ -70,6 +70,7 @@ def test_outlining_accumulation_context(pipeline, tmpdir):
         tempDir = tempfile.TemporaryDirectory()
         options.engineOptions["autoReport.directory"] = tempDir.name
         options.engineOptions["autoReport.outputGraphProfile"] = "true"
+        options.engineOptions["debug.retainDebugInformation"] = "true"
 
         with tu.create_test_device(4) as device:
 

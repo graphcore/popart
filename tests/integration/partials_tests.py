@@ -60,6 +60,7 @@ def test_per_op_partials():
         return [o]
 
     session = PopartTestSession()
+    session.options.engineOptions["debug.retainDebugInformation"] = "true"
 
     # check both convs are using half partials
     partials_type[0] = "HALF"
@@ -136,6 +137,7 @@ def test_per_op_partials_train():
 
     session = PopartTestSession()
     session.mode = "train"
+    session.options.engineOptions["debug.retainDebugInformation"] = "true"
 
     # check both convs are using half partials
     partials_type[0] = "HALF"
@@ -200,6 +202,8 @@ def test_global_partials():
 
     # check convs are using half partials
     session.options.convolutionOptions = {"partialsType": "half"}
+    session.options.engineOptions["debug.retainDebugInformation"] = "true"
+
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder0, device=device)
         _check_for_conv_partials(session, ["half"], ["float"])

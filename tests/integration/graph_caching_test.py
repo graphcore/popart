@@ -43,6 +43,7 @@ def test_convolution_cached_by_default():
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
+    opts.engineOptions["debug.retainDebugInformation"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
         session = popart.TrainingSession(
@@ -123,6 +124,7 @@ def test_convolution_disable_all():
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
+    opts.engineOptions["debug.retainDebugInformation"] = "true"
     opts.enableOutlining = False
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
@@ -201,6 +203,7 @@ def test_matmul_infer_cached_by_default():
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
+    opts.engineOptions["debug.retainDebugInformation"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
         session = popart.InferenceSession(
@@ -288,6 +291,7 @@ def test_matmul_train_cached_by_default():
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
+    opts.engineOptions["debug.retainDebugInformation"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
         session = popart.TrainingSession(
@@ -378,6 +382,7 @@ def test_gemm_train_cached_by_default():
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
+    opts.engineOptions["debug.retainDebugInformation"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
         session = popart.TrainingSession(
@@ -462,6 +467,7 @@ def test_outlining_bca1():
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
+    opts.engineOptions["debug.retainDebugInformation"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
         session = popart.InferenceSession(
@@ -537,6 +543,7 @@ def test_outlining_bca2():
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
+    opts.engineOptions["debug.retainDebugInformation"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
         session = popart.InferenceSession(
@@ -615,6 +622,7 @@ def test_outlining_bca3():
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
+    opts.engineOptions["debug.retainDebugInformation"] = "true"
 
     optimizer = popart.ConstSGD(0.01)
 
@@ -702,6 +710,7 @@ def test_outlining_bca4():
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
+    opts.engineOptions["debug.retainDebugInformation"] = "true"
     opts.enableFullyConnectedPass = False
 
     optimizer = popart.ConstSGD(0.01)

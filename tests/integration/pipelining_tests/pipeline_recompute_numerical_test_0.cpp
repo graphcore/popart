@@ -164,6 +164,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
     userOptions.virtualGraphMode = VirtualGraphMode::Manual;
 
     userOptions.reportOptions.insert({"showExecutionSteps", "true"});
+    userOptions.engineOptions.insert({"debug.retainDebugInformation", "true"});
 
     if (rt != RunType::SingleDevice) {
       userOptions.enablePipelining = true;

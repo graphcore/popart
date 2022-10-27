@@ -24,6 +24,7 @@ def test_groupHostSync():
     options.engineOptions = {
         "debug.instrumentCompute": "true",
         "debug.instrumentExternalExchange": "true",
+        "debug.retainDebugInformation": "true",
     }
     options.groupHostSync = True  # The option we are testing
     options.reportOptions = {

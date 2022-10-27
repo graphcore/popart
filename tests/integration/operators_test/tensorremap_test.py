@@ -80,6 +80,7 @@ def test_tensorremap(op_tester):
         op_tester.options.virtualGraphMode = popart.VirtualGraphMode.Auto
         op_tester.options.engineOptions["autoReport.directory"] = tempDir.name
         op_tester.options.engineOptions["autoReport.outputGraphProfile"] = "true"
+        op_tester.options.engineOptions["debug.retainDebugInformation"] = "true"
 
         session = op_tester.run(init_builder, reference, "infer")
 
