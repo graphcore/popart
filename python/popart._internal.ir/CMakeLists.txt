@@ -103,6 +103,7 @@ list(
   ${popart_op_headers_dir}/swish.hpp
   ${popart_op_headers_dir}/greater.hpp
   ${popart_op_headers_dir}/scatterreduce.hpp
+  ${popart_op_headers_dir}/subsample.hpp
   )
 # file(GLOB_RECURSE op_headers ${popart_op_headers_dir}/*.hpp)
 

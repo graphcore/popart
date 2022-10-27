@@ -70,6 +70,7 @@ from .split import split
 from .sqrt import sqrt
 from .squeeze import squeeze
 from .sub import sub
+from .subsample import subsample
 from .sum import sum
 from .sumsquare import sumsquare
 from .tanh import tanh
@@ -254,6 +255,8 @@ __all__ = [
     "squeeze",
     # sub.py
     "sub",
+    # subsample.py
+    "subsample",
     # sum.py
     "sum",
     # sumsquare.py
