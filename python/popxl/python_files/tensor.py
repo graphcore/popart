@@ -485,6 +485,20 @@ class Tensor:
         return ops.mul(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
+    def __pow__(self, other: TensorLike) -> "Tensor":
+        """Return `ops.pow(self, other)`."""
+        import popxl.ops as ops
+
+        return ops.pow(self, other)
+
+    @debug_context_frame_offset(1)
+    def __rpow__(self, other: TensorLike) -> "Tensor":
+        """Return `ops.pow(other, self)`."""
+        import popxl.ops as ops
+
+        return ops.pow(constant(other), self)
+
+    @debug_context_frame_offset(1)
     def __truediv__(self, other: TensorLike) -> "Tensor":
         """Return `ops.div(self, other)`."""
         import popxl.ops as ops

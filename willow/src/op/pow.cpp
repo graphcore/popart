@@ -58,7 +58,9 @@ std::unique_ptr<Op> PowArg1GradOp::clone() const {
 
 namespace {
 
-static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+static OpDefinition::DataTypes T = {DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::INT32};
 
 static OpDefinition powOpDef({OpDefinition::Inputs({{"X", T}, {"Y", T}}),
                               OpDefinition::Outputs({{"Z", T}}),
