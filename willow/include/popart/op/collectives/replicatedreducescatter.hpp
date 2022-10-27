@@ -42,8 +42,8 @@ public:
                             const Op::Settings &);
   ReplicatedReduceScatterOp(const OperatorIdentifier &, const Op::Settings &);
 
-  std::unique_ptr<Op> clone() const final;
-  void setup() final;
+  std::unique_ptr<Op> clone() const override;
+  void setup() override;
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
   void appendOutlineAttributes(OpSerialiserBase &) const override;
   CollectiveOperator getCollectiveOp() const { return op; }
@@ -61,6 +61,12 @@ public:
   fwdPropagateIsReplicaEqual(const AliasModel &aliasModel,
                              const ReplEqInputMap &inputMap,
                              ReplicaEqualAnalysisProxy &proxy) const override;
+
+  std::vector<std::unique_ptr<Op>> getGradOps() override;
+
+  const std::vector<GradInOutMapper> &gradInputInfo() const override;
+
+  const std::map<int, int> &gradOutToNonGradIn() const override;
 
 protected:
   CollectiveOperator op;

@@ -26,3 +26,38 @@ def to_collective_op(op: CollectiveOps) -> _ir.CollectiveOperator:
         raise ValueError(
             f"Not a valid op: {op}. Must choose from: {', '.join(OP_MAP.keys())}"
         )
+
+
+def _rearrange_input(t, axis):
+    """Rearange input so axis is first axis and flatten array to prepare for collective."""
+    # Rearrange tensor
+    if axis > 0:
+        # Permute the concat axis to the front
+        permutation = list(range(len(t.shape)))
+        permutation.pop(axis)
+        permutation.insert(0, axis)
+
+        t = t.transpose(permutation)
+
+    preshape = list(t.shape)
+
+    # Collectives implicitly flatten tensors but need this
+    # so autodiff creates correct grad op
+    t = t.flatten()
+    return t, preshape
+
+
+def _rearrange_output(y, new_shape, axis):
+    """Reshape collective output to correct shape and rearrange tensor so that axis order are correct."""
+    # Reshape as collectives implicitly flattens
+    y = y.reshape(new_shape)
+
+    # Rearrange tensor back
+    if axis > 0:
+        # Permute the concat axis back to position
+        permutation = list(range(len(y.shape)))
+        permutation.pop(0)
+        permutation.insert(axis, 0)
+
+        y = y.transpose(permutation)
+    return y

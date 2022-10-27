@@ -6,6 +6,7 @@ from popxl.context import get_current_context
 from popxl.tensor import Tensor
 from .collectives import to_collective_op, CollectiveOps
 from popxl.ops.utils import check_in_graph
+from .collectives import _rearrange_input, _rearrange_output
 
 
 def _replicated_reduce_scatter(
@@ -13,6 +14,7 @@ def _replicated_reduce_scatter(
     op: _ir.CollectiveOperator,
     group: Optional[ReplicaGrouping],
     configure_output_for_replicated_tensor_sharding: bool,
+    suffix: str,
 ) -> Tensor:
     """Construct a replicated reduce scatter op.
 
@@ -33,7 +35,7 @@ def _replicated_reduce_scatter(
 
     _op = pb_g.createConnectedOp_ReplicatedReduceScatterOp(
         {0: t.id},
-        {0: g._create_tensor_id(t.name + "_reduce_scattered")},
+        {0: g._create_tensor_id(t.name + suffix)},
         opid,
         op,
         group._pb_replica_grouping,
@@ -66,7 +68,11 @@ def replicated_reduce_scatter(
     """
     op = to_collective_op(op)
     return _replicated_reduce_scatter(
-        t, op, group, configure_output_for_replicated_tensor_sharding
+        t,
+        op,
+        group,
+        configure_output_for_replicated_tensor_sharding,
+        "_reduce_scattered",
     )
 
 
@@ -79,4 +85,55 @@ def replica_sharded_slice(t: Tensor, group: Optional[ReplicaGrouping] = None) ->
     Returns:
         Tensor: A slice of the tensor. Always a 1D tensor.
     """
-    return _replicated_reduce_scatter(t, _ir.CollectiveOperator.Local, group, True)
+    return _replicated_reduce_scatter(
+        t, _ir.CollectiveOperator.Local, group, True, "_sharded_slice"
+    )
+
+
+def replicated_slice(
+    t: Tensor, axis: int = 0, group: Optional[ReplicaGrouping] = None
+) -> Tensor:
+    """
+    Each replica takes a equal slice of `t` split along axis `axis`.
+    e.g. if `t` has shape `(2,4)`, there are two replicas and `axis==0`: the first replica
+    will output `[0:1, ...]` and the second replica `[1:2, ...]`.
+
+    This op is similar to `replica_sharded_slice` but differs in that it maintains
+    the output shape and does not configure the output for replicated tensor sharding.
+
+    This op is auto-differentiable and it's corresponding grad op is an replicated_all_gather.
+
+    Args:
+        t (Tensor): Tensor to split
+        axis (int): Axis to slice along
+        group (Optional[ReplicaGrouping]): Replica grouping that determines group of replicas
+        that slice `t`
+    Returns:
+        Tensor: A slice of the tensor.
+    Raises:
+        ValueError: if the group size does not equally divide the axis size
+    """
+    ctx = get_current_context()
+    g = ctx.graph
+    group = g.ir.replica_grouping() if group is None else group
+
+    if t.shape[axis] % group.group_size != 0:
+        raise ValueError(
+            f"Replicated slice must equally divide axis. "
+            f"Axis size: {t.shape[axis]}. Replica group size: {group.group_size}"
+        )
+
+    t_rearanged, new_shape = _rearrange_input(t, axis)
+
+    if t.shape[axis] / group.group_size == 1:
+        new_shape.pop(0)
+    else:
+        new_shape[0] //= group.group_size
+
+    out = _replicated_reduce_scatter(
+        t_rearanged, _ir.CollectiveOperator.Local, group, False, "_replicated_slice"
+    )
+
+    y = _rearrange_output(out, new_shape, axis)
+
+    return y

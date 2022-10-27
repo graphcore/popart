@@ -6,6 +6,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/collectives/collectives.hpp>
 #include <popart/op/collectives/replicatedallgather.hpp>
+#include <popart/op/collectives/replicatedreducescatter.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/tensor.hpp>
 
@@ -129,6 +130,29 @@ ReplicatedAllGatherOp::fwdPropagateIsReplicaEqual(
   } else {
     return Op::fwdPropagateIsReplicaEqual(aliasModel, inputMap, proxy);
   }
+}
+
+std::vector<std::unique_ptr<Op>> ReplicatedAllGatherOp::getGradOps() {
+  std::vector<std::unique_ptr<Op>> result;
+  result.push_back(std::make_unique<ReplicatedReduceScatterOp>(
+      Onnx::CustomOperators::ReplicatedReduceScatter,
+      CollectiveOperator::Local,
+      getReplicaGrouping(),
+      settings));
+
+  return result;
+}
+
+const std::vector<GradInOutMapper> &
+ReplicatedAllGatherOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo = {
+      {getInIndex(), getOutIndex(), GradOpInType::GradOut}};
+  return inInfo;
+}
+
+const std::map<int, int> &ReplicatedAllGatherOp::gradOutToNonGradIn() const {
+  static const std::map<int, int> outInfo = {{getOutIndex(), getInIndex()}};
+  return outInfo;
 }
 
 } // namespace popart

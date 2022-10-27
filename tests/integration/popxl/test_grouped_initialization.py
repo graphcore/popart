@@ -222,8 +222,7 @@ def create_simple_model(
     full_weights_shape = [C, B]
     label_shape = [A]
 
-    default_rg = rg if rg else ir.replica_grouping()
-    num_groups = default_rg.num_groups
+    num_groups = rg.num_groups
 
     weights_array = get_weights_array(full_weights_shape, num_groups)
     weights_array_init = get_weights_array(full_weights_shape, num_groups)
@@ -262,7 +261,7 @@ def create_simple_model(
         )
         W_gathered = W_loaded
         if rts:
-            W_gathered = ops.collectives.replicated_all_gather(W_loaded, default_rg)
+            W_gathered = ops.collectives.replicated_all_gather(W_loaded, group=rg)
 
         # Create linear model with required shapes and grouping
         linear = Linear(full_weights_shape)
@@ -300,7 +299,7 @@ def create_simple_model(
             if rts:
                 # Scatter W_grad
                 W_grad = ops.collectives.replicated_reduce_scatter(
-                    W_grad, "add", default_rg, True
+                    W_grad, "add", rg, True
                 )
 
             # Update W in-place
@@ -434,7 +433,7 @@ def test_grouped_initialization(config, remote: bool, rts: bool, retrieval_mode:
     # Initialise replica grouping (equivalent of VariableSettings in PopART)
     if config["inputs"] is None:
         # No replica grouping for the weights
-        rg = None
+        rg = ir.replica_grouping()
     else:
         rg = ir.replica_grouping(**config["inputs"])
     # Create a simple linear model
@@ -449,9 +448,6 @@ def test_grouped_initialization(config, remote: bool, rts: bool, retrieval_mode:
     # Retrieve the updated weight value
     final_weight = session.get_tensor_data(w)
 
-    if rg is None:
-        # Model already run, so it's safe to initialize rg
-        rg = ir.replica_grouping()
     groups = rg._to_variable_settings(retrieval_mode).groups(ir.replication_factor)
 
     # Get forward pass output

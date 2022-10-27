@@ -55,6 +55,12 @@ public:
                              const ReplEqInputMap &inputMap,
                              ReplicaEqualAnalysisProxy &proxy) const override;
 
+  std::vector<std::unique_ptr<Op>> getGradOps() override;
+
+  const std::vector<GradInOutMapper> &gradInputInfo() const override;
+
+  const std::map<int, int> &gradOutToNonGradIn() const override;
+
 private:
   TensorInfo gatheredOutInfo;
 };

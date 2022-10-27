@@ -5,6 +5,7 @@
 #include <string>
 #include <tuple>
 #include <popart/ir.hpp>
+#include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/op/collectives/replicatedreducescatter.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -141,6 +142,32 @@ ReplicatedReduceScatterOp::fwdPropagateIsReplicaEqual(
   } else {
     return Op::fwdPropagateIsReplicaEqual(aliasModel, inputMap, proxy);
   }
+}
+
+std::vector<std::unique_ptr<Op>> ReplicatedReduceScatterOp::getGradOps() {
+  if (getCollectiveOp() != CollectiveOperator::Local) {
+    throw error("ReplicatedReduceScatterOp: grad op is only implemented when "
+                "CollectiveOperator==CollectiveOperator::Local");
+  }
+  std::vector<std::unique_ptr<Op>> result;
+  result.push_back(std::make_unique<ReplicatedAllGatherOp>(
+      Onnx::CustomOperators::ReplicatedAllGather,
+      getReplicaGrouping(),
+      settings));
+  return result;
+}
+
+const std::vector<GradInOutMapper> &
+ReplicatedReduceScatterOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo = {
+      {getInIndex(), getOutIndex(), GradOpInType::GradOut}};
+  return inInfo;
+}
+
+const std::map<int, int> &
+ReplicatedReduceScatterOp::gradOutToNonGradIn() const {
+  static const std::map<int, int> outInfo = {{getOutIndex(), getInIndex()}};
+  return outInfo;
 }
 
 static OpDefinition::DataTypes T = {DataType::FLOAT,

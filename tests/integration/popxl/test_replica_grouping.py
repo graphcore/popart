@@ -22,19 +22,21 @@ GROUPING_ARGS = (
 
 
 def add_replicated_all_gather(x, group):
-    return ops.collectives.replicated_all_gather(x, group)
+    return ops.collectives.replicated_all_gather(
+        x, group=group, output_shape="new_axis"
+    )
 
 
 def add_replicated_all_reduce(x, group):
-    return ops.collectives.replicated_all_reduce(x, "add", group)
+    return ops.collectives.replicated_all_reduce(x, "add", group=group)
 
 
 def add_replicated_all_reduce_(x, group):
-    return ops.collectives.replicated_all_reduce_(x, "add", group)
+    return ops.collectives.replicated_all_reduce_(x, "add", group=group)
 
 
 def add_replicated_reduce_scatter(x, group):
-    return ops.collectives.replicated_reduce_scatter(x, "add", group)
+    return ops.collectives.replicated_reduce_scatter(x, "add", group=group)
 
 
 def get_replicated_all_gather_expected_result(group):

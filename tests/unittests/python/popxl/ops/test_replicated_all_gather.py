@@ -20,7 +20,7 @@ class TestReplicatedAllGather:
             gathered_t = ops.collectives.replicated_all_gather(t)
 
         assert t.nelms * 2 == gathered_t.nelms
-        assert len(g.tensors) == 2
+        assert len(g.tensors) == 4
         assert contains_op_of_type(
             "ReplicatedAllGather", _ir.op.collectives.ReplicatedAllGatherOp, g
         )

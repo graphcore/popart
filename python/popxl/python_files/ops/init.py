@@ -13,6 +13,7 @@ def init(
     dtype: dtypes.dtype,
     name: Optional[str] = None,
     init_type: Union[Literal["zero"], Literal["undef"]] = "zero",
+    meta_shape: Optional[Iterable[int]] = None,
 ) -> Tensor:
     """
     Create a tensor that is initialised with zero or undefined values.
@@ -29,6 +30,7 @@ def init(
         shape (Tuple[int]): Shape of the output tensor.
         name (str): Name of the output tensor.
         init_type (Union[Literal["zero"], Literal["undef"]]): Initialisation of the output tensor.
+        meta_shape (Tuple[int]): meta shape of tensor
 
     Raises:
         ValueError: If the `init_type` is unknown.
@@ -40,7 +42,11 @@ def init(
     g = ctx.graph
 
     pb_g = g._pb_graph
-    info = _ir.TensorInfo(dtype._pb_dtype, list(shape))
+
+    if not meta_shape:
+        info = _ir.TensorInfo(dtype._pb_dtype, list(shape))
+    else:
+        info = _ir.TensorInfo(dtype._pb_dtype, list(shape), list(meta_shape))
 
     if init_type == "zero":
         pb_init_type = _ir.InitType.Zero
