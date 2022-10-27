@@ -7,14 +7,14 @@
     "boost",
     "protobuf",
     "capnproto",
-    "trompeloeil",
-    "snap"
+    "trompeloeil"
   ],
   "optional_dependencies": [
       "popef",
       "poplar",
       "poplibs",
       "popir",
+      "snap",
       "popdist",
       "gcl",
       "gccs",
