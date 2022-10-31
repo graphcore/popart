@@ -295,6 +295,42 @@ class TestTensorGetItem:
             with pytest.raises(TypeError):
                 _ = x[key]
 
+    def test_slice_step_1d(self):
+        with popxl.Ir().main_graph:
+            x = popxl.variable(np.random.rand(10, 10))
+            y = x[1:5:2]
+            assert y.shape == (2, 10)
+
+    def test_slice_step(self):
+        with popxl.Ir().main_graph:
+            x = popxl.variable(np.random.rand(10, 10))
+            y = x[1:5:2, 2:6]
+            assert y.shape == (2, 4)
+
+    def test_slice_step_and_int(self):
+        with popxl.Ir().main_graph:
+            x = popxl.variable(np.random.rand(10, 10))
+            y = x[1:5:2, 1]
+            assert y.shape == (2,)
+
+    def test_slice_negative_step(self):
+        with popxl.Ir().main_graph:
+            x = popxl.variable(np.random.rand(10, 10))
+            y = x[9:4:-2]
+            assert y.shape == (3, 10)
+
+    def test_slice_step_only_1d(self):
+        with popxl.Ir().main_graph:
+            x = popxl.variable(np.random.rand(10, 10))
+            y = x[::5]
+            assert y.shape == (2, 10)
+
+    def test_slice_step_only(self):
+        with popxl.Ir().main_graph:
+            x = popxl.variable(np.random.rand(10, 10))
+            y = x[::5, ::2]
+            assert y.shape == (2, 5)
+
 
 class TestTensorSpec:
     def test_init(self):

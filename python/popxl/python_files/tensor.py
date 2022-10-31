@@ -645,22 +645,34 @@ class Tensor:
 
             start = []
             stop = []
-            step = []
+            slice_step = []
+            subsample_step = []
             int_slices = []
 
             for i, key_i in enumerate(key):
                 if isinstance(key_i, int):
                     start += [key_i]
                     stop += [key_i + 1]
-                    step += [1]
+                    slice_step += [1]
+                    subsample_step += [1]
                     int_slices += [i]
 
                 elif isinstance(key_i, slice):
                     start += [key_i.start]
                     stop += [key_i.stop]
-                    step += [key_i.step]
+                    # Step sent to slice must always be one of {-1, 1}
+                    # To handle abs(step) > 1, we'll slice first, then subsample
+                    # To do this, clamp the step in the range {-1, 1}
+                    slice_step += [
+                        None if key_i.step is None else max(-1, min(1, key_i.step))
+                    ]
+                    # Because the slice with negative step reverses direction already, we need abs(step) for the subsample
+                    subsample_step += [1 if key_i.step is None else abs(key_i.step)]
 
-            out = ops.slice(self, start, stop, step)
+            out = ops.slice(self, start, stop, slice_step)
+
+            if any(x != 1 for x in subsample_step):
+                out = ops.subsample(out, subsample_step)
 
             if len(int_slices) > 0:
                 out = ops.squeeze(out, axes=int_slices)

@@ -14,8 +14,9 @@ class TestSubsample:
         "input_shape, slices, expect_fail",
         [
             ((50, 24), [2, 4], False),
-            ((50, 24), [2], True),
+            ((50, 24), [2], False),
             ((10,), 2, False),
+            ((10,), -2, True),
         ],
     )
     def test_fn(
@@ -25,15 +26,17 @@ class TestSubsample:
         expect_fail: bool,
     ):
 
-        ctx = pytest.raises(ValueError) if expect_fail else suppress()
+        ctx = pytest.raises(Exception) if expect_fail else suppress()
 
         pt_input = torch.randint(0, 20, input_shape, dtype=torch.int32)
-        if isinstance(slices, int):
-            pt_output = pt_input[::slices]
-        elif len(slices) == 1:
-            pt_output = pt_input[:: slices[0]]
-        else:
-            pt_output = pt_input[:: slices[0], :: slices[1]]
+
+        with ctx:
+            if isinstance(slices, int):
+                pt_output = pt_input[::slices]
+            elif len(slices) == 1:
+                pt_output = pt_input[:: slices[0]]
+            else:
+                pt_output = pt_input[:: slices[0], :: slices[1]]
 
         ir = popxl.Ir(replication=1)
         with ctx:

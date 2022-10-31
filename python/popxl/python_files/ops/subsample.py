@@ -16,13 +16,15 @@ def subsample(t: Tensor, strides: Union[int, Iterable[int]]) -> Tensor:
         t (Tensor):
             The input tensor to subsample.
         strides (Union[int, Iterable[int]]):
-            A list of strides for each dimension of the input tensor
+            A list of strides for each dimension of the input tensor.
+            If len(strides) < t.rank, the list is padded with ones.
     Returns:
         Tensor:
             A subsampled output tensor.
     Raises:
-        ValueError: Thrown if the length of the strides list is different
-            to the rank of the input tensor.
+        ValueError:
+            Thrown if the length of the strides list is larger than the
+            rank of the input tensor.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -34,9 +36,13 @@ def subsample(t: Tensor, strides: Union[int, Iterable[int]]) -> Tensor:
     if isinstance(strides, int):
         strides = [strides]
 
-    if len(strides) != t.rank:
+    if len(strides) < t.rank:
+        # PopART doesn't support len(strides) < rank.
+        # If strides is < rank, pad with 1s to emulate PyTorch behaviour.
+        strides += [1] * (t.rank - len(strides))
+    elif len(strides) > t.rank:
         raise ValueError(
-            "The length of subsample `strides` must match the rank of the input tensor."
+            "The length of subsample `strides` must not be greater than the rank of the input tensor."
         )
 
     settings = ctx._get_op_settings("subsample")
