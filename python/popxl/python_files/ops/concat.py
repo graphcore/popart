@@ -28,6 +28,7 @@ def concat(ts: Iterable[Tensor], axis: int = 0) -> Tensor:
 
     ts = list(ts)
 
+    _check_input_types(ts)
     check_in_graph(g, **{f"ts_{i}": t for i, t in enumerate(ts)})
     check_tensor_ipu_and_tile_set(**{f"ts_{i}": t for i, t in enumerate(ts)})
 
@@ -68,6 +69,7 @@ def concat_(ts: Iterable[Tensor], axis: int = 0) -> Tensor:
 
     ts = list(ts)
 
+    _check_input_types(ts)
     check_in_graph(g, **{f"ts_{i}": t for i, t in enumerate(ts)})
     check_tensor_ipu_and_tile_set(**{f"ts_{i}": t for i, t in enumerate(ts)})
 
@@ -82,3 +84,19 @@ def concat_(ts: Iterable[Tensor], axis: int = 0) -> Tensor:
     )
 
     return Tensor._from_pb_tensor(op.outTensor(0))
+
+
+def _check_input_types(ts: Iterable[Tensor]) -> None:
+    """Check that all the input types of the tensors are the same.
+
+    Args:
+        ts (Iterable[Tensor]): The iterable of tensors to check.
+
+    Raises:
+        TypeError: If the input dtypes are not all the same.
+    """
+    types_ = [t.dtype for t in ts]
+    if not len(set(types_)) <= 1:
+        raise TypeError(
+            f"All inputs to a concat operation must have the same type: {types_}"
+        )

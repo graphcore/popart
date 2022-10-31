@@ -190,8 +190,26 @@ void ConcatOp::validateAxis() const {
   }
 }
 
+void ConcatOp::validateInputTypes() const {
+  std::vector<DataType> inTypes;
+  inTypes.reserve(input->tensors().size());
+  auto ts = input->tensors();
+
+  std::transform(ts.cbegin(),
+                 ts.cend(),
+                 std::back_inserter(inTypes),
+                 [](const Tensor *t) { return t->info.dataType(); });
+
+  if (!std::equal(inTypes.begin() + 1, inTypes.end(), inTypes.begin())) {
+    throw error("All input tensor types to a concat operation must be equal. "
+                "This is for op {}",
+                this->debugName());
+  }
+}
+
 void ConcatOp::setup() {
   validateAxis();
+  validateInputTypes();
 
   const auto input_count = input->n();
 

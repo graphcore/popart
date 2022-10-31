@@ -213,7 +213,10 @@ void SubsampleBaseOp::growAliasModel(AliasModel &m) const {
 
 namespace {
 
-static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+static OpDefinition::DataTypes T = {DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::FLOAT8_143,
+                                    DataType::FLOAT8_152};
 
 static OpDefinition
     subsampleOpDef({OpDefinition::Inputs({{"X", T}}),

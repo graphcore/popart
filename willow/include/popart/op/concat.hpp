@@ -65,6 +65,12 @@ public:
 
 private:
   void validateAxis() const;
+  /**
+   * Validate that all inputs to this concat operation are of the same PopART
+   * data type.
+   *
+   */
+  void validateInputTypes() const;
 
   int64_t axis = 0;
 

@@ -48,6 +48,7 @@ add_popart_py_unit_test(test_replicated_all_gather VARIANTS IpuModel2)
 add_popart_py_unit_test(test_replicated_slice VARIANTS IpuModel2)
 add_popart_py_unit_test(test_autodiff_hassideeffect_op VARIANTS IpuModel2)
 add_popart_py_unit_test(test_float8_variables VARIANTS IpuModel2)
+add_popart_py_unit_test(test_float8_view_changes VARIANTS IpuModel2)
 add_popart_py_unit_test(test_subsample VARIANTS IpuModel2)
 
 # Cannot run on CI as needs to dynamically create/destroy various types of

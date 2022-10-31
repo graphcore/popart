@@ -542,7 +542,9 @@ static OpDefinition::DataTypes T    = {DataType::UINT8,
                                     DataType::INT64,
                                     DataType::FLOAT16,
                                     DataType::FLOAT,
-                                    DataType::BOOL};
+                                    DataType::BOOL,
+                                    DataType::FLOAT8_143,
+                                    DataType::FLOAT8_152};
 static OpDefinition::DataTypes Tind = {DataType::INT32, DataType::INT64};
 
 static OpDefinition

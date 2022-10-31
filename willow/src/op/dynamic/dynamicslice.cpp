@@ -186,7 +186,9 @@ static OpDefinition::DataTypes U = {DataType::UINT32};
 static OpDefinition::DataTypes T = {DataType::FLOAT,
                                     DataType::FLOAT16,
                                     DataType::INT32,
-                                    DataType::UINT32};
+                                    DataType::UINT32,
+                                    DataType::FLOAT8_143,
+                                    DataType::FLOAT8_152};
 
 static OpDefinition
     dynamicSliceOpDef({OpDefinition::Inputs({{"X", T}, {"O", U}}),

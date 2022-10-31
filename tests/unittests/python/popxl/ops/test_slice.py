@@ -2,58 +2,23 @@
 import popxl
 import popxl.ops as ops
 import popart._internal.ir as _ir
-import popart
 from utils import contains_op_of_type
 import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 
-# `import test_util` requires adding to sys.path
-import sys
-from pathlib import Path
-
-sys.path.append(
-    str(Path(__file__).resolve().parent.parent.parent.parent.parent / "integration")
-)
-import test_util as tu
-
 data = np.arange(64).reshape(4, 4, 4).astype("float32")
 
 
 def run_ir(ir: popxl.Ir, y: popxl.Tensor):
-    ir_ = ir._pb_ir  # Internal ir
     y_d2h = popxl.d2h_stream(y.shape, y.dtype, name="y_stream")
     ops.host_store(y_d2h, y)
-    y_id = y_d2h.tensor_id
 
-    dataFlow = popart.DataFlow(
-        batchesPerStep=1, anchorTensors={y_id: popart.AnchorReturnType("All")}
-    )
-    ir_.setDataFlow(dataFlow)
+    with popxl.Session(ir, "ipu_model") as session:
 
-    opts = ir_.getSessionOptions()
-    opts.useHostCopyOps = True
-    opts.enableExplicitMainLoops = True
-    opts.aliasZeroCopy = True
-    opts.explicitRecomputation = True
+        outputs = session.run({})
 
-    ir_.updateVertices()
-
-    with tu.create_test_device() as device:
-        session = popart.InferenceSession.fromIr(ir=ir_, deviceInfo=device)
-
-        session.prepareDevice()
-
-        # Create buffers for anchors
-        anchors = session.initAnchorArrays()
-
-        # Run the model
-        stepio = popart.PyStepIO(inputs={}, outputs=anchors)
-
-        session.weightsFromHost()
-        session.run(stepio)
-
-    y_ = anchors[y_id]
+    y_ = outputs[y_d2h]
     return y_
 
 
