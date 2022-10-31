@@ -185,6 +185,21 @@ class TestTensor:
                 == "Tensor[TestTensor.test_repr.subgraph1_subgraph(0)/a popxl.dtypes.int32 (1,)]"
             )
 
+    def test_diag(self):
+        with popxl.Ir().main_graph:
+            x = popxl.variable(np.random.rand(10, 10))
+            y = x.diag()
+            assert y.shape == (10,)
+
+    def test_diag_not_2d(self):
+        with popxl.Ir().main_graph:
+            x = popxl.variable(np.random.rand(10, 10, 10))
+            with pytest.raises(ValueError):
+                _ = x.diag()
+            x = popxl.variable(np.random.rand(10))
+            with pytest.raises(ValueError):
+                _ = x.diag()
+
 
 class TestTensorIpuAndTileSet:
     def test_ipu_undefined(self):

@@ -337,6 +337,18 @@ class Tensor:
         return ops.detach(self)
 
     @debug_context_frame_offset(1)
+    def diag(self) -> "Tensor":
+        """Return the diagonal of a 2d tensor.
+
+        Raises:
+            ValueError: If the tensor is not 2-dimensional
+        """
+        if self.rank != 2:
+            raise ValueError("Diag expected a 2d tensor.")
+
+        return self.flatten()[:: self.shape[1] + 1]
+
+    @debug_context_frame_offset(1)
     def detach_(self) -> "Tensor":
         """Return this tensor detached inplace."""
         import popxl.ops as ops
