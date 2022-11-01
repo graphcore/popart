@@ -19,6 +19,8 @@
 #include <vector>
 #include <popart/error.hpp>
 #include <popart/names.hpp>
+#include <iostream>
+#include <fstream>
 
 #include "popart/logging.hpp"
 

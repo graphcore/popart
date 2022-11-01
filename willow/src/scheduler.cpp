@@ -23,6 +23,7 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/scheduler.hpp>
+#include <fstream>
 
 #include "popart/graphid.hpp"
 #include "popart/logging.hpp"

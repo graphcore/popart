@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <filereader.hpp>
 #include <istream>
+#include <fstream>
 #include <iterator>
 #include <memory>
 #include <onnx/onnx_pb.h>
