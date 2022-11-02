@@ -70,6 +70,7 @@ class Ir:
 
         Ir._ir_cache[self.id] = self
         self._graph_cache: Dict[str, Graph] = {}
+        self._tensor_cache: Dict[str, Tensor] = {}
         # If no num_device_iterations, default to 1
         if not self._pb_ir.getDataFlow().batchesPerStep():
             self._pb_ir.getDataFlow().setBatchesPerStep(1)
@@ -531,3 +532,30 @@ class Ir:
         return ReplicaGrouping._from_params(
             ir=self, stride=stride, group_size=group_size
         )
+
+    def replica_grouping_from_assignments(
+        self, assignment: List[int]
+    ) -> "ReplicaGrouping":
+        """
+        Create a :py:class:`~popxl.ReplicaGrouping` object with an arbitrary replica group assignment.
+        If a non-constant stride is provided, the ReplicaGrouping can be used for variable
+        settings and cannot be used with GCL operations.
+
+        An example of a non-constant stride is the assignment `[0, 1, 0, 0, 1, 1]` as the strides for
+        group 0 is `[2, 1]`.
+
+        For more information about replica groupings see the docstring for `Ir.replica_grouping`
+
+        .. code-block:: python
+
+            ir.replica_grouping([0, 0, 1, 1, 0, 0, 1, 1]).assignment
+            [0, 0, 1, 1, 0, 0, 1, 1]
+
+        Args:
+            assignment (List[int]): The group each replica is assigned to.
+
+        Returns:
+            ReplicaGrouping: An object describing the replica grouping.
+
+        """
+        return ReplicaGrouping._from_assignment(ir=self, assignment=assignment)

@@ -342,7 +342,15 @@ class Session:
 
                 return_tensors[tensor] = weights[tensor.id]
             else:
-                return_tensors[tensor] = _popxl_to_numpy(tensor)
+                data_np = _popxl_to_numpy(tensor)
+
+                if (
+                    isinstance(tensor, Variable)
+                    and not tensor.replica_grouping.is_const
+                ):
+                    data_np = data_np[tensor.replica_grouping.to_host_map]
+
+                return_tensors[tensor] = data_np
 
         return return_tensors
 
@@ -434,6 +442,12 @@ class Session:
                     f'Copying to tensor {tensor.id} with "all_replicas" '
                     "retreval mode is not yet supported."
                 )
+
+            if not tensor.replica_grouping.is_const:
+                data = data[tensor.replica_grouping.to_device_map]
+
+            # If needed, convert to C-ordered contiguous array
+            data = np.asarray(data, order="C")
 
             tensor._pb_tensor.writeTensorData(data, self._pb_session)
 

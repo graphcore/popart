@@ -4,10 +4,12 @@ from typing import Any, Dict, List, Optional, Tuple
 from typing_extensions import Literal
 
 import numpy as np
-import popart
 import pytest
 
 import popxl
+import popart
+import popart._internal.ir as pb_ir
+from popxl import ops
 import popxl.dtypes as dtypes
 from popxl.replica_grouping import ReplicaGrouping
 from popxl.tensor import Variable
@@ -38,6 +40,12 @@ class TestReplicaGrouping:
         assert rg.stride == stride
         assert rg.group_size == group_size
         assert rg.assignment == assignment
+        assert isinstance(rg.num_groups, int)
+        assert rg.const_rg
+        assert rg.to_device_map is None
+        assert rg.to_host_map is None
+        assert isinstance(rg._to_variable_settings(), popart.VariableSettings)
+        assert isinstance(rg._pb_replica_grouping, pb_ir.ReplicaGrouping)
 
     def test_replica_grouping_repr(self):
         ir = popxl.Ir()
@@ -220,39 +228,6 @@ class TestVariableReplicaGrouping:
 
         with main:
             replica_grouping = ir.replica_grouping(**settings["inputs"])
-            self._verify_settings(replica_grouping)
-
-    def test__from_variable_settings(
-        self,
-        settings: Dict[str, Any],
-        retrieval_mode: Literal["one_per_group", "all_replicas"],
-    ):
-        """Test the correct ReplicaGrouping is generated from a VariableSettings object.
-
-        Args:
-            settings (Dict[str, Any]): Some examples of the expected variable settings.
-            retrieval_mode (Literal["one_per_group", "all_replicas"]):
-                One of:
-                - "one_per_group": Return only the first replica's variable per group.
-                - "all_replicas": Return all replica's variables in every group.
-        """
-        ir = popxl.Ir()
-        ir.replication_factor = settings["replicas"]
-        main = ir.main_graph
-
-        stride = settings["inputs"].get("stride", 1)
-        group_size = settings["inputs"].get(
-            "group_size", settings["replicas"] // stride
-        )
-        if retrieval_mode == "one_per_group":
-            rm = popart.VariableRetrievalMode.OnePerGroup
-        else:
-            rm = popart.VariableRetrievalMode.AllReplicas
-
-        vs = popart.VariableSettings(stride, group_size, rm)
-
-        with main:
-            replica_grouping = popxl.ReplicaGrouping._from_variable_settings(ir, vs)
             self._verify_settings(replica_grouping)
 
     def test_variable_settings_normal_variable(
@@ -466,3 +441,134 @@ def test_transpose():
         assert rg_transpose.stride == transpose["stride"], f"example {i}"
         assert rg_transpose.group_size == transpose["group_size"], f"example {i}"
         assert rg_transpose.assignment == transpose["assignment"], f"example {i}"
+
+
+class TestReplicaGroupingNonConst:
+    def test_transpose_from_const_to_nonconst(self):
+        ir = popxl.Ir(replication=8)
+        rg = ir.replica_grouping(stride=2, group_size=2)
+        assert rg.assignment == [0, 1, 0, 1, 2, 3, 2, 3]
+
+        rg_T = rg.transpose()
+        assert not rg_T.is_const
+        assert rg_T.assignment == [0, 0, 1, 1, 0, 0, 1, 1]
+
+    def test_transpose_from_nonconst_to_const(self):
+        ir = popxl.Ir(replication=8)
+        rg = ir.replica_grouping_from_assignments([0, 0, 1, 1, 0, 0, 1, 1])
+
+        rg_T = rg.transpose()
+        assert rg_T.is_const
+        assert rg_T.assignment == [0, 1, 0, 1, 2, 3, 2, 3]
+
+    def test_transpose_from_nonconst_to_nonconst(self):
+        ir = popxl.Ir(replication=8)
+        rg = ir.replica_grouping_from_assignments([0, 1, 0, 1, 2, 3, 2, 3])
+
+        rg_T = rg.transpose()
+        assert not rg_T.is_const
+        assert rg_T.assignment == [0, 0, 1, 1, 0, 0, 1, 1]
+
+    def test_constructor_checks(self):
+        # Wrong length
+        ir = popxl.Ir(replication=4)
+        with pytest.raises(ValueError):
+            ir.replica_grouping_from_assignments([0])
+
+        # Different group sizes
+        with pytest.raises(ValueError):
+            ir.replica_grouping_from_assignments([0, 0, 0, 1])
+
+        # Group indexes dont start at 0
+        with pytest.raises(ValueError):
+            ir.replica_grouping_from_assignments([1, 1, 2, 2])
+
+        # Group indexes are not consecutive
+        with pytest.raises(ValueError):
+            ir.replica_grouping_from_assignments([0, 0, 2, 2])
+
+        # Group indexes are not monotonic
+        with pytest.raises(ValueError):
+            ir.replica_grouping_from_assignments([1, 1, 0, 0])
+
+    def test_properties(self):
+        ir = popxl.Ir(replication=8)
+        rg = ir.replica_grouping_from_assignments([0, 0, 1, 1, 0, 0, 1, 1])
+
+        assert rg.assignment == [0, 0, 1, 1, 0, 0, 1, 1]
+        assert rg.group_size == 4
+        assert rg.num_groups == 2
+        assert not rg.is_const
+        assert isinstance(rg.num_groups, int)
+        assert rg.to_device_map
+        assert rg.to_host_map
+
+        with pytest.raises(NotImplementedError):
+            rg.stride
+
+        with pytest.raises(NotImplementedError):
+            rg._to_variable_settings()
+
+        with pytest.raises(NotImplementedError):
+            rg._pb_replica_grouping
+
+    def test_from_assignment_with_const_stride(self):
+        ir = popxl.Ir(replication=8)
+        rg = ir.replica_grouping_from_assignments([0, 0, 0, 0, 1, 1, 1, 1])
+
+        assert rg.is_const
+        assert rg.group_size == 4
+        assert rg.stride == 1
+
+
+nonconst_variable_examples = [
+    {
+        "assignment": [0, 0, 1, 1, 0, 0, 1, 1],
+        "const_assignment": [0, 0, 1, 1, 2, 2, 3, 3],
+    },
+    {
+        "assignment": [0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1],
+        "const_assignment": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+    },
+    {
+        "assignment": [0, 1, 1, 0, 0, 1, 1, 0],
+        "const_assignment": [0, 1, 2, 3, 4, 5, 6, 7],
+    },
+    {
+        "assignment": [0, 1, 2, 3, 1, 2, 3, 0],
+        "const_assignment": [0, 1, 2, 3, 4, 5, 6, 7],
+    },
+    {
+        "assignment": [0, 1, 0, 0, 1, 1, 0, 1],
+        "const_assignment": [0, 1, 2, 3, 4, 5, 6, 7],
+    },
+]
+
+
+def test_nonconst_rg_variable():
+    for i, example in enumerate(nonconst_variable_examples):
+        assignment = example["assignment"]
+        const_assignment = example["const_assignment"]
+        assert len(assignment) == len(const_assignment)
+        replication = len(assignment)
+        num_groups = len(set(assignment))
+
+        ir = popxl.Ir(replication=replication)
+        data = np.arange(num_groups * 3 * 2).reshape(num_groups, 3, 2).astype("int32")
+        rg = ir.replica_grouping_from_assignments(assignment)
+        assert not rg.is_const, f"example {i}"
+        assert rg.const_rg.assignment == const_assignment, f"example {i}"
+
+        with ir.main_graph:
+            var = popxl.variable(data, popxl.int32, name="var", replica_grouping=rg)
+            assert var.shape == (3, 2)
+            ops.print_tensor(var)  # Stops the variable being optimised away
+
+        with popxl.Session(ir, "ipu_model") as session:
+            device_data = session.get_tensor_data(var)
+            np.testing.assert_array_equal(device_data, data, err_msg=f"example {i}")
+
+            data_rev = data[::-1]
+            session.write_variable_data(var, data_rev)
+            device_data = session.get_tensor_data(var)
+            np.testing.assert_array_equal(device_data, data_rev, err_msg=f"example {i}")

@@ -20,6 +20,7 @@ from popxl.typing_ import NewAliasAnnotation
 from popxl.errors import UndefinedValue
 from popxl.utils import to_numpy
 from popxl.replica_grouping import ReplicaGrouping
+import popxl
 
 if TYPE_CHECKING:
     from popxl import Ir
@@ -123,6 +124,11 @@ class Tensor:
 
     @classmethod
     def _from_pb_tensor(cls, pb_tensor: _ir.Tensor) -> "Tensor":
+        ir = popxl.Ir._from_pb(pb_tensor.getIr())
+        id = str(pb_tensor.id)
+        if id in ir._tensor_cache:
+            return ir._tensor_cache[id]
+
         specifc_cls = cls._tensor_types.get(
             pb_tensor.tensor_type(), None
         )  # type: ignore
@@ -131,6 +137,7 @@ class Tensor:
 
         self = super().__new__(cls)
         self._pb_tensor = pb_tensor
+        ir._tensor_cache[id] = self
         return self
 
     ## Properties
@@ -426,7 +433,8 @@ class Tensor:
 
     ## Dunders
     def __repr__(self) -> str:
-        return f"Tensor[{self.id} {self.dtype} {self.shape}]"
+        class_name = type(self).__name__
+        return f"{class_name}[{self.id} {self.dtype} {self.shape}]"
 
     def __hash__(self):
         """Hash the Tensor, based on Tensor and Ir `id`."""
@@ -728,7 +736,7 @@ class Variable(Tensor, tensor_type="Variable"):
 
     def __init__(self):
         super().__init__()
-        self._replica_grouping: Union[None, ReplicaGrouping] = None
+        self._replica_grouping: ReplicaGrouping
 
     @debug_context_frame_offset(1)
     def copy_to_ipu(self, dst: int, src: int) -> "Tensor":
@@ -748,8 +756,7 @@ class Variable(Tensor, tensor_type="Variable"):
         Returns:
             ReplicaGrouping: The ReplicaGrouping object, if set.
         """
-        vs = self._pb_tensor.getVariableSettings()
-        return ReplicaGrouping._from_variable_settings(self.ir, vs)
+        return self._replica_grouping
 
     @property
     def retrieval_mode(self) -> Literal["one_per_group", "all_replicas"]:
@@ -807,11 +814,11 @@ class Variable(Tensor, tensor_type="Variable"):
         dimension safely (ie. checks if the outer dimension matches an expected
         outer dimension).
         """
-        return tuple(
-            self._pb_tensor.getVariableSettings().shapeOnHost(
-                self.shape, self.ir.replication_factor
-            )
-        )
+        num_groups = self.replica_grouping.num_groups
+        if num_groups == 1:
+            return self.shape
+        else:
+            return tuple([num_groups, *self.shape])
 
 
 class Constant(Tensor, tensor_type="Const"):
@@ -923,16 +930,22 @@ def variable(
     )
     popxl_dt = dtypes.dtype.as_dtype(np_data)
 
+    replica_grouping = replica_grouping if replica_grouping else g.ir.replica_grouping()
+
+    pb_rg = replica_grouping
+    if not replica_grouping.is_const:
+        np_data = np_data[replica_grouping.to_device_map]
+        pb_rg = replica_grouping.const_rg
+
     info = _ir.TensorInfo(popxl_dt._pb_dtype, np_data.shape)
     pb_id = g._create_tensor_id(name)
 
-    if replica_grouping is None:
-        replica_grouping = g.ir.replica_grouping()
-    pb_g.addVarInit(
-        pb_id, info, np_data, replica_grouping._to_variable_settings(retrieval_mode)
-    )
+    pb_g.addVarInit(pb_id, info, np_data, pb_rg._to_variable_settings(retrieval_mode))
 
-    return Variable._from_pb_tensor(pb_g.getTensor(pb_id))
+    var = Variable._from_pb_tensor(pb_g.getTensor(pb_id))
+    var._replica_grouping = replica_grouping
+
+    return var
 
 
 def remote_variable(
@@ -1185,6 +1198,10 @@ def replica_sharded_buffer(
         RemoteBuffer
     """
     from popxl.remote_buffer import remote_buffer
+
+    g = gcg()
+    replica_grouping = replica_grouping if replica_grouping else g.ir.replica_grouping()
+    replica_grouping = replica_grouping.const_rg
 
     replica_group_size = (
         replica_grouping.group_size

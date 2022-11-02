@@ -179,7 +179,7 @@ class TestTensor:
             a = popxl.variable([1], name="bob")
             g = ir.create_graph(subgraph1, a)
 
-            assert repr(a) == "Tensor[bob popxl.dtypes.int32 (1,)]"
+            assert repr(a) == "Variable[bob popxl.dtypes.int32 (1,)]"
             assert (
                 repr(g.inputs[0])
                 == "Tensor[TestTensor.test_repr.subgraph1_subgraph(0)/a popxl.dtypes.int32 (1,)]"
