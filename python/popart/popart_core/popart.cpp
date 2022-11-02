@@ -1683,6 +1683,10 @@ PYBIND11_MODULE(popart_core, m) {
         "createImplicitPipeliningFwdOnlyProgram",
         &SessionOptions::createImplicitPipeliningFwdOnlyProgram,
         DOC(popart, SessionOptions, createImplicitPipeliningFwdOnlyProgram));
+    cls.def_readwrite(
+        "throwIfLog2ScaleTensorNotInRange",
+        &SessionOptions::throwIfLog2ScaleTensorNotInRange,
+        DOC(popart, SessionOptions, throwIfLog2ScaleTensorNotInRange));
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel", DOC(popart, PatternsLevel));

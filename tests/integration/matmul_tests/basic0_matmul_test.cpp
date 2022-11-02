@@ -13,6 +13,7 @@
 
 #include "popart/datatype.hpp"
 #include "popart/debugcontext.hpp"
+#include "popart/logging.hpp"
 #include "popart/names.hpp"
 #include "popart/op.hpp"
 #include "popart/operators.hpp"
@@ -433,7 +434,8 @@ BOOST_AUTO_TEST_CASE(MatMul_Float8ErrorCases) {
     return std::string(error.what()).find(expectedMsg) != std::string::npos;
   };
 
-  expectedMsg = "Invalid combination of operand types";
+  expectedMsg =
+      logging::format("Invalid operand type: {}", rhs.info.dataType());
   BOOST_CHECK(!mm.isPow2ScaledMatMul());
   BOOST_CHECK_EXCEPTION(mm.setup(), error, errorMessageMatches);
 
@@ -444,7 +446,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Float8ErrorCases) {
   mm.input->insert(0, &lhs);
   mm.input->insert(1, &rhs);
 
-  expectedMsg = "Log2 scale input must be provided";
+  expectedMsg = "Log2 scale input tensor must be provided";
   BOOST_CHECK(!mm.isPow2ScaledMatMul());
   BOOST_CHECK_EXCEPTION(mm.setup(), error, errorMessageMatches);
 
@@ -464,7 +466,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Float8ErrorCases) {
   mm.input->insert(1, &rhsInvalid);
   mm.input->insert(2, &log2Scale);
 
-  expectedMsg = "Log2 scale input not accepted";
+  expectedMsg = "Log2 scale input tensor not accepted";
   BOOST_CHECK(!mm.isPow2ScaledMatMul());
   BOOST_CHECK_EXCEPTION(mm.setup(), error, errorMessageMatches);
 
@@ -478,7 +480,8 @@ BOOST_AUTO_TEST_CASE(MatMul_Float8ErrorCases) {
   mm.input->insert(1, &rhs);
   mm.input->insert(2, &invalidLog2Scale);
 
-  expectedMsg = "Invalid log2 scale input type";
+  expectedMsg = logging::format("Invalid log2 scale input type {}",
+                                invalidLog2Scale.info.dataType());
   BOOST_CHECK(!mm.isPow2ScaledMatMul());
   BOOST_CHECK_EXCEPTION(mm.setup(), error, errorMessageMatches);
 
@@ -507,6 +510,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Float8ErrorCases) {
   mmOutputType.input->insert(0, &lhs);
   mmOutputType.input->insert(1, &rhs);
   mmOutputType.input->insert(2, &log2Scale);
+  mmOutputType.output->insert(0, &out);
 
   expectedMsg = "Invalid output type";
   BOOST_CHECK_EXCEPTION(mmOutputType.setup(), error, errorMessageMatches);
@@ -522,6 +526,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Float8ErrorCases) {
   mmPartialsType.input->insert(0, &lhs);
   mmPartialsType.input->insert(1, &rhs);
   mmPartialsType.input->insert(2, &log2Scale);
+  mmPartialsType.output->insert(0, &out);
 
   expectedMsg = "Invalid partials type";
   BOOST_CHECK_EXCEPTION(mmPartialsType.setup(), error, errorMessageMatches);

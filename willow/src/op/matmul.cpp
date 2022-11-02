@@ -231,34 +231,7 @@ Shape MatMulOp::npMatMulOut(Shape lhs, Shape rhs) {
 }
 
 void MatMulOp::setup() {
-  bool lhsIsFloat8  = isFloat8(MatMulOp::getLhsInIndex());
-  bool rhsIsFloat8  = isFloat8(MatMulOp::getRhsInIndex());
-  bool hasLog2Scale = hasInput(getLog2ScaleInIndex());
-
-  if (lhsIsFloat8 != rhsIsFloat8) {
-    throw error("Invalid combination of operand types: {} and {}. If using a "
-                "FLOAT8_* input, both matmul inputs must be of type FLOAT8_*.",
-                lhsIn()->info.dataType(),
-                rhsIn()->info.dataType());
-  }
-
-  if (!lhsIsFloat8 && !rhsIsFloat8 && hasLog2Scale) {
-    throw error("Log2 scale input not accepted for non FLOAT8_* inputs. ");
-  }
-
-  if (lhsIsFloat8 && rhsIsFloat8) {
-    if (!hasLog2Scale) {
-      throw error("Log2 scale input must be provided for FLOAT8_* inputs. ");
-    } else if (log2ScaleIn()->info.rank() > 0) {
-      throw error("Log2 scale input must be a scalar tensor");
-    } else if (auto type = log2ScaleIn()->info.dataType();
-               type != DataType::INT32) {
-      throw error(
-          "Invalid log2 scale input type {}. Log2 scale input tensor must "
-          "be of type INT32. ",
-          type);
-    };
-  }
+  validateOpFloat8Inputs(input.get(), getLog2ScaleInIndex(), debugName());
 
   if (phase == Phase::Fwd) {
     if (getSerialiseSettings().mode !=
@@ -347,22 +320,7 @@ void MatMulOp::setup() {
 }
 
 bool MatMulOp::isPow2ScaledMatMul() const {
-  bool lhsIsFloat8 = isFloat8(MatMulOp::getLhsInIndex());
-  bool rhsIsFloat8 = isFloat8(MatMulOp::getRhsInIndex());
-  if (hasInput(getLog2ScaleInIndex())) {
-    auto log2ScaleInfo           = log2ScaleIn()->info;
-    bool log2ScaleHasCorrectType = log2ScaleInfo.dataType() == DataType::INT32;
-    bool log2ScaleIsScalar       = log2ScaleInfo.rank() == 0;
-
-    return lhsIsFloat8 && rhsIsFloat8 && log2ScaleHasCorrectType &&
-           log2ScaleIsScalar;
-  }
-  return false;
-}
-
-bool MatMulOp::isFloat8(InIndex idx) const {
-  auto type = inTensor(idx)->info.dataType();
-  return type == DataType::FLOAT8_143 || type == DataType::FLOAT8_152;
+  return opInputsAreValidPow2ScaledInputs(input.get(), getLog2ScaleInIndex());
 }
 
 MatMulLhsGradOp::MatMulLhsGradOp(const MatMulOp &fwdOp)

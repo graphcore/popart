@@ -1636,6 +1636,16 @@ struct SessionOptions {
   /// \deprecated Create a custom program containing the forward pipeline only.
   bool createImplicitPipeliningFwdOnlyProgram = false;
 
+  /**
+   * If set to `true`, throw a Poplar error if any fused ops that consume a
+   * log2 scale tensor receive a log2 scale tensor value not in the integer
+   * range [-32, 32).
+   *
+   * If set to `false`, no error is thrown. However, note that this may lead to
+   * undefined behaviour if the value of the log2 scale is outside the range.
+   */
+  bool throwIfLog2ScaleTensorNotInRange = true;
+
   /// Constructor for SessionOptions.
   SessionOptions() {
     // Automatically set `enableEngineCaching` and `cachePath` if the

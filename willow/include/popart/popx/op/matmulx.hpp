@@ -72,22 +72,6 @@ public:
 private:
   // The ONNX tensor shape
   std::vector<std::size_t> getOutputShape() const;
-
-  // Returns a tensor of type quarter from an unsigned char
-  // tensor of FP8 data in `format`. The metadata tensor is
-  // populated with `log2scale` as the scale.
-  poplar::Tensor
-  prepareQuarterInputTensor(DataType format,
-                            poplar::Tensor &x,
-                            poplar::Tensor &log2Scale,
-                            poplar::program::Sequence &prog) const;
-
-  // Create a poplar program that throws an error if log2scale tensor
-  // is not in the range [lower, upper], and does nothing otherwise
-  poplar::program::Sequence
-  createAssertLog2ScaleInRangeProg(poplar::Tensor &log2ScaleTensor,
-                                   int lower,
-                                   int upper) const;
 };
 
 } // namespace popx

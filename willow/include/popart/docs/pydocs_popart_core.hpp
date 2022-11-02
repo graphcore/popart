@@ -14783,6 +14783,11 @@ static const char
     *__singlelinedoc_popart_SessionOptions_tensorLocationSettingsOverride =
         R"doc(Override tensor location for specific tensors by setting tensor locations for specific tensor ID values.)doc";
 
+static const char *__doc_popart_SessionOptions_throwIfLog2ScaleTensorNotInRange =
+    R"doc(Specify whether to throw a Poplar error at runtime if any fused ops that consume a log2 scale tensor receive a log2 scale value that
+is not in the 6-bit signed integer range [-32, 31). Setting this option to false will not throw an error, however may lead to undefined behaviour
+if the value of the log2 scale tensor is outside the range. Default :code:`true` (enabled).)doc";
+
 static const char *__doc_popart_SessionOptions_timeLimitScheduler =
     R"doc(The maximum allowed time (in seconds) that can be spent searching for a
 good graph schedule before a solution must be returned.)doc";

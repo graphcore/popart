@@ -121,6 +121,11 @@ def test_raise_on_log2scale_not_in_range(log2_scale):
     format_ = popxl.float8_143
 
     ir = popxl.Ir()
+
+    # Explicitly set set the option to throw if the log2scale tensor is not in range
+    opts = ir._pb_ir.getSessionOptions()
+    opts.throwIfLog2ScaleTensorNotInRange = True
+
     main_graph = ir.main_graph
     x32_lhs: np.ndarray = np.random.rand(*shape)
     x32_rhs: np.ndarray = np.random.rand(*shape)
@@ -148,3 +153,8 @@ def test_raise_on_log2scale_not_in_range(log2_scale):
     with popxl.Session(ir, "ipu_model") as session:
         with pytest.raises(popart.poplar_application_runtime_error):
             session.run({instream0: x8_host_lhs, instream1: x8_host_rhs})
+
+    # If we set the option to throw to false, this should run fine
+    opts.throwIfLog2ScaleTensorNotInRange = False
+    with popxl.Session(ir, "ipu_model") as session:
+        session.run({instream0: x8_host_lhs, instream1: x8_host_rhs})

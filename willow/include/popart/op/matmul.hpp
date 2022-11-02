@@ -160,7 +160,6 @@ public:
   Shape npMatMulOut(Shape lhs, Shape rhs);
 
   bool isPow2ScaledMatMul() const;
-  bool isFloat8(InIndex idx) const;
 
   std::set<InIndex> optionalInputs() const override {
     return {getLog2ScaleInIndex()};

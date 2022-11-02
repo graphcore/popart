@@ -22,6 +22,7 @@
 
 #include "popart/names.hpp"
 #include "popart/util/expressionchecking.hpp"
+#include "popart/util/float8util.hpp"
 
 namespace popart {
 

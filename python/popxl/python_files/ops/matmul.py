@@ -115,7 +115,7 @@ def matmul_pow2scaled(
     Raises:
         TypeError: If the matrix multiply operand tensors do not have a dtype in
             `{popxl.float8_143, popxl.float8_152}`, or if the `log2_scale` tensor
-            does not have dtype `popxl.int8`
+            does not have dtype `popxl.int32`
         ValueError: If `log2_scale` is not a scalar tensor.
     """
 

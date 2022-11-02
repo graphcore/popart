@@ -1,5 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include "popart/popx/debugcontextx.hpp"
+#include "popart/util/float8util.hpp"
 #include <algorithm>
 #include <boost/range/algorithm.hpp>
 #include <boost/range/algorithm_ext.hpp>
@@ -45,8 +46,6 @@
 #include "popart/popx/popopx.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/vendored/optional.hpp"
-
-namespace pe = popops::expr;
 
 namespace snap {
 namespace program {
@@ -122,55 +121,6 @@ std::vector<std::size_t> MatMulOpx::onnxShapeToPoplar(const Shape &shape) {
 std::vector<std::size_t> MatMulOpx::getOutputShape() const {
   auto matmul = getMatMulOp();
   return MatMulOpx::onnxShapeToPoplar(matmul->outInfo(0).shape());
-}
-
-poplar::program::Sequence
-MatMulOpx::createAssertLog2ScaleInRangeProg(poplar::Tensor &log2ScaleTensor,
-                                            int lower,
-                                            int upper) const {
-  poplar::program::Sequence seq;
-
-  // x >= upper or x < lower
-  auto outsideRange = pe::Or(pe::Gte(pe::_1, pe::Const(upper)),
-                             pe::Lt(pe::_1, pe::Const(lower)));
-
-  auto errorBranch = poplar::program::ErrorProgram(
-      logging::format(
-          "runtime error in {}. Log2 scale is not in the range [{}, {}). ",
-          getOp<MatMulOp>().debugName(),
-          lower,
-          upper),
-      log2ScaleTensor,
-      debugContext("log2ScaleAssert"));
-
-  auto notInRange = popops::map(graph(), outsideRange, {log2ScaleTensor}, seq);
-
-  seq.add(poplar::program::If(
-      notInRange, errorBranch, poplar::program::Sequence(), debugContext()));
-
-  return seq;
-}
-
-poplar::Tensor
-MatMulOpx::prepareQuarterInputTensor(popart::DataType format,
-                                     poplar::Tensor &x,
-                                     poplar::Tensor &log2Scale,
-                                     poplar::program::Sequence &prog) const {
-  auto poplarFormat = format == popart::DataType::FLOAT8_143
-                          ? poplar::QuarterMetadata::Format::F143
-                          : poplar::QuarterMetadata::Format::F152;
-
-  auto metadata = poplar::createVariableMetadataTensor(
-      graph().getPoplarGraph(), poplarFormat, log2Scale, prog, debugContext());
-
-  // We can't directly reinterpret UINT8 tensors as QUARTER, so we have
-  // to workaround using copy-cloning. Poplar elides this.
-  auto float8Tensor =
-      graph().getPoplarGraph().clone(poplar::QUARTER, metadata, x);
-  prog.add(poplar::program::Copy(
-      x, float8Tensor.reinterpret(poplar::UNSIGNED_CHAR)));
-
-  return float8Tensor;
 }
 
 static std::pair<snap::Tensor, snap::Tensor>
@@ -473,20 +423,26 @@ void MatMulOpx::grow(snap::program::Sequence &prog) const {
   if (matmul.isPow2ScaledMatMul()) {
     auto log2ScaleTensor = getInTensor(MatMulOp::getLog2ScaleInIndex());
 
-    auto assertSeq = createAssertLog2ScaleInRangeProg(
-        log2ScaleTensor.getPoplarTensor(), -32, 31);
-    prog.getPoplarSequence().add(assertSeq);
+    if (matmul.getIr().getSessionOptions().throwIfLog2ScaleTensorNotInRange) {
+      auto assertProg = createAssertLog2ScaleInRangeProg(
+          graph().getPoplarGraph(), log2ScaleTensor.getPoplarTensor(), -32, 32);
 
-    auto lhs = prepareQuarterInputTensor(matmul.lhsIn()->info.dataType(),
-                                         a.getPoplarTensor(),
-                                         log2ScaleTensor.getPoplarTensor(),
-                                         prog.getPoplarSequence());
+      prog.getPoplarSequence().add(assertProg);
+    }
 
-    auto zeroScale = graph().addConstant(poplar::SIGNED_CHAR, {}, 0);
-    auto rhs       = prepareQuarterInputTensor(matmul.rhsIn()->info.dataType(),
-                                         b.getPoplarTensor(),
-                                         zeroScale.getPoplarTensor(),
-                                         prog.getPoplarSequence());
+    auto lhs = reinterpretCastUInt8ToQuarter(
+        graph().getPoplarGraph(),
+        a.getPoplarTensor(),
+        toPoplarQuarterFormat(matmul.lhsIn()->info.dataType()),
+        log2ScaleTensor.getPoplarTensor(),
+        prog.getPoplarSequence());
+
+    auto rhs = reinterpretCastUInt8ToQuarter(
+        graph().getPoplarGraph(),
+        b.getPoplarTensor(),
+        toPoplarQuarterFormat(matmul.rhsIn()->info.dataType()),
+        0,
+        prog.getPoplarSequence());
 
     // Wrap back up into snap Tensors before matmul
     a = snap::Tensor(lhs, graph());
