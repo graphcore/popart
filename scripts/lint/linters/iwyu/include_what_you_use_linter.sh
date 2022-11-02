@@ -65,7 +65,6 @@ function single_file_iwyu () {
         -isystem "$POPLAR_VIEW_BUILD_DIR"/install/libpvti/include \
         -isystem "$POPLAR_VIEW_BUILD_DIR"/install/libpva/include \
         -isystem "$POPLAR_VIEW_BUILD_DIR"/install/gcl/include \
-        -isystem "$POPLAR_VIEW_BUILD_DIR"/install/popir/include \
         -isystem "$POPLAR_VIEW_BUILD_DIR"/install/gccs/include \
         -isystem "$POPLAR_VIEW_BUILD_DIR"/install/pybind11/include \
         -isystem "$POPLAR_VIEW_BUILD_DIR"/install/boost/include \

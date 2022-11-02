@@ -28,7 +28,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <popir/CompiledGraph.hpp>
 #include <poplar/ArrayRef.hpp>
 #include <poplar/CSRFunctions.hpp>
 #include <poplar/CodeletFileType.hpp>

@@ -32,10 +32,10 @@ else
         EXTRA_INCLUDES_STR="-I $1/install/gccs/include \
         -I $1/install/gcl/include \
         -I $1/install/libpva/include \
-        -I $1/install/popir/include \
         -I $1/install/poplar/include \
         -I $1/install/poplibs/include \
-        -I $1/install/poprithms/include"
+        -I $1/install/poprithms/include" \
+        -I $1/install/snap/include
         # If LLVM_DIR_PATH is not set, give it a default value inside the POPLARVIEW build directory
         # LIBCLANG_PATH in this case should be automatically found inside $LLVM_DIR_PATH
         if [ -z "$LLVM_DIR_PATH" ]
