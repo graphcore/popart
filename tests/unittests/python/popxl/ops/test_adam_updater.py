@@ -49,7 +49,9 @@ class TestAdamUpdater:
             with pytest.raises(ValueError) as excinfo:
                 _ = ops.var_updates.adam_updater(m, v, time_step=t, beta1=b1)
             message = str(excinfo.value)
-        assert "Bias correction requires both beta1 and beta2 not None." in message
+        assert (
+            "Bias correction requires both beta1 and beta2 to not be None." in message
+        )
 
     def test_adam_wd_updater(self):
         ir = popxl.Ir()
@@ -77,7 +79,7 @@ class TestAdamUpdater:
             with pytest.raises(ValueError) as excinfo:
                 _ = ops.var_updates.adam_updater(m, v, time_step=t, weight_decay=wd)
             message = str(excinfo.value)
-        assert "Weight decay requires weight to be not None." in message
+        assert "Weight decay requires weight to not be None." in message
 
     def test_adam_bias_wd_updater(self):
         ir = popxl.Ir()
@@ -137,7 +139,9 @@ class TestAdamUpdater:
             with pytest.raises(ValueError) as excinfo:
                 _ = ops.var_updates.lamb_updater(m, v, time_step=t, beta1=b1)
             message = str(excinfo.value)
-        assert "Bias correction requires both beta1 and beta2 not None." in message
+        assert (
+            "Bias correction requires both beta1 and beta2 to not be None." in message
+        )
 
     def test_lamb_wd_updater(self):
         ir = popxl.Ir()
@@ -165,7 +169,7 @@ class TestAdamUpdater:
             with pytest.raises(ValueError) as excinfo:
                 _ = ops.var_updates.lamb_updater(m, v, time_step=t, weight_decay=wd)
             message = str(excinfo.value)
-        assert "Weight decay requires weight to be not None." in message
+        assert "Weight decay requires weight to not be None." in message
 
     def test_lamb_bias_wd_updater(self):
         ir = popxl.Ir()
@@ -207,7 +211,7 @@ class TestAdamUpdater:
             with pytest.raises(ValueError) as excinfo:
                 _ = ops.var_updates.adamax_updater(m, v)
             message = str(excinfo.value)
-            assert "AdaMax requires time_step not None." in message
+            assert "AdaMax requires time_step to not be None." in message
 
     def test_adamax_wd_updater(self):
         ir = popxl.Ir()

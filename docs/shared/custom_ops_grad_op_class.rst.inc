@@ -1,3 +1,5 @@
+..  Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+
 .. _sec_custom_op_grad_op_class:
 
 Gradient operation class
@@ -27,7 +29,7 @@ require the definition of a static ``defaultOperatorId`` function and
 The job of gradient operations (meaning the set of operations obtained by
 calling :external+popart-user-guide:cpp:func:`popart::Op::getGradOps` on a forward
 operation) is to perform one step of the
-:ref:`chain rule <https://en.wikipedia.org/wiki/Chain_rule>`.
+`chain rule <https://en.wikipedia.org/wiki/Chain_rule>`__.
 
 For ``LeakyReluOp``, recall that
 :external+popart-user-guide:cpp:func:`popart::Op::getGradOps` returns a single gradient

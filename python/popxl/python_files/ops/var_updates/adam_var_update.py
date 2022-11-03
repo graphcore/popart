@@ -18,45 +18,41 @@ def adam_var_update(
     max_weight_norm: Optional[Union[float, Tensor]] = None,
 ) -> Tensor:
     """
-     Calculate the updated weight tensor for Adam/LAMB.
+    Calculate the updated weight tensor for Adam or LAMB.
 
-     x = updater term (see :func:`~popxl.ops.adamupdater`)
-     lr = learning rate
-     max_weight_norm = max weight norm (c.f. phi or scaling function in Lamb paper)
-     r1 = (Lamb) L2 norm of the weight (w)
-     r2 = (Lamb) L2 norm of the updater term (x)
+    * `x` = updater term (see :py:func:`~popxl.ops.adamupdater`)
+    * `lr` = learning rate
+    * `max_weight_norm` = max weight norm (c.f. :math:`\\phi` or scaling function in Lamb paper)
+    * `r1` = (Lamb) L2 norm of the weight (`w`)
+    * `r2` = (Lamb) L2 norm of the updater term (`x`)
 
-     Lamb r1 (FP32):
-     r1 = ||w||_2                    (without Lamb or φ(r1) == 0: r1/r2 = 1)
-       special case: replicated weight sharding; every replica only stores a
-       shard of w, therefore the sum-of-squares is computed replicated, and
-       thereafter all-reduced before every replica takes the square root of r1sq
+    Lamb r1 (FP32): :math:`r1 = ||w||_2` (without Lamb or :math:`\\phi (r1) == 0: r1/r2 = 1`)
 
-     Lamb r2 (FP32):
-     r2 = ||x||_2                    (without Lamb or r2 == 0: r1/r2 = 1)
-       special case: replicated weight sharding; every replica only stores a
-       shard of x, therefore the sum-of-squares is computed replicated, and
-       thereafter all-reduced before every replica takes the square root of r2sq
+    Special case: replicated weight sharding; every replica only stores a
+    shard of `w`, therefore the sum-of-squares is computed replicated, and
+    thereafter all-reduced before every replica takes the square root of `r1sq`.
 
-     scale factor:
-     φ(r1) = min(r1, max_weight_norm)
+    Lamb r2 (FP32): :math:`r2 = ||x||_2` (without Lamb or :math:`r2 == 0: r1/r2 = 1`)
 
-     variable update:
-     w -= φ(r1) / r2 * lr * x
-          ^^^^^^^^^^
-          Lamb trust ratio
+    Special case: replicated weight sharding; every replica only stores a
+    shard of `x`, therefore the sum-of-squares is computed replicated, and
+    thereafter all-reduced before every replica takes the square root of `r2sq`.
+
+    Scale factor: :math:`\\phi (r1) = min(r1, max_weight_norm)`
+
+    Variable update: :math:`w -= (\\phi (r1) / r2) * lr * x` where :math:`\\phi (r1) / r2` is the Lamb trust ratio.
 
     Args:
         t (Tensor): The weight to update.
         x (Tensor): The updater term.
-        r1 (Tensor): The r1 squared input tensor.
-        r2 (Tensor): The r2 squared input tensor.
-        learning_rate (Optional[Union[float, Tensor]]): Optional learning rate tensor to use. Will
-        be constant if this argument is a float or None.
+        r1 (Tensor): The `r1` squared input tensor.
+        r2 (Tensor): The `r2` squared input tensor.
+        learning_rate (Optional[Union[float, Tensor]]): Optional learning rate
+            tensor to use. Will be constant if this argument is a float or None.
             Defaults to None.
-        max_weight_norm (Optional[Union[float, Tensor]]): Optional max weight tensor to use. Will be
-            constant if this argument is is a float or None.
-            Defaults to None.
+        max_weight_norm (Optional[Union[float, Tensor]]): Optional max weight
+            tensor to use. Will be constant if this argument is is a float or
+            None. Defaults to None.
 
     Returns:
         Tensor: The updated weight tensor.

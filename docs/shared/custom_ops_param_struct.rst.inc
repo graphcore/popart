@@ -1,3 +1,5 @@
+.. Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+
 .. _sec_custom_op_param_struct:
 
 Parameter struct

@@ -44,9 +44,9 @@ def cast(t: Tensor, data_type: dtype) -> Tensor:
 
 
 def pow2scale_then_cast(t: Tensor, log2_scale: Tensor, data_type: dtype) -> Tensor:
-    """Add a fused operation `cast(src * pow2(log2_scale), dtype) to cast to floating point 8 data type.
+    """Add a fused operation `cast(src * pow2(log2_scale), dtype)` to cast to floating point 8 data type.
 
-    See the popxl documentation on floating point 8 types for more details.
+    See the PopXL documentation on floating point 8 types for more details.
 
     Args:
         t (Tensor): Tensor to convert.
@@ -54,7 +54,7 @@ def pow2scale_then_cast(t: Tensor, log2_scale: Tensor, data_type: dtype) -> Tens
         data_type (dtype): Data type to convert to. Must be float8_143 or float8_152
 
     Raises:
-        TypeError: If data_type is not of type float8_143 or float8_152.
+        TypeError: If `data_type` is not of type float8_143 or float8_152.
 
     Returns:
         Tensor: The converted float 8 tensor.
@@ -86,7 +86,7 @@ def pow2scale_then_cast(t: Tensor, log2_scale: Tensor, data_type: dtype) -> Tens
 def cast_then_pow2scale(t: Tensor, log2_scale: Tensor, data_type: dtype):
     """Add a fused operation `cast(X, dtype) * pow2(log2_scale)` to cast from floating point 8 type.
 
-    See the popxl documentation on floating point 8 types for more details.
+    See the PopXL documentation on floating point 8 types for more details.
 
     Args:
         t (Tensor): Tensor to convert.
@@ -94,7 +94,7 @@ def cast_then_pow2scale(t: Tensor, log2_scale: Tensor, data_type: dtype):
         data_type (dtype): Data type to convert to. Must be float16 or float32.
 
     Raises:
-        TypeError: If data_type is not of type float16 or float32.
+        TypeError: If `data_type` is not of type float16 or float32.
 
     Returns:
         Tensor: The converted float16 or float32 tensor.

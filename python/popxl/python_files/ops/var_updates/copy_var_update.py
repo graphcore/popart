@@ -14,10 +14,10 @@ def copy_var_update_(t: Tensor, X: Tensor) -> Tensor:
         t: Tensor
             Tensor to be updated.
         X: Tensor
-            Value to update the variable
+            Value to update the tensor with.
     Returns:
-        updated: Tensor
-            An alias to the variable.
+        Tensor:
+            An alias to the updated variable.
     """
     ctx = get_current_context()
     g = ctx.graph

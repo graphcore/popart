@@ -36,8 +36,7 @@ class Ir:
         PopXL intermediate representation (IR).
 
         An IR contains a main graph (property `main_graph`) and can create
-        additional graphs using member methods such as :py:meth:`create_graph` and
-        :py:meth:`create_empty_graph`.
+        additional graphs using member methods such as :py:meth:`create_graph` and :py:meth:`create_empty_graph`.
 
         Args:
             replication (Union[int, Literal['popdist']], optional):
@@ -165,8 +164,8 @@ class Ir:
 
         Raises:
             TypeError: If `fn` is not a callable extending the popxl.Module or if any of the
-                arguments listed in *args mixes Tensors with other types
-            ValueError: If the *args and **kwargs don't match the signature or if the output
+                arguments listed in `*args` mixes Tensors with other types
+            ValueError: If the `*args` and `**kwargs` don't match the signature or if the output
                 of a subgraph is not a Tensor, an iterable of Tensors or None.
 
         Returns:
@@ -390,7 +389,7 @@ class Ir:
 
     def get_all_h2d_streams(self) -> Set["HostToDeviceStream"]:
         """
-        Return all ``HostToDeviceStream``s in the IR which has a host_load op that streams along it.
+        Return all ``HostToDeviceStream`` objects in the IR which have a ``host_load`` op that streams along it.
         """
         from popxl.streams import HostToDeviceStream
 

@@ -9,11 +9,12 @@ from popxl.tensor import Tensor
 
 
 @op_debug_context
-def repeat(graph: Graph,
-           repeat_count: int,
-           *inputs: Union[Tensor, Iterable[Tensor]],
-           inputs_dict: Optional[Mapping[Tensor, Tensor]] = None
-           ) -> Tuple[Tensor, ...]:
+def repeat(
+    graph: Graph,
+    repeat_count: int,
+    *inputs: Union[Tensor, Iterable[Tensor]],
+    inputs_dict: Optional[Mapping[Tensor, Tensor]] = None,
+) -> Tuple[Tensor, ...]:
     """
     Repeatedly call a graph.
 
@@ -39,22 +40,19 @@ def repeat(graph: Graph,
 
         # popxl.Module to repeat
         class AddWeight(popxl.Module):
-        def __init__(self):
-            self.w: popxl.Tensor = None
+            def __init__(self):
+                self.w: popxl.Tensor = None
 
-        def build(self, x):
-            self.w = popxl.graph_input(x.shape, x.dtype, "w")
-            return self.w + x, w
+            def build(self, x):
+                self.w = popxl.graph_input(x.shape, x.dtype, "w")
+                return self.w + x, w
 
-        with g: # a graph
-            add_weight0 = AddWeight()
-            add_weight_graph0 = ir.create_graph(add_weight0, x0)
+            with g:  # a graph
+                add_weight0 = AddWeight()
+                add_weight_graph0 = ir.create_graph(add_weight0, x0)
 
-            # repeat 8 times
-            y0, w0 = ops.repeat(add_weight_graph0,
-                                8,
-                                x0,
-                                inputs_dict={add_weight0.w: w0})
+                # repeat 8 times
+                y0, w0 = ops.repeat(add_weight_graph0, 8, x0, inputs_dict={add_weight0.w: w0})
 
     See also `PyTorch Tensor.repeat <https://pytorch.org/docs/stable/generated/torch.Tensor.repeat.html>`__, `NumPy repeat <https://numpy.org/doc/stable/reference/generated/numpy.repeat.html>`__.
 
@@ -76,20 +74,19 @@ def repeat(graph: Graph,
         Tuple[Tensor, ...]:
             Tuple of the output tensors of the call in the parent graph.
     """
-    loop_info = repeat_with_info(graph,
-                                 repeat_count,
-                                 *inputs,
-                                 inputs_dict=inputs_dict)
+    loop_info = repeat_with_info(graph, repeat_count, *inputs, inputs_dict=inputs_dict)
 
     out_tensors = loop_info.outputs
     return out_tensors
 
 
-def repeat_with_info(graph: Graph,
-                     repeat_count: int,
-                     *inputs: Union[Tensor, Iterable[Tensor]],
-                     inputs_dict: Optional[Mapping[Tensor, Tensor]] = None,
-                     check_inputs: bool = True) -> CallSiteInfo:
+def repeat_with_info(
+    graph: Graph,
+    repeat_count: int,
+    *inputs: Union[Tensor, Iterable[Tensor]],
+    inputs_dict: Optional[Mapping[Tensor, Tensor]] = None,
+    check_inputs: bool = True,
+) -> CallSiteInfo:
     """
     Repeatedly call a graph and return information about the call site.
 
@@ -141,29 +138,29 @@ def repeat_with_info(graph: Graph,
                             V               V V V
                             Keep         Loop Carried
                         Going              Outputs
+
     Example:
 
     .. code-block:: python
 
         # popxl.Module to repeat
         class AddWeight(popxl.Module):
-        def __init__(self):
-            self.w: popxl.Tensor = None
+            def __init__(self):
+                self.w: popxl.Tensor = None
 
-        def build(self, x):
-            self.w = popxl.graph_input(x.shape, x.dtype, "w")
-            return self.w + x, w
+            def build(self, x):
+                self.w = popxl.graph_input(x.shape, x.dtype, "w")
+                return self.w + x, w
 
-        with g: # a graph
-            add_weight0 = AddWeight()
-            add_weight_graph0 = ir.create_graph(add_weight0, x0)
+            with g:  # a graph
+                add_weight0 = AddWeight()
+                add_weight_graph0 = ir.create_graph(add_weight0, x0)
 
-            # repeat 8 times
-            call_info = ops.repeat(add_weight_graph0,
-                                   8,
-                                   x0,
-                                   inputs_dict={add_weight0.w: w0})
-            y0, w0 = call_info.outputs()
+                # repeat 8 times
+                call_info = ops.repeat(
+                    add_weight_graph0, 8, x0, inputs_dict={add_weight0.w: w0}
+                )
+                y0, w0 = call_info.outputs()
 
     Args:
         graph (Graph): User defined graph to repeat `repeat_count` times.
@@ -176,12 +173,11 @@ def repeat_with_info(graph: Graph,
             Check when called if all inputs have been provided. Defaults to True.
 
     Raises:
-        ValueError: If repeat_count < 0.
-        ValueError: If the number of explicitly passed inputs + the number of loop created inputs
-            != the number of outputs.
+        ValueError: If `repeat_count < 0`.
+        ValueError: If the number of explicitly passed inputs + the number of loop created inputs != the number of outputs.
 
     Returns:
-        repeat_info (CallSiteInfo): Information on the created callsite for
+        CallSiteInfo: Information on the created callsite for
         the repeat op.
     """
 
@@ -197,7 +193,8 @@ def repeat_with_info(graph: Graph,
     if total_inputs < total_outputs:
         raise ValueError(
             f"To repeat the subgraph ({graph.id}) the number of inputs must be greater than or equal to the number of outputs."
-            f" {total_inputs} < {total_outputs}")
+            f" {total_inputs} < {total_outputs}"
+        )
 
     # For clarity, we rename our graphs:
     # - Bottom: The user provided bottom level graph. We call this with a call op. This has gone
@@ -218,14 +215,16 @@ def repeat_with_info(graph: Graph,
 
     # Create the middle graph, call and loop ops
     pb_middle_graph, pb_callop, pb_loop_op = _setup_call_and_repeat(
-        pb_ir, pb_top_graph, pb_bottom_graph)
+        pb_ir, pb_top_graph, pb_bottom_graph
+    )
 
     # set the number of times to loop
     pb_loop_op.setTripCountValue(repeat_count)
 
     # Prep and validate inputs
-    inputs_all = _prep_and_validate_inputs(check_inputs, top_graph, graph,
-                                           'called', inputs, inputs_dict)
+    inputs_all = _prep_and_validate_inputs(
+        check_inputs, top_graph, graph, "called", inputs, inputs_dict
+    )
 
     # 1, 2. Connect inputs.
     _setup_inputs(
@@ -237,8 +236,9 @@ def repeat_with_info(graph: Graph,
     )
 
     # 3. Connect outputs.
-    _ = _setup_outputs(pb_top_graph, pb_bottom_graph, pb_middle_graph,
-                       pb_callop, pb_loop_op)
+    _ = _setup_outputs(
+        pb_top_graph, pb_bottom_graph, pb_middle_graph, pb_callop, pb_loop_op
+    )
 
     pb_callop.setup()
     pb_loop_op.setup()
@@ -250,23 +250,22 @@ def repeat_with_info(graph: Graph,
     loop_carried_inputs = pb_loop_op.getNumExplicitInputs()
     for bottom_t in bottom_graph._by_ref_inputs:
         middle_t = c_info.graph_to_parent(bottom_t)
-        loop_carried = pb_middle_graph.getInputIndex(
-            middle_t.id) < loop_carried_inputs
+        loop_carried = pb_middle_graph.getInputIndex(middle_t.id) < loop_carried_inputs
         # If a tensor was set as a by_ref_input, we should also do the same for the looped subgraph.
         c_info.set_parent_input_modified(
-            middle_t, infer_modified_regions=not loop_carried)
+            middle_t, infer_modified_regions=not loop_carried
+        )
         top_t = r_info.graph_to_parent(middle_t)
-        r_info.set_parent_input_modified(
-            top_t, infer_modified_regions=not loop_carried)
+        r_info.set_parent_input_modified(top_t, infer_modified_regions=not loop_carried)
         r_info.called_graph._by_ref_inputs.add(middle_t)
 
     return r_info
 
 
 # Design point: For simplicity all of the below functions only take _ir level objects as arguments.
-def _setup_call_and_repeat(pb_ir: _ir.Ir, pb_top_graph: _ir.Graph,
-                           pb_bottom_graph: _ir.Graph
-                           ) -> Tuple[_ir.Graph, _ir.op.CallOp, _ir.op.LoopOp]:
+def _setup_call_and_repeat(
+    pb_ir: _ir.Ir, pb_top_graph: _ir.Graph, pb_bottom_graph: _ir.Graph
+) -> Tuple[_ir.Graph, _ir.op.CallOp, _ir.op.LoopOp]:
     """Set up the call and repeat ops, as well as the middle graph that the loop op will loop over.
 
     Args:
@@ -281,43 +280,46 @@ def _setup_call_and_repeat(pb_ir: _ir.Ir, pb_top_graph: _ir.Graph,
     # This is the graph we will repeat.
     pb_middle_graph = pb_ir.createGraph(
         _ir.GraphId(
-            pb_ir.createUniqueSubgraphId(
-                f"{pb_bottom_graph.id.str()}__loop_wrapper")))
+            pb_ir.createUniqueSubgraphId(f"{pb_bottom_graph.id.str()}__loop_wrapper")
+        )
+    )
 
-    opid = _ir.OperatorIdentifier("ai.graphcore", "Call", 1, _ir.NumInputs(),
-                                  0)
-    op_name = pb_middle_graph.id.str() + '__call__' + pb_bottom_graph.id.str()
+    opid = _ir.OperatorIdentifier("ai.graphcore", "Call", 1, _ir.NumInputs(), 0)
+    op_name = pb_middle_graph.id.str() + "__call__" + pb_bottom_graph.id.str()
 
     ctx = get_current_context()
     # Call the bottom_graph
-    pb_callop = pb_middle_graph.createOp_CallOp(opid, pb_bottom_graph,
-                                                ctx._get_op_settings(op_name))
+    pb_callop = pb_middle_graph.createOp_CallOp(
+        opid, pb_bottom_graph, ctx._get_op_settings(op_name)
+    )
 
     opid = _ir.OperatorIdentifier("ai.onnx", "Loop", 11, _ir.NumInputs(), 0)
-    op_name = pb_top_graph.id.str() + '__loop__' + pb_middle_graph.id.str()
+    op_name = pb_top_graph.id.str() + "__loop__" + pb_middle_graph.id.str()
 
     # Loop the middle_graph
-    pb_loop_op = pb_top_graph.createOp_LoopOp(opid,
-                                              ctx._get_op_settings(op_name),
-                                              pb_middle_graph)
+    pb_loop_op = pb_top_graph.createOp_LoopOp(
+        opid, ctx._get_op_settings(op_name), pb_middle_graph
+    )
 
     # Add mandatory loop iterator tensor to graph (is not an output)
     repeatIterId = _ir.addScope(pb_middle_graph, "Iterator___")
-    pb_middle_graph.addInput(repeatIterId,
-                             _ir.TensorInfo(_ir.DataType.INT32, ()))
+    pb_middle_graph.addInput(repeatIterId, _ir.TensorInfo(_ir.DataType.INT32, ()))
 
     # Add mandatory loop condition tensor to graph (is also an output)
     repeatCondId = _ir.addScope(pb_middle_graph, "LoopCond___")
-    pb_middle_graph.addInput(repeatCondId, _ir.TensorInfo(
-        _ir.DataType.BOOL, ()))
+    pb_middle_graph.addInput(repeatCondId, _ir.TensorInfo(_ir.DataType.BOOL, ()))
     pb_middle_graph.markAsOutput(repeatCondId)
 
     return pb_middle_graph, pb_callop, pb_loop_op
 
 
-def _setup_inputs(inputs_all: List[Tensor], pb_top_graph: _ir.Graph,
-                  pb_middle_graph: _ir.Graph, pb_callop: _ir.op.CallOp,
-                  pb_loop_op: _ir.op.LoopOp) -> None:
+def _setup_inputs(
+    inputs_all: List[Tensor],
+    pb_top_graph: _ir.Graph,
+    pb_middle_graph: _ir.Graph,
+    pb_callop: _ir.op.CallOp,
+    pb_loop_op: _ir.op.LoopOp,
+) -> None:
     """Set up the inputs.
 
     This is done in the following way:
@@ -346,15 +348,23 @@ def _setup_inputs(inputs_all: List[Tensor], pb_top_graph: _ir.Graph,
         call_in_idx = pb_callop.subgraphInToOpInIndex(graph_input_idx)
         # Note the + 2 here
         pb_loop_op.addLoopInput(
-            call_in_idx + 2, _ir.addScope(pb_top_graph, parent_tensor.name),
-            _ir.addScope(pb_middle_graph, parent_tensor.name), False)
+            call_in_idx + 2,
+            _ir.addScope(pb_top_graph, parent_tensor.name),
+            _ir.addScope(pb_middle_graph, parent_tensor.name),
+            False,
+        )
         pb_callop.connectInTensor(
-            call_in_idx, _ir.addScope(pb_middle_graph, parent_tensor.name))
+            call_in_idx, _ir.addScope(pb_middle_graph, parent_tensor.name)
+        )
 
 
-def _setup_outputs(pb_top_graph: _ir.Graph, pb_bottom_graph: _ir.Graph,
-                   pb_middle_graph: _ir.Graph, pb_callop: _ir.op.CallOp,
-                   pb_loop_op: _ir.op.LoopOp) -> List[str]:
+def _setup_outputs(
+    pb_top_graph: _ir.Graph,
+    pb_bottom_graph: _ir.Graph,
+    pb_middle_graph: _ir.Graph,
+    pb_callop: _ir.op.CallOp,
+    pb_loop_op: _ir.op.LoopOp,
+) -> List[str]:
     """Connect outputs (step 3).
 
     We introspect the graph to get its outputs then, for each one, create an output tensor of the
@@ -375,19 +385,21 @@ def _setup_outputs(pb_top_graph: _ir.Graph, pb_bottom_graph: _ir.Graph,
 
     for pb_subgraph_out_id in pb_bottom_graph.getOutputIds():
         top_tensor_id = _ir.addScope(
-            pb_top_graph, _ir.removeScope(pb_bottom_graph, pb_subgraph_out_id))
+            pb_top_graph, _ir.removeScope(pb_bottom_graph, pb_subgraph_out_id)
+        )
         # Already has scope added
         middle_tensor_id = _ir.removeScope(pb_bottom_graph, pb_subgraph_out_id)
         bottom_tensor_id = _ir.addScope(
-            pb_bottom_graph,
-            _ir.removeScope(pb_bottom_graph, pb_subgraph_out_id))
+            pb_bottom_graph, _ir.removeScope(pb_bottom_graph, pb_subgraph_out_id)
+        )
 
         sgOutIdx = pb_bottom_graph.getOutputIndex(bottom_tensor_id)
         callOutIdx = pb_callop.subgraphOutToOpOutIndex(sgOutIdx)
 
         # Avoid tensor name collisions
         middle_tensor_id = pb_middle_graph.getIr().createIntermediateTensorId(
-            middle_tensor_id)
+            middle_tensor_id
+        )
         pb_callop.createAndConnectOutTensor(callOutIdx, middle_tensor_id)
 
         pb_middle_graph.markAsOutput(middle_tensor_id)
@@ -395,11 +407,11 @@ def _setup_outputs(pb_top_graph: _ir.Graph, pb_bottom_graph: _ir.Graph,
         repeatOutIdx = pb_loop_op.subgraphOutToOpOutIndex(sgOutIdx)
         # Avoid tensor name collisions
         top_tensor_id = pb_middle_graph.getIr().createIntermediateTensorId(
-            top_tensor_id)
+            top_tensor_id
+        )
         # We overwrite here as we added the middle_tensor_id as an output above, but we want to make
         # sure the loop op is setup correctly.
-        pb_loop_op.addLoopOutput(repeatOutIdx, top_tensor_id, middle_tensor_id,
-                                 True)
+        pb_loop_op.addLoopOutput(repeatOutIdx, top_tensor_id, middle_tensor_id, True)
 
         outnames.append(top_tensor_id)
     return outnames

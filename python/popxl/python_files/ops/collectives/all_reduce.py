@@ -17,7 +17,7 @@ def all_reduce(
     """
     Allreduce tensors across IPUs within a replica.
 
-    Currently only the 'add' reduce op is supported by autodiff.
+    Currently only the `add` reduce op is supported by autodiff.
 
     Args:
         ts (List[Tensor]): Tensors to reduce
@@ -41,7 +41,7 @@ def all_reduce_identical_inputs(
 
     This means the op is an identity but the corresponding grad op is an allreduce.
 
-    Currently only the 'add' reduce op is supported by autodiff.
+    Currently only the `add` reduce op is supported by autodiff.
 
     The `AllReduceToIdentityPattern` pattern must be run for this op to function correctly.
 
@@ -68,7 +68,7 @@ def all_reduce_identical_grad_inputs(
 
     This means that this op is an all-reduce and the corresponding grad op an identity.
 
-    Currently only the 'add' reduce op is supported by autodiff.
+    Currently only the `add` reduce op is supported by autodiff.
 
     The `AllReduceToIdentityPattern` pattern must be run for this op to function correctly.
 

@@ -6,7 +6,7 @@ Environment variables
 There are several environment variables which you can use to control the
 behaviour of PopXL. Most of these use the underlying PopART library.
 
-.. include:: env_vars_logging.rst
+.. include:: env_vars_logging.rst.inc
 
 Generating DOT files
 ---------------------

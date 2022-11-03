@@ -12,3 +12,8 @@ Ops available in PopXL
     :members:
     :undoc-members:
     :special-members: __init__
+
+.. automodule:: popxl.ops.var_updates
+    :members:
+    :undoc-members:
+    :special-members: __init__

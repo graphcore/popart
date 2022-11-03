@@ -7,5 +7,3 @@ Data types
     :members:
     :undoc-members:
     :special-members: __init__
-
-.. _popxl-graphs:

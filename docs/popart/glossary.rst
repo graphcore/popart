@@ -65,6 +65,7 @@ This chapter defines some of the specialised terminology that is used in the Pop
     Assigning parts of the computational graph to different pipeline stages so that they can run in parallel.
 
   Pipeline cycle
+
     - The time step with which micro-batches move through the pipeline.
     - All :term:`Pipeline stages <Pipeline stage>` are executed once within one Pipeline cycle, in parallel (except for some serialisation if multiple Pipeline stages are mapped to a single IPU).
 
@@ -75,7 +76,8 @@ This chapter defines some of the specialised terminology that is used in the Pop
     - Main-phase (running all pipeline stages in parallel)
     - Flush-phase (ramp down, discontinue a pipeline stage in each iteration)
 
-  Pipline stage
+  Pipeline stage
+
     - A partition of the graph that can be (in theory) executed in parallel with any other pipeline stage (although multiple pipeline stages mapped to a single IPU will in practice run serially).
     - Each Pipeline stage operates on a single and separate micro-batch of data.
     - Excluding inter-IPU copies and host IO, operations on a Pipeline stage have no dependencies on other Pipeline Stages within a single :term:`Pipeline cycle`.

@@ -77,56 +77,69 @@ def adam_updater(
     """
     Calculate an updater term to update the weights for Adam.
 
-    accumulated bias corrected first order momentum (FP16/FP32) mc:
-    mc = m / (1 - b1 ** t)  (without correction: mc = m)
+    Accumulated bias corrected first order momentum (FP16/FP32) `mc`::
 
-    accumulated bias corrected second order momentum (FP16/FP32) vc:
-    vc = v / (1 - b2 ** t)  (without correction: vc = v)
+        mc = m / (1 - b1 ** t)
 
-    updater term (FP16/FP32, with weight decay mode: decay and wd > 0.0) x:
-    x = mc / (sqrt(vc) + eps) + wd * w
+    Without correction::
 
-    updater term (FP16/FP32, without weight decay mode: decay) x:
-    x = mc / (sqrt(vc) + eps)
+        mc = m
 
-    Note: `time_step` will be incremented by 1.
+    Accumulated bias corrected second order momentum (FP16/FP32) `vc`::
+
+        vc = v / (1 - b2 ** t)
+
+    Without correction::
+
+        vc = v
+
+    Updater term (FP16/FP32, with weight decay mode: `decay >0.0` and `wd > 0.0`) `x`::
+
+        x = mc / (sqrt(vc) + eps) + wd * w
+
+    Updater term (FP16/FP32, without weight decay mode: `decay`) `x`::
+
+        x = mc / (sqrt(vc) + eps)
+
+    .. note:: `time_step` will be incremented by 1.
 
     Args:
-        acc_first_order: Tensor (m)
+        acc_first_order: Tensor (`m`)
             First order momentum (FP16/FP32).
-        acc_second_order: Tensor (v)
+        acc_second_order: Tensor (`v`)
             Second order momentum (FP16/FP32).
-        weight: Optional[Tensor] (w)
-            Weight. Only required for weight_decay.
-        time_step: Tensor (t)
+        weight: Optional[Tensor] (`w`)
+            Weight. Only required for `weight_decay`.
+        time_step: Tensor (`t`)
             Time step. Providing this tensor enables bias correction.
         weight_decay: Optional[Union[float, Tensor]] = None
             Optional scalar to apply weight decay.
         beta1: Optional[Union[float, Tensor]] = None
-            Only required in bias correction for m
+            Only required in bias correction for `m`
         beta2: Optional[Union[float, Tensor]] = None
-            Only required in bias correction for v
+            Only required in bias correction for `v`
         epsilon: Union[float, Tensor] = 1e-07
             Scalar to calculate updater.
 
     Raises:
-        ValueError: A ValueError will be raised if:
-            - weight_decay is set and weight is None.
-            - time_step set None and beta1 and beta2 is not set
-              (no bias correction can take place).
+        ValueError: If `weight_decay` is set and `weight` is None.
+        ValueError: If `time_step` set to None and `beta1` and `beta2` are not
+            set (no bias correction can take place).
 
     Returns:
-        updater: Tensor
-            An updater to update weight.
+        Tensor:
+            An updater to update the weight for Adam.
     """
     ins = {1: acc_first_order.id, 2: acc_second_order.id}
     if weight_decay_is_required(weight_decay) and weight is None:
-        raise ValueError("Weight decay requires weight to be not None.")
+        raise ValueError("Weight decay requires weight to not be None.")
     if weight_decay_is_required(weight_decay) and weight is not None:
         ins[0] = weight.id
 
     if time_step is not None and (beta1 is None or beta2 is None):
-        raise ValueError("Bias correction requires both beta1 and beta2 not None.")
+        raise ValueError(
+            "Bias correction requires both beta1 and beta2 to not be None."
+        )
     if time_step is not None and beta1 is not None and beta2 is not None:
         ins[3] = time_step.id
         adam_mode = _ir.AdamMode.Adam
@@ -161,62 +174,67 @@ def lamb_updater(
     """
     Calculate an updater term to update the weights for LAMB.
 
-    accumulated bias corrected first order momentum (FP16/FP32) mc:
-    mc = m / (1 - b1 ** t)  (without correction: mc = m)
+    Accumulated bias corrected first order momentum (FP16/FP32) `mc`::
 
-    accumulated bias corrected second order momentum (FP16/FP32) vc:
-    vc = v / (1 - b2 ** t)  (without correction: vc = v)
+        mc = m / (1 - b1 ** t) (without correction: mc = m)
 
-    updater term (FP16/FP32, with weight decay mode: decay and wd > 0.0) x:
-    x = mc / (sqrt(vc) + eps) + wd * w
+    Accumulated bias corrected second order momentum (FP16/FP32) `vc`::
 
-    updater term (FP16/FP32, without weight decay mode: decay) x:
-    x = mc / (sqrt(vc) + eps)
+        vc = v / (1 - b2 ** t) (without correction: vc = v)
 
-    Note: `time_step` will be incremented by one.
+    Updater term (FP16/FP32, with weight decay mode: `decay > 0.0` and `wd > 0.0`) `x`::
+
+        x = mc / (sqrt(vc) + eps) + wd * w
+
+    Updater term (FP16/FP32, without weight decay mode: decay) `x`::
+
+        x = mc / (sqrt(vc) + eps)
+
+    .. note:: `time_step` will be incremented by 1.
 
     Args:
         acc_first_order (Tensor):
-            First order momentum (FP16/FP32) (m).
+            First order momentum (FP16/FP32) (`m`).
         acc_second_order (Tensor):
-            Second order momentum (FP16/FP32) (v).
+            Second order momentum (FP16/FP32) (`v`).
         weight (Optional[Tensor], optional):
-            Weight (v). Only required for weight_decay.
+            Weight (`w`). Only required for `weight_decay`.
             Defaults to None.
         time_step (Optional[Tensor], optional):
-            Time step (v). Providing this tensor enables bias correction.
+            Time step (`t`). Providing this tensor enables bias correction.
             Defaults to None.
         weight_decay (Optional[Union[float, Tensor]], optional):
             Optional scalar to apply weight decay.
             Defaults to None.
         beta1 (Optional[Union[float, Tensor]], optional):
-            Only required in bias correction for m.
+            Only required in bias correction for `m`.
             Defaults to None.
         beta2 (Optional[Union[float, Tensor]], optional):
-            Only required in bias correction for v.
+            Only required in bias correction for `v`.
             Defaults to None.
         epsilon (Union[float, Tensor], optional):
             Scalar to calculate updater.
             Defaults to 1e-07.
 
     Raises:
-        ValueError: A ValueError will be raised if:
-            - weight_decay is set and weight is None.
-            - time_step set None and beta1 and beta2 is not set
-              (no bias correction can take place).
+        ValueError: If `weight_decay` is set and `weight` is None.
+        ValueError: If `time_step` is set to None and `beta1` and `beta2` are
+            not set (no bias correction can take place).
 
     Returns:
         Tensor:
-            An updater to update weight.
+            An updater to update the weight for LAMB.
     """
     ins = {1: acc_first_order.id, 2: acc_second_order.id}
     if weight_decay_is_required(weight_decay) and weight is None:
-        raise ValueError("Weight decay requires weight to be not None.")
+        raise ValueError("Weight decay requires weight to not be None.")
     if weight_decay_is_required(weight_decay) and weight is not None:
         ins[0] = weight.id
 
     if time_step is not None and (beta1 is None or beta2 is None):
-        raise ValueError("Bias correction requires both beta1 and beta2 not None.")
+        raise ValueError(
+            "Bias correction requires both beta1 and beta2 to not be None."
+        )
     if time_step is not None and beta1 is not None and beta2 is not None:
         ins[3] = time_step.id
         adam_mode = _ir.AdamMode.Lamb
@@ -250,50 +268,53 @@ def adamax_updater(
     """
     Calculate an updater term to update the weights for Adamax.
 
-    accumulated bias corrected first order momentum (FP16/FP32) mc:
-    mc = m / (1 - b1 ** t)
-    updater term (FP16/FP32, with weight decay mode: decay and wd > 0.0) x:
-    x = mc / (vc + eps) + wd * w
+    Accumulated bias corrected first order momentum (FP16/FP32) `mc`::
 
-    updater term (FP16/FP32, without weight decay mode: decay) x:
-    x = mc / (vc + eps)
+        mc = m / (1 - b1 ** t)
 
-    Note: `time_step` will be incremented by one.
+    Updater term (FP16/FP32, with weight decay mode: `decay > 0.0` and `wd > 0.0`) `x`::
+
+        x = mc / (vc + eps) + wd * w
+
+    Updater term (FP16/FP32, without weight decay mode: decay) `x`::
+
+        x = mc / (vc + eps)
+
+    .. note:: `time_step` will be incremented by 1.
 
     Args:
         acc_first_order (Tensor):
-            First order momentum (FP16/FP32) (m).
+            First order momentum (FP16/FP32) (`m`).
         acc_second_order (Tensor):
-            Second order momentum (FP16/FP32) (v).
+            Second order momentum (FP16/FP32) (`v`).
         weight (Optional[Tensor]):
-            Weight (w). Only required for weight_decay.
+            Weight (`w`). Only required for `weight_decay`.
         time_step (Tensor):
-            Time step (t).
+            Time step (`t`).
         weight_decay (Optional[Union[float, Tensor]]):
             Optional scalar to apply weight decay. Defaults to None
         beta1 (Union[float, Tensor]):
-            Scalar to do bias correction for m. Defaults to 0.9
+            Scalar to do bias correction for `m.` Defaults to 0.9
         epsilon (Union[float, Tensor]):
             Scalar to calculate updater. Defaults to 1e-07
 
     Raises:
-        ValueError: A ValueError will be raised if:
-            - weight_decay is set and weight is None.
-            - time_step is None.
+        ValueError: If `weight_decay` is set and `weight` is None.
+        ValueError: If `time_step` is None.
 
     Returns:
-        updater: Tensor
-            An updater to update weight.
+        Tensor:
+            An updater to update the weight for Adamax.
     """
     ins = {1: acc_first_order.id, 2: acc_second_order.id}
     if weight_decay_is_required(weight_decay) and weight is None:
-        raise ValueError("Weight decay requires weight to be not None.")
+        raise ValueError("Weight decay requires weight to not be None.")
 
     if weight_decay_is_required(weight_decay) and weight is not None:
         ins[0] = weight.id
 
     if time_step is None:
-        raise ValueError("AdaMax requires time_step not None.")
+        raise ValueError("AdaMax requires time_step to not be None.")
     else:
         ins[3] = time_step.id
         adam_mode = _ir.AdamMode.AdaMax

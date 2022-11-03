@@ -76,7 +76,7 @@ Variable tensors for replicated tensor sharding
 
 You can also create a variable tensor for replicated tensor sharding (RTS) that
 is split in equal shards across replicas. See the
-:ref:`PopART User Guide <popart-user-guide:replicated tensor sharding (rts)>`
+:ref:`PopART User Guide <popart-user-guide:replicated tensor sharding>`
 for more information.
 Together with the allGather operation
 :py:func:`~popxl.ops.collectives.replicated_all_gather`, RTS avoids storing the

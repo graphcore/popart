@@ -1,3 +1,5 @@
+.. Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+
 .. _sec_custom_op_op_class:
 
 Operation class

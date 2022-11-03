@@ -21,7 +21,7 @@ Currently, we support the following transforms:
 
 ..  -  Merge exchange
 
-.. _sec_autodiff:
+.. _autodiff:
 
 Autodiff
 -----------

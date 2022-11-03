@@ -39,21 +39,20 @@ class Session:
 
         A runtime session that can execute a PopXL `Ir`.
 
-        .. warning:: The session object takes ownership of the provided Ir and it cannot be modified
-        afterwards.
+        .. warning:: The session object takes ownership of the provided Ir and it cannot be modified afterwards.
 
         Initialise a new session.
 
         Args:
-            ir (Ir): The Ir to use for this session.
-            device_desc (Literal["ipu_hw", "ipu_model", "cpu"], optional): This can be
-                either a DeviceInfo object created via the popart.DeviceManager or the type of
-                ipu device to use, chosen amongst the following list:
-                "ipu_hw": Real IPU hardware. Uses `DeviceConnectionType` == `OnDemand` and
-                    `DeviceSelectionCriterion` == `Random`.
-                "ipu_model": IPU model.
-                "cpu": CPU model. Does not support replication.
-                Defaults to "cpu".
+            ir (Ir): The IR to use for this session.
+            device_desc (Literal["ipu_hw", "ipu_model", "cpu"], optional): This
+                can be either a `DeviceInfo` object created via the
+                `popart.DeviceManager` or the type of IPU device to use, chosen from the following:
+
+                - "ipu_hw": Real IPU hardware. Uses `DeviceConnectionType` == `OnDemand` and `DeviceSelectionCriterion` == `Random`.
+                - "ipu_model": IPU model.
+                - "cpu": CPU model. Does not support replication.
+                  Defaults to "cpu".
 
         Raises:
             RuntimeError: If the desired device could not be acquired.
@@ -146,10 +145,12 @@ class Session:
         Inputs will be used as inputs to the model, and outputs will be written to by the session.
 
         Args:
-            inputs (h2dStreamBufferMaps, optional): The inputs to the model. Defaults to None.
-            outputs (d2hStreamBufferMaps, optional): The output buffers, these will be written to
-                and modified. Defaults to None.
-            downcast_inputs (bool): If True 64-bit float/ints inputs will be downcast to 32-bit variants. Defaults to True.
+            inputs (h2dStreamBufferMaps, optional): The inputs to the model.
+                Defaults to None.
+            outputs (d2hStreamBufferMaps, optional): The output buffers, these
+                will be written to and modified. Defaults to None.
+            downcast_inputs (bool): If True 64-bit float/ints inputs will be
+                downcast to 32-bit variants. Defaults to True.
 
         Raises:
             ValueError: If not attached to device before calling this function.
@@ -198,8 +199,10 @@ class Session:
         """Run :func:`~popxl.Session.run_with_outputs` but create the expected outputs and return them.
 
         Args:
-            inputs (h2dStreamBufferMaps, optional): The inputs to the model. Defaults to None.
-            downcast_inputs (bool): If True 64-bit float/ints inputs will be downcast to 32-bit variants. Defaults to True.
+            inputs (h2dStreamBufferMaps, optional): The inputs to the model.
+                Defaults to None.
+            downcast_inputs (bool): If True 64-bit float/ints inputs will be
+                downcast to 32-bit variants. Defaults to True.
 
         Returns:
             d2hStreamBufferMaps: The map of outputs from the model.
@@ -242,28 +245,30 @@ class Session:
     def expected_inputs(self) -> List[HostToDeviceStream]:
         """Return the list of expected inputs for this session.
 
-        Data will need to be provided for each of these when doing :func:`~popxl.Session.run`.
+        Data will need to be provided for each of these when doing
+            :func:`~popxl.Session.run`.
 
         Returns:
             List[HostToDeviceStream]: A list of all the host to device streams
-            required by this session.
+                required by this session.
         """
         return self.ir.get_all_h2d_streams()
 
     def get_tensor_data(self, tensor: Union[Variable, Constant]) -> np.ndarray:
         """Get the data stored in the tensor on the device including IPU and remote memory.
 
-        This will sync all the host buffers with the corresponding tensors on the device. Note this
-        is a memory view of the data, so will not allocate extra memory for the data, but it is your
-        responsibility to ensure the data in the tensor is live at the point of retrieval.
+        This will sync all the host buffers with the corresponding tensors on
+        the device. Note this is a memory view of the data, so will not
+        allocate extra memory for the data, but it is your responsibility to
+        ensure the data in the tensor is live at the point of retrieval.
 
         Args:
-            tensor (Union[Variable, Constant]): The tensor to get the data for. Must be Constant or
-            Variable type.
+            tensor (Union[Variable, Constant]): The tensor to get the data for.
+                Must be Constant or Variable type.
 
         Returns:
-            np.ndarray: The data for the tensor in question, with type and shape the same as the
-            device tensor.
+            np.ndarray: The data for the tensor in question, with type and
+                shape the same as the device tensor.
         """
 
         return self.get_tensors_data([tensor])[tensor]
@@ -276,15 +281,15 @@ class Session:
         This will only sync the host and device buffers once.
 
         Args:
-            tensors (Iterable[Union[Variable, Constant]]): An iterable of the tensors to provide data
-            for.
+            tensors (Iterable[Union[Variable, Constant]]): An iterable of the
+                tensors to provide data for.
 
         Raises:
             TypeError: If any tensor is not of type Constant, Variable.
 
         Returns:
-            Dict[Union[Constant, Variable], np.ndarray]: A dictionary of tensors and the
-            corresponding data arrays returned.
+            Dict[Union[Constant, Variable], np.ndarray]: A dictionary of
+                tensors and the corresponding data arrays returned.
         """
 
         # Guard against bad argument.
@@ -357,11 +362,10 @@ class Session:
     def write_variable_data(self, tensor: Variable, data: np.ndarray) -> None:
         """Write the variable tensor data from the provided host array.
 
-        This is only valid for Variable type tensors.
+        This is only valid for Variable type tensors. The tensor and data must
+        have matching shapes and dtypes.
 
-        tensor and data must have matching shape and dtype.
-
-        If attached to device, the Variable will be updated on host, then a
+        If attached to a device, the Variable will be updated on host, then a
         ``weights_from_host`` will occur to update the weights on device.
 
         If not attached to device, the Variable will be updated on host only.
@@ -391,19 +395,16 @@ class Session:
 
         Raises:
             TypeError: If any input tensor is not of type Variable.
-
-            TypeError: If the input array data type does not match that of the associated
-                tensor.
-
-            ValueError: If the input array shape does not match that of the associated
-                tensor.
-
-            NotImplementedError: If the retrieval mode of the variable is "all_replicas.
-                This is currently not supported.
+            TypeError: If the input array data type does not match that of the
+                associated tensor.
+            ValueError: If the input array shape does not match that of the
+                associated tensor.
+            NotImplementedError: If the retrieval mode of the variable is
+                "all_replicas. This is currently not supported.
 
         Args:
             tensors Dict[(Variable, np.ndarray]): A dictionary of tensors and
-            the corresponding array to call 'write_variable_data` with.
+                the corresponding array to call 'write_variable_data` with.
         """
 
         import numbers
@@ -462,19 +463,19 @@ class Session:
         which will fill each array with the values streamed back from device.
 
         There is an entry in the mapping for every stream in
-        `ir.get_all_d2h_streams()`, for the Ir that this Session was
+        `ir.get_all_d2h_streams()`, for the IR that this Session was
         constructed for.
 
-        For stream s, the shape of the np.ndarray it maps to is:
+        For stream `s`, the shape of the np.ndarray it maps to is::
 
-          `(d, r) + s.shape`
+          (d, r) + s.shape
 
-        Where:
+        where:
 
           * `d` = `ir.num_host_transfers`
           * `r` = `ir.instance_replication_factor`
 
-        And all dimensions not >1 in `(d, r)` will be removed.
+        and all dimensions not >1 in `(d, r)` will be removed.
 
         Examples:
 
@@ -518,8 +519,8 @@ class Session:
 
         Then the shape will be `(2, 4)`
 
-        NOTE: Batch serialisation is not supported, so there is no dimension
-        for this.
+        .. note:: Batch serialisation is not supported, so there is no dimension
+            for this.
         """
 
         outputs = {}
@@ -535,7 +536,7 @@ class Session:
     @property
     def ir(self) -> Ir:
         """
-        Return the associated Ir for this session.
+        Return the associated IR for this session.
 
         Read only.
         """
@@ -560,8 +561,8 @@ class Session:
     def _cleanup_on_error(self):
         """Call `Session.__exit__` if an exception in `Session.__enter__` is raised.
 
-        Function calls which can raise unhandled exceptions in `Session.__enter__`
-        should use this context manager.
+        Function calls which can raise unhandled exceptions in
+        `Session.__enter__` should use this context manager.
 
         This function was inspired by the recipes in:
         https://docs.python.org/3/library/contextlib.html#cleaning-up-in-an-enter-implementation
@@ -575,8 +576,8 @@ class Session:
         """
         Enter the context of this ``Session``.
 
-        If not already attached to a device, this will attach to an available device and perform a
-        ``weights_from_host``.
+        If not already attached to a device, this will attach to an available
+        device and perform a ``weights_from_host``.
 
         See :numref:`sec_session` for a more comprehensive
         guide to sessions and the context manager.
@@ -658,15 +659,15 @@ class Session:
         return max(ir_ipus) + 1
 
     def _get_ipu_count(self) -> int:
-        """Return the number of ipus required by this session and ir.
+        """Return the number of IPUs required by this session and IR.
 
-        Equal to 2 ** ceil(log_2(max(virtual_graphs) + 1))
+        Equal to `2 ** ceil(log_2(max(virtual_graphs) + 1))`
 
         Raises:
-            RuntimeError: If the Ir has no graphs.
+            RuntimeError: If the IR has no graphs.
 
         Returns:
-            int: The number of ipus required by this session + ir.
+            int: The number of IPUs required by this session and the IR.
         """
         num_ipus = self._get_ipus_per_replica()
         num_ipus *= self.ir.instance_replication_factor
@@ -675,21 +676,20 @@ class Session:
     def _expected_outputs(self) -> List[DeviceToHostStream]:
         """Return the list of expected outputs from this session.
 
-        Data will be returned for each of these when doing `:func:`~popxl.Session.run``.
+        Data will be returned for each of these when doing :func:`~popxl.Session.run`.
 
         Returns:
             List[DeviceToHostStream]: A list of all the device to host streams
-            returned by this session.
+                returned by this session.
         """
         return self.ir.get_all_d2h_streams()
 
     def _full_input_shape(self, shape: Tuple[int, ...]) -> Tuple[int, ...]:
         """Return the full input shape that this array will need to be.
 
-        The shape is taking into account num_host_transfers and replication_factor.
+        The shape takes into account the number of host transfers, ``num_host_transfers``, and the replication factor, ``replication_factor``.
 
-        For example, shape = (3, 4), num_host_transfers = 8, replicas = 4, _full_input_shape =
-        (8, 4) + (3, 4)  (8, 4, 3, 4)
+        For example, if `shape = (3, 4)`, `num_host_transfers = 8` and `replicas = 4`, then the full input shape is `(8, 4) + (3, 4)  (8, 4, 3, 4)`.
 
         Args:
             shape (Tuple[int, ...]): The shape to add the additional dims to.
@@ -704,14 +704,16 @@ class Session:
     ) -> None:
         """Validate that the from / to device streams are present and valid.
 
-        Checks there are no missing or unexpected streams, then checks the shape of each is correct.
+        Checks there are no missing or unexpected streams, then checks that the shape of each stream is correct.
 
         Args:
-            stream_buffer_map (StreamBufferMaps): The streams provided by the user.
-            expected_streams (StreamBufferMaps): The expected streams for the session.
+            stream_buffer_map (StreamBufferMaps): The streams provided by the
+                user.
+            expected_streams (StreamBufferMaps): The expected streams for the
+                session.
 
         Raises:
-            ValueError: If There are missing or unexpected streams.
+            ValueError: If there are missing or unexpected streams.
         """
         # 1: Validate no missing or unexpected streams.
 
@@ -743,13 +745,18 @@ class Session:
         """Verify the array shape is as expected for a DeviceToHostStream or HostToDeviceStream.
 
         Args:
-            s (Union[DeviceToHostStream, HostToDeviceStream]): The stream to check.
-            arr (np.ndarray): The corresponding array to check against the stream.
+            s (Union[DeviceToHostStream, HostToDeviceStream]): The stream to
+                check.
+            arr (np.ndarray): The corresponding array to check against the
+                stream.
 
         Raises:
-            ValueError: If the num_host_transfers dimension of the array is != num_host_transfers
-            ValueError: If the replication dimension of the array != replication_factor
-            ValueError: If the remaining dimensions are not equal to the stream shape.
+            ValueError: If the ``num_host_transfers`` dimension of the array is
+                != ``num_host_transfers``.
+            ValueError: If the replication dimension of the array
+                != ``replication_factor``.
+            ValueError: If the remaining dimensions are not equal to the stream
+                shape.
         """
         stream_type_str = "input" if isinstance(s, HostToDeviceStream) else "output"
         full_shape = self._full_input_shape(s.shape)
@@ -786,8 +793,7 @@ class Session:
             )
 
     def _validate_run_inputs(self, inputs: h2dStreamBufferMaps) -> None:
-        """Run :func:`~popxl.Session._validate_run_io_streams` for each of the given inputs vs.
-        the expected inputs.
+        """Run :func:`~popxl.Session._validate_run_io_streams` for each of the given inputs against the expected inputs.
 
         Args:
             inputs (h2dStreamBufferMaps): The inputs to check.
@@ -795,8 +801,7 @@ class Session:
         self._validate_run_io_streams(inputs, self.expected_inputs())
 
     def _validate_run_outputs(self, outputs: d2hStreamBufferMaps) -> None:
-        """Run :func:`~popxl.Session._validate_run_io_streams` for each of the given outputs vs.
-        the expected outputs.
+        """Run :func:`~popxl.Session._validate_run_io_streams` for each of the given outputs against the expected outputs.
 
         Args:
             outputs (h2dStreamBufferMaps): The outputs to check.
@@ -807,7 +812,7 @@ class Session:
     @property
     def _ir(self) -> _ir.Ir:
         """
-        Return the associated popart._internal.ir Ir object for this session.
+        Return the associated ``popart._internal.ir`` IR object for this session.
 
         Read only.
         """
@@ -817,10 +822,10 @@ class Session:
     def _extra_input_dims(self) -> Tuple[int, ...]:
         """Return the tuple of extra input dimensions required for this session.
 
-        Equal to (num_device_iterations, num_replicas)
+        Equal to (``num_device_iterations``, ``num_replicas``).
 
         Returns:
-            Tuple[int, ...]: A tuple (num_device_iterations, num_replicas)
+            Tuple[int, ...]: A tuple (``num_device_iterations``, ``num_replicas``).
         """
         _extra_input_dims: Tuple[int, ...] = tuple()
         if self.ir.num_host_transfers > 1:

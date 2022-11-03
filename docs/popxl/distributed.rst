@@ -22,10 +22,11 @@ that it covers replicas 4...7 in a 4-instance program of 16 replicas total).
 
 The reasons you may wish to distribute your replicas over multiple
 host instances include:
+
   * To increase the potential bandwidth between host and IPU, by locating your
     instances on separate physical hosts (as each will have its own links to its
     IPUs).
-  * You *must* have at least one process per :term:`glossary:ILD` when using a 
+  * You *must* have at least one process per :term:`glossary:ILD` when using a
     partition of IPUs that spans multiple ILDs. Please see
     :ref:`here <vipu-admin:ipu-link domains>`
     and :ref:`here <vipu-admin:cluster topologies>`
@@ -101,6 +102,7 @@ The following ``poprun`` command runs your program ``model.py`` on 2 instances
 
 If you pass ``--print-topology yes``, PopRun will print a diagram visualising the
 topology it has created for you::
+
    ===================
   |  poprun topology  |
   |===================|
@@ -319,6 +321,7 @@ group that the weight is sharded over (see
 sharded over every ``shard_over`` consecutive replicas of the group.
 For example, for ``w = [1, 2]``, 4 replicas in the group, and ``shard_over=2``,
 the replicas will get the values::
+
   Replica 0: [1]
   Replica 1: [2]
   Replica 2: [1]
@@ -367,7 +370,7 @@ program is shown in :numref:`distributed_rts_complex_example`.
 To run this program on 16 replicas and 8 instances using PopRun:
 
 .. code-block:: bash
-  
+
   poprun \
     --vipu-partition popxl_test --update-partition yes \
     --num-replicas 16 --num-instances 8 \

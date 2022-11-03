@@ -1577,7 +1577,6 @@ Enums
 .. doxygenenum:: popart::ActivationFunction
 .. doxygenenum:: popart::AutoPad
 .. doxygenenum:: popart::CollectiveOperator
-.. doxygenenum:: popart::CommGroupType
 .. doxygenenum:: popart::DeviceSelectionCriterion
 .. doxygenenum:: popart::InitType
 .. doxygenenum:: popart::MatMulPartialsType

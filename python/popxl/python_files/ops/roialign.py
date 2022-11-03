@@ -17,39 +17,42 @@ def roi_align(
     sampling_ratio: int,
 ) -> Tensor:
     """
-    Apply pooling across each region of interest (RoIs).
+    Apply pooling across each region of interest.
 
-    This consumes an input tensor `t` and regions of interest to apply pooling across each
-    RoI.
+    This consumes an input tensor `t` and regions of interest (ROIs) to apply pooling across each ROI.
     Only supports average pooling. Max pooling is not supported.
 
     Args:
         t (Tensor):
             Input data tensor from the previous operator;
-            4-D feature map of shape (N, C, H, W), where N is the batch size, C is the number of
-            channels, and H and W are the height and the width of the data.
+            4-D feature map of shape (`N`, `C`, `H`, `W`), where `N` is the batch size, `C` is the number of
+            channels, and `H` and `W` are the height and the width of the data.
         rois (Tensor):
-            Regions of interest (RoIs) to pool over.
-            rois is 2-D input of shape (num_rois, 4) given as [[x1, y1, x2, y2], ...].
-            The RoIs' coordinates are in the coordinate system of the input image.
-            Each coordinate set has a 1:1 correspondence with 'batch_index' input.
+            ROIs to pool over. `rois` is 2-D input of shape (`numRois`, 4)
+            given as [[x1, y1, x2, y2], ...], where `numRois` is the number of ROIs.
+            The ROI coordinates are in the coordinate system of the input image.
+            Each coordinate set has a 1:1 correspondence with the `batch_index`
+            input.
         batch_index (Tensor):
-            1-D tensor of shape (numRois,) with each element denoting the index of the
-            corresponding image in the batch.
+            1-D tensor of shape [`numRois`,] with each element denoting the
+            index of the corresponding image in the batch.
         output_size (Tuple[int]):
             Pooled output height and width.
         spatial_scale (float):
-            Multiplicative spatial scale factor to translate ROI coordinates from their input
-            spatial scale to the scale used when pooling; that is, the spatial scale of the input feature
-            map `t` relative to the input image.
+            Multiplicative spatial scale factor to translate ROI coordinates
+            from their input spatial scale to the scale used when pooling; that
+            is, the spatial scale of the input feature map `t` relative to the
+            input image.
         sampling_ratio (int):
-            Number of sampling points in the interpolation grid used to compute the output value of
-            each pooled output bin.
+            Number of sampling points in the interpolation grid used to compute
+            the output value of each pooled output bin.
     Returns:
         Tensor:
-            RoI pooled output Y, a 4-D tensor of shape
-            (numRois, channels, aligned_height_, aligned_width_).
-            The r-th batch element `Y[r-1]` is a pooled feature map corresponding to the `r`-th RoI
+            ROI pooled output Y, a 4-D tensor of shape
+            (`numRois`, `channels`, `aligned_height`, `aligned_width`) where
+            `aligned_height` is the output height and `aligned_width` is the
+            output height.
+            The r-th batch element `Y[r-1]` is a pooled feature map corresponding to the `r`-th ROI
             `t[r-1]`.
     """
     ctx = get_current_context()

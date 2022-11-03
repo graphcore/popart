@@ -1,7 +1,9 @@
+.. Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+
 Logging
 -------
 
-PopART can output information about its activity as described in :numref:`popart_logging`.
+PopART can output information about its activity as described in :ref:`popart_logging`.
 You can control the level of logging information using environment variables.
 
 .. _POPART_LOG_LEVEL:

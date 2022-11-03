@@ -1,3 +1,5 @@
+..  Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+
 .. _sec_custom_op_grad_opx_class:
 
 Gradient opx class
@@ -12,7 +14,7 @@ that need to be implemented.
 
 .. literalinclude:: files/leaky_relu_op_impl.cpp
     :language: cpp
-    :name: leaky_relu_grad_op_class
+    :name: leaky_relu_grad_opx_class
     :caption: Opx implementation of Leaky ReLU's gradient operation
     :start-after: GradOpx begin
     :end-before: GradOpx end

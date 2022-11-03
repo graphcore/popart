@@ -1,3 +1,5 @@
+.. Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+
 .. _sec_custom_op_opx_class:
 
 Opx class
@@ -23,11 +25,11 @@ The :external+popart-user-guide:cpp:func:`popart::popx::Opx::grow` function is t
 :external+popart-user-guide:cpp:class:`popart::popx::Opx` function you need to implement.
 In this function, you are expected to add the code required to
 produce your operation's outputs to a Poplar
-:cpp:class:`~poplar-api:poplar::program::Sequence` object. Then, once you have described how to compute
-Poplar :cpp:class:`~poplar-api:poplar::Tensor` objects for said outputs, you
+:cpp:class:`~poplar::program::Sequence` object. Then, once you have described how to compute
+Poplar :cpp:class:`~poplar::Tensor` objects for said outputs, you
 must use :external+popart-user-guide:cpp:func:`popart::popx::Opx::setOutTensor` to
 associate, for each output, the output index with a specific Poplar
-:cpp:class:`~poplar-api:poplar::Tensor` object.
+:cpp:class:`~poplar::Tensor` object.
 
 Our Leaky ReLU example produces only one output tensor, and that tensor is
 output at index 0, so it only calls

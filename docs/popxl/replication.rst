@@ -5,7 +5,7 @@ Replication
 
 This chapter describes how to use replication in PopXL.
 
-.. _sec_graph_replication:
+.. _sec_graph_replication_2:
 
 Graph replication
 -----------------

@@ -3,17 +3,17 @@
 Tensors
 -------
 
-.. autoclass:: popxl.Tensor
+.. autoclass:: popxl.tensor.Tensor
     :members:
     :undoc-members:
     :special-members: __init__
 
-.. autoclass:: popxl.Constant
+.. autoclass:: popxl.tensor.Constant
     :members:
     :undoc-members:
     :special-members: __init__
 
-.. autoclass:: popxl.Variable
+.. autoclass:: popxl.tensor.Variable
     :members:
     :undoc-members:
     :special-members: __init__
@@ -27,7 +27,7 @@ Tensors
 .. autofunction:: popxl.graph_input
 .. autofunction:: popxl.graph_output
 
-.. autodata:: popxl.HostScalarTensor
-.. autodata:: popxl.HostTensor
-.. autodata:: popxl.ScalarType
-.. autodata:: popxl.TensorLike
+.. autodata:: popxl.tensor.HostScalarTensor
+.. autodata:: popxl.tensor.HostTensor
+.. autodata:: popxl.tensor.ScalarType
+.. autodata:: popxl.tensor.TensorLike

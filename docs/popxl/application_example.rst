@@ -120,7 +120,7 @@ and update the weights and bias in ``update_weights_bias``.
     :lineno-match:
 
 * Construct the graph to calculate the gradients for each layer, ``bwd_graph_info_0`` and ``bwd_graph_info_1``
-  by using :py:func:~popxl.transforms.autodiff` (:numref:`sec_autodiff`) transformation on its forward pass graph.
+  by using :py:func:~popxl.transforms.autodiff` (:numref:`autodiff`) transformation on its forward pass graph.
   Note that, you only need to calculate the gradients for ``W0`` and ``b0`` in the first layer, and gradients for
   all the inputs, ``x1``, ``W1`` and ``b1``, in the second layer. In this example, you will see two different ways
   to use ``autodiff`` and how to use it to get the required gradients.

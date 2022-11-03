@@ -37,12 +37,12 @@ the Leaky ReLU operation applies the following arithmetic element-wise:
 Creating and using custom operations requires some environment setup and
 requires implementing a number of C++ types and Python bindings.
 
-.. include:: custom_ops_environment.rst
-.. include:: custom_ops_param_struct.rst
-.. include:: custom_ops_op_class.rst
-.. include:: custom_ops_opx_class.rst
-.. include:: custom_ops_grad_op_class.rst
-.. include:: custom_ops_grad_opx_class.rst
+.. include:: custom_ops_environment.rst.inc
+.. include:: custom_ops_param_struct.rst.inc
+.. include:: custom_ops_op_class.rst.inc
+.. include:: custom_ops_opx_class.rst.inc
+.. include:: custom_ops_grad_op_class.rst.inc
+.. include:: custom_ops_grad_opx_class.rst.inc
 
 
 .. _sec_custom_op_python_bindings:
@@ -110,7 +110,7 @@ Note that in :numref:`leaky_relu_popxl`, the module name
 `Pybind11 <https://github.com/pybind/pybind11>`__ module in
 :numref:`sec_custom_op_python_bindings`.
 
-.. include:: custom_ops_cppimport.rst
+.. include:: custom_ops_cppimport.rst.inc
 
 .. _sec_custom_op_using:
 

@@ -17,20 +17,20 @@ def accumulate_(
     Update (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = t + (f * X)`.
 
     Does not apply NumPy broadcasting.
-    Uses mixed precision poplibs operations.
-    `t` and `X` must be the same shape, but can be different types.
+    Uses mixed precision PopLibs operations.
+    `t` and `X` must have the same shape, but can be different types.
     `f` must be scalar.
 
     Args:
         t: Tensor
             Tensor to be updated.
         X: Tensor
-            Value to update the tensor with
+            Value to update the tensor with.
         f: Optional[Union[float, Tensor]]
             Optional scalar to apply to `X` before the addition.
     Returns:
-        updated: Tensor
-            An alias to the variable.
+        Tensor:
+            An alias to the updated tensor.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -67,20 +67,20 @@ def accumulate_square_(t: Tensor, X: Tensor, f: Union[float, Tensor] = 1.0) -> T
     Update (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = t + (f * X^2)`.
 
     Does not apply NumPy broadcasting.
-    Uses mixed precision poplibs operations.
-    `t` and `X` must be the same shape, but can be different types.
+    Uses mixed precision PopLibs operations.
+    `t` and `X` must have the same shape, but can be different types.
     `f` must be scalar.
 
     Args:
         t: Tensor
             Tensor to be updated.
         X: Tensor
-            Value to update the tensor with
+            Value to update the tensor with.
         f: Optional[Union[float, Tensor]]
             Optional scalar to apply to `X` before the addition.
     Returns:
-        updated: Tensor
-            An alias to the variable.
+        Tensor:
+            An alias to the updated tensor.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -129,21 +129,21 @@ def accumulate_mean_(t: Tensor, X: Tensor, step: Union[float, Tensor]) -> Tensor
             accumulate_mean(accum, a, 0.0)
             accumulate_mean(accum, b, 1.0)
 
-    will result with `accum` having the value `(a+b)/2 = 1.5`.
+    will result in `accum` having the value `(a+b)/2 = 1.5`.
 
     Does not apply NumPy broadcasting.
-    Uses mixed precision poplibs operations.
-    `t` and `X` must be the same shape, but can be different types.
+    Uses mixed precision PopLibs operations.
+    `t` and `X` must have the same shape, but can be different types.
     `step` must be scalar.
 
     Args:
         t (Tensor): Tensor to be updated.
-        X (Tensor): Value to update the variable.
-        step (Union[float, Tensor]]): Value representing the number of previously accumulated
-          values.
+        X (Tensor): Value to update the tensor with.
+        step (Union[float, Tensor]]): The number of previously accumulated
+            values.
 
     Returns:
-        Tensor: An alias to the variable.
+        Tensor: An alias to the updated tensor.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -174,20 +174,20 @@ def accumulate_moving_average_(t: Tensor, X: Tensor, f: Union[float, Tensor]) ->
     Update (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = (f * t) + ((1-f) * X)`.
 
     Does not apply NumPy broadcasting.
-    Uses mixed precision poplibs operations.
-    `t` and `X` must be the same shape, but can be different types.
+    Uses mixed precision PopLibs operations.
+    `t` and `X` must have the same shape, but can be different types.
     `f` must be scalar.
 
     Args:
         t: Tensor
             Tensor to be updated.
         X: Tensor
-            Value to update the variable
+            Value to update the tensor with.
         f: Union[float, Tensor]
-            Scalar to apply to update before the addition.
+            Scalar to apply before the addition.
     Returns:
-        updated: Tensor
-            An alias to the variable.
+        Tensor:
+            An alias to the updated tensor.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -226,20 +226,20 @@ def accumulate_moving_average_square_(
     Update (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = (f * t) + ((1-f) * X^2)`.
 
     Does not apply NumPy broadcasting.
-    Uses mixed precision poplibs operations.
-    `t` and `X` must be the same shape, but can be different types.
+    Uses mixed precision PopLibs operations.
+    `t` and `X` must have the same shape, but can be different types.
     `f` must be scalar.
 
     Args:
         t: Tensor
             Tensor to be updated.
         X: Tensor
-            Value to update the tensor
+            Value to update the tensor with.
         f: Union[float, Tensor]
-            Scalar to apply to update before the addition.
+            Scalar to apply to before the addition.
     Returns:
-        updated: Tensor
-            An alias to the variable.
+        Tensor:
+            An alias to the updated tensor.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -277,17 +277,18 @@ def accumulator_scale_(t: Tensor, f: Union[float, Tensor]) -> Tensor:
     This op will directly zero the input tensor if the factor is const and 0.
 
     Does not apply NumPy broadcasting.
-    Uses mixed precision poplibs operations.
+    Uses mixed precision PopLibs operations.
 
     Args:
         t: Tensor
             Tensor to be updated.
         f: Union[float, Tensor]
-            The scalar to multiply `t` by. If a float this will be a const multiplication, otherwise
-            will multiply by the values of the (non-const) tensor `f` elementwise.
+            The scalar to multiply `t` by. If a float this will be a const
+            multiplication, otherwise will multiply by the values of the
+            (non-const) tensor `f` elementwise.
     Returns:
-        updated: Tensor
-            An alias to the variable.
+        Tensor:
+            An alias to the updated tensor.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -321,14 +322,15 @@ def accumulator_zero_(t: Tensor) -> Tensor:
     """
     Zero the input tensor.
 
-    This is an AccumulatorScaleOp with a factor of 0, and this zeroes the input tensor.
+    This is an AccumulatorScaleOp with a factor of 0, and this zeroes the input
+    tensor.
 
     Args:
         t: Tensor
             Tensor to be zeroed.
     Returns:
-        updated: Tensor
-            An alias to the input.
+        Tensor:
+            An alias to the input tensor.
     """
     return accumulator_scale_(t, 0.0)
 
@@ -345,56 +347,57 @@ def sparse_accumulate_(
     Apply a sparse accumulate operation to a tensor.
 
     Does not apply NumPy broadcasting.
-    Uses mixed precision poplibs operations.
-    `t` and `X` must be the same shape, but can be different types.
+    Uses mixed precision PopLibs operations.
+    `t` and `X` must have the same shape, but can be different types.
 
     Detail:
 
-    Assume you have:
-    w -> Gather -> x
+    Assume you have::
 
-    In backward pass you have:
-    dW <- GatherGrad <- x
+        w -> Gather -> x
 
-    and when the optimiser step is grown:
-    dW <- GatherGrad <- x
-     \
-      Accumulate -> accum'
-     /
-    accum
+    and when the optimiser step is grown::
 
-    GatherGrad is essentially a scatter. Then we Accumulate the resultant dW on
-    accum. This involves creating an extra dW tensor, so instead we can do:
+        dW <- GatherGrad <- x
+        \\
+        Accumulate -> accum'
+        /
+        accum
 
-                  x
-                  |
-                  V
-    accum -> SparseAccumulate -> accum'
+    GatherGrad is essentially a scatter operation. Then we Accumulate the
+    resultant `dW` on `accum`. This involves creating an extra `dW` tensor, so
+    we can do the following instead::
 
-    Where SparseAccumulate can in one operation, without extra space, accumulate
-    the slices of x into accum as required.
+                    x
+                    |
+                    V
+        accum -> SparseAccumulate -> accum'
 
-    ---------
+    SparseAccumulate can accumulate the slices of `x` into `accum` as
+    required, in one operation, without extra requiring extra memory.
 
-    The input tensor `W` is an optional input. This is can be used when two different views of the
-    weight are consumed in the forward pass, and one of those ops is a Gather, thus requiring a
-    SparseAccumulate in the weight update step.
+    When calling this op, the input tensor `W` is an optional input. This can be
+    used when two different views of the weight are consumed in the forward
+    pass, and one of those ops is a Gather, thus requiring a SparseAccumulate in
+    the weight update step.
 
-    We connect the op to the other view of the weight than the one this SparseAccumulate is for.
-    Then, the lowering will clone that tensor (and its layout) when creating accum.
+    We connect the op to the other view of the weight instead of the view this
+    SparseAccumulate is for. Then, the lowering will clone that tensor (and its
+    layout) when creating `accum`.
 
     Args:
         t (Tensor): Tensor to be updated
-        X (Tensor): Value to update the variable.
+        X (Tensor): Value to update the tensor with.
         indices (Tensor): The indices of the scatter operation.
         axis (int, optional): Which axis to set on. Default is 0.
-        f (Optional[Union[float, Tensor]], optional): Optional scalar to apply to update before the
-            addition. Defaults to None.
-        W (Optional[Tensor], optional):  Tile mapping reference tensor for `t` to be cloned from.
+        f (Optional[Union[float, Tensor]], optional): Optional scalar to apply
+            to update before the addition. Defaults to None.
+        W (Optional[Tensor], optional):  Tile mapping reference tensor for `t`
+            to be cloned from.
 
 
     Returns:
-        Tensor: An alias to the variable.
+        Tensor: An alias to the updated tensor.
     """
     ctx = get_current_context()
     g = ctx.graph
