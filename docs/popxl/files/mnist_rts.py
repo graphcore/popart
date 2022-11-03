@@ -10,12 +10,34 @@ import numpy as np
 import torch
 import torchvision
 from tqdm import tqdm
+import os
 import popxl
 import popxl.ops as ops
 import popxl.transforms as transforms
 from popxl.ops.call import CallSiteInfo
+import urllib.request
 
 # import end
+
+
+def download_mnist(file_path):
+    mnist_files = [
+        "t10k-images-idx3-ubyte.gz",
+        "t10k-labels-idx1-ubyte.gz",
+        "train-images-idx3-ubyte.gz",
+        "train-labels-idx1-ubyte.gz",
+    ]
+    path = os.path.join(file_path + "/MNIST/raw")
+    if not os.path.exists(path):
+        print(f"Downloading MNIST dataset to {file_path}")
+        os.makedirs(path)
+        root_url = (
+            "https://graphcore-external-datasets.s3-eu-west-1.amazonaws.com/mnist/"
+        )
+        for file_str in mnist_files:
+            local_path = os.path.join(path, file_str)
+            urllib.request.urlretrieve(root_url + file_str, local_path)
+            torchvision.datasets.utils.extract_archive(local_path, path)
 
 
 # dataset begin
@@ -32,11 +54,14 @@ def get_mnist_data(
     Returns:
         Tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader]: the data loaders for training data and test data.
     """
+    file_path = "~/.torch/datasets"
+    download_mnist(os.path.expanduser(file_path))
+
     training_data = torch.utils.data.DataLoader(
         torchvision.datasets.MNIST(
-            "~/.torch/datasets",
+            file_path,
             train=True,
-            download=True,
+            download=False,
             transform=torchvision.transforms.Compose(
                 [
                     torchvision.transforms.ToTensor(),
