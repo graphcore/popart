@@ -2,6 +2,7 @@
 # See https://docs.pytest.org/en/6.2.x/fixture.html for details on this file.
 import pytest
 import numpy as np
+import random
 
 SEED = 0
 
@@ -11,5 +12,6 @@ def random_seed():
     """Set the random seed for all tests in this directory. autouse=True will
     use this fixture in every test.
     """
-    print(f"Setting numpy seed to {SEED}")
+    print(f"Setting numpy and random seed to {SEED}")
     np.random.seed(SEED)
+    random.seed(SEED)

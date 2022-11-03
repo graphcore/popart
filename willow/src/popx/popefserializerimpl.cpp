@@ -72,6 +72,10 @@ popef::DataType toPopefDataType(popart::DataType type) {
     return popef::DataType::F32;
   case popart::DataType::DOUBLE:
     return popef::DataType::F64;
+  case popart::DataType::FLOAT8_143:
+    return popef::DataType::F8143;
+  case popart::DataType::FLOAT8_152:
+    return popef::DataType::F8152;
   default:
     std::stringstream errorStream;
     errorStream << "There is no PopEF mapping for popart::DataType " << type;
