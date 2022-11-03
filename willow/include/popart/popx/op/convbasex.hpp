@@ -39,7 +39,7 @@ public:
   createInputTensor(InIndex index,
                     const poplar::DebugNameAndId &dnai) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex index0) const final;
-  InputCreatorType getInputCreatorType(InIndex) const final;
+  InputCreatorType getInputCreatorType(InIndex) const;
   void grow(snap::program::Sequence &) const final;
 
   poplar::OptionFlags getConvOptions(int, std::string pass = "") const;

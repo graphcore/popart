@@ -37,6 +37,7 @@ public:
   static InIndex getWeightsInIndex() {
     return MultiConvBaseOp::getWeightsInIndex(0);
   }
+  static InIndex getLog2ScaleInIndex() { return getWeightsInIndex() + 1; }
   static OutIndex getOutIndex() { return MultiConvBaseOp::getOutIndex(0); }
   int64_t getGroups() const { return MultiConvBaseOp::getGroups(0); }
   void setGroup() { group = MultiConvBaseOp::getGroups(0); }
@@ -48,7 +49,18 @@ public:
   void
   restoreAttributesFromParams(const std::vector<ConvParameters> &) override;
 
+  /**
+   * Returns true if and only if the inputs to the op constitute a
+   * valid set of inputs for a fused (float8) convolution.
+   */
+  bool isPow2ScaledConv() const;
+
+  std::set<InIndex> optionalInputs() const override {
+    return {getLog2ScaleInIndex()};
+  }
+
 private:
+  void verifyPartialsTypesAreHalf() const;
   // Can always be determined by input shapes. However, we check here that
   // the user-provided value matches.
   int64_t group;

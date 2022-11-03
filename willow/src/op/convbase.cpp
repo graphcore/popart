@@ -1,4 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include "popart/datatype.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/util/float8util.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -653,16 +656,24 @@ Shape MultiConvBaseOp::upperOutTruncs(int64_t convIndex) const {
 void MultiConvBaseOp::setup() {
   checkParameters();
 
-  // Set output shapes
+  // Set output shapes and type;
   for (int i = 0; i < numConvs(); i++) {
-    outInfo(getOutIndex(i))
-        .set(inInfo(getDataInIndex(i)).dataType(), getOutShape(i, getPads(i)));
+    auto outputInfo = outInfo(getOutIndex(i));
+    auto outShape   = getOutShape(i, getPads(i));
+
+    if (outputInfo.isSet()) {
+      // datatype has already been set
+      outputInfo.set(outputInfo.dataType(), outShape);
+    } else {
+      outputInfo.set(inInfo(getDataInIndex(i)).dataType(), outShape);
+    }
+    outInfo(i) = outputInfo;
   }
 }
 
 void MultiConvBaseOp::checkParameters() const {
   // Check that all parameters are either empty, or unpackable (i.e. they
-  // contain N * sum(nSpatialDims) elements each, where N == 1 for dilantions
+  // contain N * sum(nSpatialDims) elements each, where N == 1 for dilations
   // and strides, and N == 2 for pads.
   int64_t totalNumSpatialDims = 0;
   for (int i = 0; i < numConvs(); i++) {

@@ -1,4 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include "popart/util/float8util.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <map>
@@ -22,6 +23,7 @@
 #include "popart/operators.hpp"
 #include "popart/sessionoptions.hpp"
 #include "popart/tensorinfo.hpp"
+#include "popart/util.hpp"
 
 namespace popart {
 struct OperatorIdentifier;
@@ -44,6 +46,11 @@ ConvOp::ConvOp(const OperatorIdentifier &_opid,
       group(group_) {}
 
 std::vector<std::unique_ptr<Op>> ConvOp::getGradOps() {
+  if (isPow2ScaledConv()) {
+    throw error(
+        "Using a scaled convolution in a backwards pass is currently not "
+        "supported.");
+  }
   std::vector<std::unique_ptr<Op>> upops;
   upops.emplace_back(std::make_unique<ConvDataGradOp>(*this));
   upops.emplace_back(std::make_unique<ConvWeightsGradOp>(*this));
@@ -55,6 +62,8 @@ std::unique_ptr<Op> ConvOp::clone() const {
 }
 
 void ConvOp::setup() {
+  validateOpFloat8Inputs(input.get(), getLog2ScaleInIndex(), debugName());
+
   // The non-optional 'group' argument can always be determined based
   // on input shapes. Check that they match
   if (group == 0) {
@@ -72,7 +81,29 @@ void ConvOp::setup() {
         inInfo(getWeightsInIndex()).dim(1));
   }
 
-  return MultiConvBaseOp::setup();
+  if (isPow2ScaledConv()) {
+    verifyPartialsTypesAreHalf();
+    outInfo(getOutIndex()) = {DataType::FLOAT16, getOutShape(0, getPads(0))};
+  }
+
+  MultiConvBaseOp::setup();
+}
+
+void ConvOp::verifyPartialsTypesAreHalf() const {
+  auto opts = getConvOptions();
+  if (opts.partialsTypes.size()) {
+    auto partialsType = opts.partialsTypes[0];
+    if (partialsType.compare("half") != 0) {
+      throw error("Invalid partials type: {}. Partials type must be half for "
+                  "FLOAT8 conv operand types. ",
+                  partialsType);
+    }
+  }
+}
+
+bool ConvOp::isPow2ScaledConv() const {
+  return opInputsAreValidPow2ScaledInputs(input.get(),
+                                          ConvOp::getLog2ScaleInIndex());
 }
 
 void ConvOp::restoreAttributesFromParams(
@@ -172,22 +203,32 @@ const std::map<int, int> &ConvFlipWeightsGradOp::gradOutToNonGradIn() const {
 
 namespace {
 
-static OpDefinition convOpDef(
-    {OpDefinition::Inputs({
-         {"X", {{DataType::FLOAT, DataType::FLOAT16}}},
-         {"W", {{DataType::FLOAT, DataType::FLOAT16}}},
-         {"B", {{DataType::FLOAT, DataType::FLOAT16}}},
-     }),
-     OpDefinition::Outputs({{"Y", {{DataType::FLOAT, DataType::FLOAT16}}}}),
-     OpDefinition::Attributes({
-         {"auto_pad", {"NOTSET"}},
-         // deprecated from conv
-         {"dilations", {"*"}},
-         {"group", {"*"}},
-         {"kernel_shape", {"*"}}, // Do we support this?
-         {"pads", {"*"}},
-         {"strides", {"*"}},
-     })});
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition
+    convOpDef({OpDefinition::Inputs({
+                   {"X",
+                    {{DataType::FLOAT,
+                      DataType::FLOAT16,
+                      DataType::FLOAT8_143,
+                      DataType::FLOAT8_152}}},
+                   {"W",
+                    {{DataType::FLOAT,
+                      DataType::FLOAT16,
+                      DataType::FLOAT8_143,
+                      DataType::FLOAT8_152}}},
+                   {"B", {{DataType::FLOAT, DataType::FLOAT16}}},
+               }),
+               OpDefinition::Outputs({{"Y", T}}),
+               OpDefinition::Attributes({
+                   {"auto_pad", {"NOTSET"}},
+                   // deprecated from conv
+                   {"dilations", {"*"}},
+                   {"group", {"*"}},
+                   {"kernel_shape", {"*"}}, // Do we support this?
+                   {"pads", {"*"}},
+                   {"strides", {"*"}},
+               })});
 
 static OpCreator<ConvOp> convOpCreator(
     OpDefinitions({
@@ -219,8 +260,6 @@ static OpCreator<ConvOp> convOpCreator(
                      convOpts));
     },
     true);
-
-static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
 
 static OpDefinition
     convFlipWeightsOpDef({OpDefinition::Inputs({{"input", T}}),

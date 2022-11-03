@@ -27,6 +27,9 @@ public:
                                   int convIndex) const final;
   snap::Tensor createDataInput(const poplar::DebugNameAndId &dnai,
                                int convIndex) const final;
+
+  InputCreatorType getInputCreatorType(InIndex idx) const override;
+
   std::vector<snap::Tensor>
   convolve(snap::program::Sequence &,
            const std::vector<snap::Tensor> &weights) const final;

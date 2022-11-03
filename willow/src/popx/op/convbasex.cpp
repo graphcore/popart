@@ -1,6 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-
-#include "popart/popx/debugcontextx.hpp"
+#include "popart/util/float8util.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -13,8 +12,11 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <poplar/MetadataCreation.hpp>
 #include <poplar/OptionFlags.hpp>
+#include <poplar/Quarter.hpp>
 #include <poplar/Tensor.hpp>
+#include <poplar/Type.hpp>
 #include <poplin/ConvParams.hpp>
 #include <poplin/ConvUtil.hpp>
 #include <poplin/Convolution.hpp>
@@ -23,11 +25,13 @@
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/convbasex.hpp>
 
+#include "popart/datatype.hpp"
 #include "popart/error.hpp"
 #include "popart/ir.hpp"
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
 #include "popart/op.hpp"
+#include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/popopx.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorinfo.hpp"
@@ -51,7 +55,7 @@ std::set<TensorId> MultiConvBaseOpx::mustExistBeforeCreate(InIndex) const {
   return {};
 }
 
-InputCreatorType MultiConvBaseOpx::getInputCreatorType(InIndex) const {
+InputCreatorType MultiConvBaseOpx::getInputCreatorType(InIndex idx) const {
   return InputCreatorType::CanCreate;
 }
 
@@ -286,9 +290,19 @@ snap::Tensor reshapeOnnxWeightsForPoplar(const snap::Tensor &weights,
 }
 
 poplin::ConvParams getPoplarConvParams(const ConvParameters &param) {
+  poplar::Type inType;
+  poplar::Type outType;
+  if (isFloat8(param.type)) {
+    inType  = poplar::QUARTER;
+    outType = poplar::HALF;
+  } else {
+    inType  = popType(param.type);
+    outType = popType(param.type);
+  }
+
   return poplin::ConvParams(
-      popType(param.type),
-      popType(param.type),
+      inType,
+      outType,
       param.batchSize,
       vXtoY<int64_t, size_t>(param.inputShape),
       vXtoY<int64_t, size_t>(param.kernelShape),

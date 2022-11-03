@@ -1,5 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
+#include "popart/ir.hpp"
+#include "popart/util/float8util.hpp"
 #include <map>
 #include <memory>
 #include <snap/Graph.hpp>
@@ -8,8 +9,11 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <poplar/MetadataCreation.hpp>
 #include <poplar/OptionFlags.hpp>
+#include <poplar/Quarter.hpp>
 #include <poplar/Tensor.hpp>
+#include <poplar/Type.hpp>
 #include <poplin/Convolution.hpp>
 #include <popart/op/conv.hpp>
 #include <popart/popx/devicex.hpp>
@@ -17,6 +21,7 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
 
+#include "popart/datatype.hpp"
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
 #include "popart/op/convbase.hpp"
@@ -37,40 +42,87 @@ ConvOpx::ConvOpx(Op *op, Devicex *devicex) : MultiConvBaseOpx(op, devicex) {
 
 snap::Tensor ConvOpx::createWeightsInput(const poplar::DebugNameAndId &dnai,
                                          int convIndex) const {
-  return snap::Tensor{poplin::createWeights(
-                          graph().getPoplarGraph(),
-                          getPoplarConvParams(getOp<ConvOp>().getParameters()),
-                          dnai,
-                          getConvOptions(convIndex, getFwdPassFlagString()),
-                          &dv_p->convCache),
-                      graph()};
+  poplar::Tensor weightsInput = poplin::createWeights(
+      graph().getPoplarGraph(),
+      getPoplarConvParams(getOp<ConvOp>().getParameters()),
+      dnai,
+      getConvOptions(convIndex, getFwdPassFlagString()),
+      &dv_p->convCache);
+
+  if (weightsInput.elementType() == poplar::QUARTER) {
+    weightsInput = weightsInput.reinterpret(poplar::UNSIGNED_CHAR);
+  }
+  return snap::Tensor{weightsInput, graph()};
 }
+
 snap::Tensor ConvOpx::createDataInput(const poplar::DebugNameAndId &dnai,
                                       int convIndex) const {
-  return snap::Tensor{
+  poplar::Tensor dataInput =
       poplin::createInput(graph().getPoplarGraph(),
                           getPoplarConvParams(getOp<ConvOp>().getParameters()),
                           dnai,
                           getConvOptions(convIndex, getFwdPassFlagString()),
-                          &dv_p->convCache),
-      graph()};
+                          &dv_p->convCache);
+
+  if (dataInput.elementType() == poplar::QUARTER) {
+    dataInput = dataInput.reinterpret(poplar::UNSIGNED_CHAR);
+  }
+  return snap::Tensor{dataInput, graph()};
+}
+
+InputCreatorType ConvOpx::getInputCreatorType(InIndex idx) const {
+  if (idx == ConvOp::getLog2ScaleInIndex()) {
+    return InputCreatorType::Deadend;
+  }
+  return InputCreatorType::CanCreate;
 }
 
 std::vector<snap::Tensor>
 ConvOpx::convolve(snap::program::Sequence &prog,
                   const std::vector<snap::Tensor> &weights) const {
   ConvOp &op = getOp<ConvOp>();
+
+  poplar::Tensor data = getInTensor(ConvOp::getDataInIndex()).getPoplarTensor();
+  poplar::Tensor convWeights = weights[0].getPoplarTensor();
+
+  if (op.isPow2ScaledConv()) {
+    poplar::Tensor log2Scale =
+        getInTensor(ConvOp::getLog2ScaleInIndex()).getPoplarTensor();
+
+    if (op.getIr().getSessionOptions().throwIfLog2ScaleTensorNotInRange) {
+      auto assertProg = createAssertLog2ScaleInRangeProg(
+          graph().getPoplarGraph(), log2Scale, -32, 32);
+
+      prog.getPoplarSequence().add(assertProg);
+    }
+
+    data = reinterpretCastUInt8ToQuarter(
+        graph(),
+        data,
+        toPoplarQuarterFormat(op.inInfo(ConvOp::getDataInIndex()).dataType()),
+        log2Scale,
+        prog,
+        debugContext());
+    convWeights = reinterpretCastUInt8ToQuarter(
+        graph(),
+        convWeights,
+        toPoplarQuarterFormat(
+            op.inInfo(ConvOp::getWeightsInIndex()).dataType()),
+        0,
+        prog,
+        debugContext());
+  }
+
   auto outTensor =
-      snap::Tensor{poplin::convolution(
-                       graph().getPoplarGraph(),
-                       getInTensor(ConvOp::getDataInIndex()).getPoplarTensor(),
-                       weights[0].getPoplarTensor(),
-                       getPoplarConvParams(op.getParameters()),
-                       false,
-                       prog.getPoplarSequence(),
-                       debugContext("convolution"),
-                       getConvOptions(0),
-                       &(dv_p->convCache)),
+      snap::Tensor{poplin::convolution(graph().getPoplarGraph(),
+                                       data,
+                                       convWeights,
+                                       getPoplarConvParams(op.getParameters()),
+                                       false,
+                                       prog.getPoplarSequence(),
+                                       debugContext("convolution"),
+                                       getConvOptions(0),
+                                       &(dv_p->convCache)),
                    graph()};
   return {outTensor};
 }

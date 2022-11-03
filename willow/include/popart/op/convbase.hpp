@@ -162,7 +162,7 @@ public:
 
   static InIndex getDataInIndex(int convIndex) { return 2 * convIndex; }
   static InIndex getWeightsInIndex(int convIndex) {
-    return (2 * convIndex) + 1;
+    return getDataInIndex(convIndex) + 1;
   }
   static OutIndex getOutIndex(int convIndex) { return convIndex; }
   static int getConvIndexFromInIndex(InIndex index) {
