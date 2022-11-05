@@ -51,8 +51,8 @@ repos:
             files: .*.py
             exclude: |
                 (?x)^(
-                    docs/user_guide/files/tests/test_popart_doc_examples_custom_op.py|
-                    docs/user_guide/files/tests/test_popart_doc_examples.py|
+                    docs/popart/files/tests/test_popart_doc_examples_custom_op.py|
+                    docs/popart/files/tests/test_popart_doc_examples.py|
                     docs/popxl/files/tests/test_popxl_doc_examples_custom_op.py|
                     docs/popxl/files/tests/test_popxl_doc_examples.py|
                     docs/popxl/files/mnist.py|

@@ -7,86 +7,14 @@ import argparse
 from typing import Dict, List, Tuple, Mapping
 import numpy as np
 import torch
-import torchvision
 from tqdm import tqdm
-import os
 import popxl
 import popxl.ops as ops
 import popxl.transforms as transforms
 from popxl.ops.call import CallSiteInfo
-import urllib.request
+from mnist_utils import Timer, get_mnist_data
 
 # import end
-
-
-def download_mnist(file_path):
-    mnist_files = [
-        "t10k-images-idx3-ubyte.gz",
-        "t10k-labels-idx1-ubyte.gz",
-        "train-images-idx3-ubyte.gz",
-        "train-labels-idx1-ubyte.gz",
-    ]
-    path = os.path.join(file_path + "/MNIST/raw")
-    if not os.path.exists(path):
-        print(f"Downloading MNIST dataset to {file_path}")
-        os.makedirs(path)
-        root_url = (
-            "https://graphcore-external-datasets.s3-eu-west-1.amazonaws.com/mnist/"
-        )
-        for file_str in mnist_files:
-            local_path = os.path.join(path, file_str)
-            urllib.request.urlretrieve(root_url + file_str, local_path)
-            torchvision.datasets.utils.extract_archive(local_path, path)
-
-
-# dataset begin
-def get_mnist_data(
-    test_batch_size: int, batch_size: int
-) -> Tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader]:
-    """
-    Get the training and testing data for mnist.
-    """
-    file_path = "~/.torch/datasets"
-    download_mnist(os.path.expanduser(file_path))
-
-    training_data = torch.utils.data.DataLoader(
-        torchvision.datasets.MNIST(
-            file_path,
-            train=True,
-            download=False,
-            transform=torchvision.transforms.Compose(
-                [
-                    torchvision.transforms.ToTensor(),
-                    # Mean and std computed on the training set.
-                    torchvision.transforms.Normalize((0.1307,), (0.3081,)),
-                ]
-            ),
-        ),
-        batch_size=batch_size,
-        shuffle=True,
-        drop_last=True,
-    )
-
-    validation_data = torch.utils.data.DataLoader(
-        torchvision.datasets.MNIST(
-            "~/.torch/datasets",
-            train=False,
-            download=True,
-            transform=torchvision.transforms.Compose(
-                [
-                    torchvision.transforms.ToTensor(),
-                    torchvision.transforms.Normalize((0.1307,), (0.3081,)),
-                ]
-            ),
-        ),
-        batch_size=test_batch_size,
-        shuffle=True,
-        drop_last=True,
-    )
-    return training_data, validation_data
-
-
-# dataset end
 
 
 def get_accuracy(predictions: np.ndarray, labels: np.ndarray) -> float:
@@ -387,36 +315,55 @@ def main() -> None:
     parser.add_argument(
         "--epochs", type=int, default=1, help="Number of epochs to train for."
     )
+    parser.add_argument(
+        "--limit-nbatches",
+        type=int,
+        default=None,
+        help="Limit the number of batches (per training and testing) to process "
+        "whilst training and testing. Default is no limit.",
+    )
     parser.add_argument("--lr", type=float, default=0.005, help="Learning rate.")
+    parser.add_argument(
+        "--datasets-dir",
+        type=str,
+        default="~/.torch/datasets",
+        help="Datasets directory in which to look for, else download, the "
+        "MNIST dataset into.",
+    )
 
     opts = parser.parse_args()
     # Get the data for training and validation
-    training_data, test_data = get_mnist_data(opts.test_batch_size, opts.batch_size)
-
-    # Build the ir for training
-    train_ir, input_streams, loss_stream, train_variables = build_train_ir(opts)
-    # session begin
-    train_session = popxl.Session(train_ir, "ipu_model")
-    with train_session:
-        train(train_session, training_data, opts, input_streams, loss_stream)
-    # session end
-    trained_weights_data_dict = train_session.get_tensors_data(train_variables)
-    print("Training complete.")
-
-    # test begin
-    # Build the ir for testing
-    test_ir, test_input_streams, out_stream, test_variables = build_test_ir(opts)
-    test_session = popxl.Session(test_ir, "ipu_model")
-    # Get test variable values from trained weights
-    test_weights_data_dict = get_test_var_values(
-        test_variables, trained_weights_data_dict
+    training_data, test_data = get_mnist_data(
+        opts.datasets_dir, opts.test_batch_size, opts.batch_size, opts.limit_nbatches
     )
-    # Copy trained weights to the test ir
-    test_session.write_variables_data(test_weights_data_dict)
-    with test_session:
-        test(test_session, test_data, test_input_streams, out_stream)
-    # test end
-    print("Testing complete.")
+
+    with Timer(desc="MNIST training"):
+
+        # Build the ir for training
+        train_ir, input_streams, loss_stream, train_variables = build_train_ir(opts)
+        # session begin
+        train_session = popxl.Session(train_ir, "ipu_model")
+        with train_session:
+            train(train_session, training_data, opts, input_streams, loss_stream)
+        # session end
+        trained_weights_data_dict = train_session.get_tensors_data(train_variables)
+        print("Training complete.")
+
+    with Timer(desc="MNIST testing"):
+        # test begin
+        # Build the ir for testing
+        test_ir, test_input_streams, out_stream, test_variables = build_test_ir(opts)
+        test_session = popxl.Session(test_ir, "ipu_model")
+        # Get test variable values from trained weights
+        test_weights_data_dict = get_test_var_values(
+            test_variables, trained_weights_data_dict
+        )
+        # Copy trained weights to the test ir
+        test_session.write_variables_data(test_weights_data_dict)
+        with test_session:
+            test(test_session, test_data, test_input_streams, out_stream)
+        # test end
+        print("Testing complete.")
 
 
 if __name__ == "__main__":

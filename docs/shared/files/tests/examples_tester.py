@@ -2,14 +2,14 @@
 import os
 import sys
 import subprocess
-import unittest
+import pytest
 
 
-class ExamplesTester(unittest.TestCase):
+class ExamplesTester:
     """Test case for the examples"""
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         """Setup"""
         cls.cwd = os.getcwd()
         cls.default_timeout = 600.0
@@ -31,7 +31,7 @@ class ExamplesTester(unittest.TestCase):
             return_code_ok = False
 
         if not return_code_ok:
-            self.fail(
+            pytest.fail(
                 f"""The following command failed: {command}\n
                 Working path: {self.cwd}\n
                 Output of failed command:\n{combined_output}"""

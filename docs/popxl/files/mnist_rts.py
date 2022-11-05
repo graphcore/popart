@@ -8,93 +8,14 @@ from collections import namedtuple
 from typing import Dict, List, Tuple, Mapping
 import numpy as np
 import torch
-import torchvision
 from tqdm import tqdm
-import os
 import popxl
 import popxl.ops as ops
 import popxl.transforms as transforms
 from popxl.ops.call import CallSiteInfo
-import urllib.request
+from mnist_utils import Timer, get_mnist_data
 
 # import end
-
-
-def download_mnist(file_path):
-    mnist_files = [
-        "t10k-images-idx3-ubyte.gz",
-        "t10k-labels-idx1-ubyte.gz",
-        "train-images-idx3-ubyte.gz",
-        "train-labels-idx1-ubyte.gz",
-    ]
-    path = os.path.join(file_path + "/MNIST/raw")
-    if not os.path.exists(path):
-        print(f"Downloading MNIST dataset to {file_path}")
-        os.makedirs(path)
-        root_url = (
-            "https://graphcore-external-datasets.s3-eu-west-1.amazonaws.com/mnist/"
-        )
-        for file_str in mnist_files:
-            local_path = os.path.join(path, file_str)
-            urllib.request.urlretrieve(root_url + file_str, local_path)
-            torchvision.datasets.utils.extract_archive(local_path, path)
-
-
-# dataset begin
-def get_mnist_data(
-    test_batch_size: int, batch_size: int
-) -> Tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader]:
-    """
-    Get the training and testing data for MNIST.
-
-    Args:
-        test_batch_size (int): The batch size for test.
-        batch_size (int): The batch size for training.
-
-    Returns:
-        Tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader]: the data loaders for training data and test data.
-    """
-    file_path = "~/.torch/datasets"
-    download_mnist(os.path.expanduser(file_path))
-
-    training_data = torch.utils.data.DataLoader(
-        torchvision.datasets.MNIST(
-            file_path,
-            train=True,
-            download=False,
-            transform=torchvision.transforms.Compose(
-                [
-                    torchvision.transforms.ToTensor(),
-                    # Mean and std computed on the training set.
-                    torchvision.transforms.Normalize((0.1307,), (0.3081,)),
-                ]
-            ),
-        ),
-        batch_size=batch_size,
-        shuffle=True,
-        drop_last=True,
-    )
-
-    validation_data = torch.utils.data.DataLoader(
-        torchvision.datasets.MNIST(
-            "~/.torch/datasets",
-            train=False,
-            download=True,
-            transform=torchvision.transforms.Compose(
-                [
-                    torchvision.transforms.ToTensor(),
-                    torchvision.transforms.Normalize((0.1307,), (0.3081,)),
-                ]
-            ),
-        ),
-        batch_size=test_batch_size,
-        shuffle=True,
-        drop_last=True,
-    )
-    return training_data, validation_data
-
-
-# dataset end
 
 
 def get_accuracy(predictions: np.ndarray, labels: np.ndarray) -> float:
@@ -447,6 +368,7 @@ def get_test_var_values(
     return test_weights_data_dict
 
 
+@Timer(desc="MNIST training")
 def run_train(training_data, opts):
     # Build the ir for training
     train_ir, input_streams, loss_stream, train_variables = build_train_ir(opts)
@@ -466,6 +388,7 @@ def run_train(training_data, opts):
     return trained_weights_data_dict
 
 
+@Timer(desc="MNIST testing")
 def run_test(test_data, trained_weights_data_dict, opts):
     # test begin
     # Build the ir for testing
@@ -490,9 +413,12 @@ def main() -> None:
     opts = parser()
     # Get the data for training and validation
     training_data, test_data = get_mnist_data(
+        opts.datasets_dir,
         opts.test_batch_size * opts.replication_factor,
         opts.batch_size * opts.replication_factor,
+        opts.limit_nbatches,
     )
+
     trained_weights_data_dict = run_train(training_data, opts)
     if opts.test:
         run_test(test_data, trained_weights_data_dict, opts)
@@ -512,6 +438,13 @@ def parser():
     parser.add_argument(
         "--epochs", type=int, default=1, help="Number of epochs to train for."
     )
+    parser.add_argument(
+        "--limit-nbatches",
+        type=int,
+        default=None,
+        help="Limit the number of batches (per training and testing) to process "
+        "whilst training and testing. Default is no limit.",
+    )
     parser.add_argument("--lr", type=float, default=0.005, help="Learning rate.")
     parser.add_argument(
         "--ipu", action="store_true", help="Run on available IPU hardware device."
@@ -526,6 +459,13 @@ def parser():
         type=int,
         default=80,
         help="Batch size for testing on a single replica.",
+    )
+    parser.add_argument(
+        "--datasets-dir",
+        type=str,
+        default="~/.torch/datasets",
+        help="Datasets directory in which to look for, else download, the "
+        "MNIST dataset into.",
     )
 
     opts = parser.parse_args()

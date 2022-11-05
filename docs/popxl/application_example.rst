@@ -23,7 +23,7 @@ Prepare dataset
 ---------------
 You can get the MNIST training and validation dataset using `torch.utils.data.DataLoader <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
 
-.. literalinclude:: files/mnist.py
+.. literalinclude:: files/mnist_utils.py
   :language: python
   :start-after: dataset begin
   :end-before: dataset end

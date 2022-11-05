@@ -15,6 +15,13 @@ from examples_tester import ExamplesTester
 
 working_dir = Path(os.path.dirname(__file__)).parent
 
+# Session-level fixture, so all tests in this session share the same tmpdir for
+# the MNIST dataset, so they do not each re-download it.
+@pytest.fixture(scope="session")
+def mnist_datasets_tmpdir(tmpdir_factory):
+    fn = tmpdir_factory.mktemp("datasets")
+    return fn
+
 
 class TestPythonDocExamples(ExamplesTester):
     """Test simple running of the examples included in the docs"""
@@ -156,22 +163,13 @@ class TestPythonDocExamples(ExamplesTester):
         filename = "rts_var.py"
         self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
-    def test_documentation_popxl_mnist(self):
+    def test_documentation_popxl_mnist(self, mnist_datasets_tmpdir):
         """Test the popxl basic mnist example"""
-        filename = "mnist.py"
+        # Note, mnist.py always trains and tests, so no --test.
+        filename = f"mnist.py --datasets-dir={mnist_datasets_tmpdir} --test-batch-size 8 --limit-nbatches 2"
         self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
-    def test_documentation_popxl_mnist_replication_train(self):
-        """Test the popxl mnist with replication example"""
-        filename = "mnist_rts.py --replication-factor 2"
-        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
-
-    def test_documentation_popxl_mnist_rts_train(self):
+    def test_documentation_popxl_mnist_rts(self, mnist_datasets_tmpdir):
         """Test the popxl mnist with RTS example"""
-        filename = "mnist_rts.py --replication-factor 2 --rts"
-        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
-
-    def test_documentation_popxl_mnist_rts_train_test(self):
-        """Test the popxl mnist with RTS example"""
-        filename = "mnist_rts.py --replication-factor 2 --rts --test"
+        filename = f"mnist_rts.py --datasets-dir={mnist_datasets_tmpdir} --replication-factor 2 --rts --test --test-batch-size 8 --limit-nbatches 2"
         self.run_python(filename, file_dir=working_dir, working_dir=working_dir)

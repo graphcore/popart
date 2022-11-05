@@ -52,7 +52,7 @@ class TestPythonDocExamples(ExamplesTester):
 class TestPopartCustomOperatorCube(ExamplesTester):
     """Tests for example of Popart cube custom operator"""
 
-    def setUp(self):
+    def setup(self):
         custom_op_dir = os.path.join(working_dir, "custom_op")
         self.run_command(
             "make clean", working_dir=custom_op_dir, timeout_secs=self.default_timeout
@@ -60,6 +60,8 @@ class TestPopartCustomOperatorCube(ExamplesTester):
         self.run_command("make", working_dir=custom_op_dir, timeout_secs=600.0)
 
     def test_run_cube_custom_op(self):
+        self.setup()
+
         filename = "custom_op.py"
         self.run_python(
             filename, file_dir=working_dir, working_dir=working_dir, timeout_secs=600.0
