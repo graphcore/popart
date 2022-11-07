@@ -47,7 +47,6 @@ def _download_mnist(datasets_path: pathlib.Path):
             torchvision.datasets.utils.extract_archive(mnist_file, str(mnist_path))
 
 
-# dataset begin
 @Timer(desc="Getting and preparing MNIST data")
 def get_mnist_data(
     datasets_dir: str,
@@ -94,6 +93,7 @@ def get_mnist_data(
             )
         )
 
+    # dataset begin
     training_data = torch.utils.data.DataLoader(
         mnist(train=True),
         batch_size=batch_size,
@@ -107,4 +107,6 @@ def get_mnist_data(
         shuffle=True,
         drop_last=True,
     )
+    # dataset end
+
     return training_data, validation_data

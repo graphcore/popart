@@ -21,7 +21,9 @@ First, you need to import all the required libraries.
 
 Prepare dataset
 ---------------
-You can get the MNIST training and validation dataset using `torch.utils.data.DataLoader <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+You can use a `torch.utils.data.DataLoader <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_
+for the training and validation data. Here, ``mnist`` is a function that returns
+a ``torch.utils.data.DataSet`` for the MNIST dataset.
 
 .. literalinclude:: files/mnist_utils.py
   :language: python
