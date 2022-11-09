@@ -58,6 +58,7 @@ list(
   ${popart_op_headers_dir}/tiedgather.hpp
   ${popart_op_headers_dir}/fmod.hpp
   ${popart_op_headers_dir}/groupnorm.hpp
+  ${popart_op_headers_dir}/batchnorm.hpp
   ${popart_op_headers_dir}/equal.hpp
   ${popart_op_headers_dir}/exchange/multiexchange.hpp
   ${popart_op_headers_dir}/or.hpp

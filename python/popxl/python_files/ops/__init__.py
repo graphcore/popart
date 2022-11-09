@@ -2,6 +2,7 @@
 from .abs import abs
 from .add import add, add_
 from .pool import average_pool, max_pool
+from .batch_norm import batch_norm_inference
 from .call import call, call_with_info, CallSiteInfo
 from .cast import cast, pow2scale_then_cast, cast_then_pow2scale
 from .concat import concat, concat_
@@ -95,6 +96,8 @@ __all__ = [
     # pool.py
     "average_pool",
     "max_pool",
+    # batch_norm.py
+    "batch_norm_inference",
     # call.py
     "call",
     "call_with_info",
