@@ -42,6 +42,26 @@ std::unique_ptr<Op> ConvTransposeOp::clone() const {
 }
 
 void ConvTransposeOp::setup() {
+  // The non-optional 'group' argument can always be determined based
+  // on input shapes. Check that they match
+  if (group < 1) {
+    throw error("group attribute in {} must be greater than zero", debugName());
+  }
+
+  auto dataInInfo = inInfo(ConvTransposeOp::getInIndex());
+  auto weightInfo = inInfo(ConvTransposeOp::getWeightsInIndex());
+  if (dataInInfo.dim(1) != weightInfo.dim(0)) {
+    throw error("Unexpected number of channels in the input tensor: {}. Given "
+                "non-transposed weight "
+                "tensor of shape {}, transposed convolution expects input "
+                "tensor of size {}"
+                " to have {} channels.",
+                dataInInfo.dim(1),
+                weightInfo.shape(),
+                dataInInfo.shape(),
+                weightInfo.dim(0));
+  }
+
   const Shape inputShape  = inShape(getInIndex());
   const Shape kernelShape = inShape(getWeightsInIndex());
 

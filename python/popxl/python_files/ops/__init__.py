@@ -6,7 +6,7 @@ from .call import call, call_with_info, CallSiteInfo
 from .cast import cast, pow2scale_then_cast, cast_then_pow2scale
 from .concat import concat, concat_
 from .conditional import conditional, conditional_with_info
-from .conv import conv, conv_pow2scaled, PadType
+from .conv import conv, conv_pow2scaled, conv_transpose, PadType
 from .code_copy import remote_code_load
 from .cos import cos
 from .cumsum import cumsum
@@ -114,6 +114,7 @@ __all__ = [
     # conv.py
     "conv",
     "conv_pow2scaled",
+    "conv_transpose",
     "PadType",
     # cos.py
     "cos",

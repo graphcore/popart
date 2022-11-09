@@ -21,6 +21,7 @@
 #include <popart/op/call.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/op/conv.hpp>              // IWYU pragma: keep
+#include <popart/op/convtranspose.hpp>     // IWYU pragma: keep
 #include <popart/op/exchange/codecopy.hpp> // IWYU pragma: keep
 #include <popart/op/gather.hpp>            // IWYU pragma: keep
 #include <popart/op/if.hpp>                // IWYU pragma: keep
@@ -577,6 +578,33 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
         py::arg("dilations"),
         py::arg("group"),
         py::arg("padType"),
+        py::arg("convOpts"),
+        py::return_value_policy::reference);
+
+  // ConvTranspose
+  g.def("createConnectedOp_ConvTransposeOp",
+        &Graph::createConnectedOp<ConvTransposeOp,
+                                  const OperatorIdentifier &,
+                                  const Op::Settings &,
+                                  std::vector<int64_t> &,
+                                  std::vector<int64_t> &,
+                                  std::vector<int64_t> &,
+                                  int64_t,
+                                  const AutoPad &,
+                                  std::vector<int64_t>,
+                                  Shape,
+                                  const MultiConvOptions &>,
+        py::arg("in"),
+        py::arg("out"),
+        py::arg("opid"),
+        py::arg("settings"),
+        py::arg("strides"),
+        py::arg("pads"),
+        py::arg("dilations"),
+        py::arg("group"),
+        py::arg("padType"),
+        py::arg("outputPadding"),
+        py::arg("outputShape"),
         py::arg("convOpts"),
         py::return_value_policy::reference);
 

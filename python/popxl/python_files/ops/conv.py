@@ -305,3 +305,135 @@ def conv_pow2scaled(
     )
 
     return Tensor._from_pb_tensor(op.outTensor(0))
+
+
+def conv_transpose(
+    t: Tensor,
+    weight: Tensor,
+    stride: Optional[Tuple[int]] = (1, 1),
+    padding: Optional[Tuple[int]] = (0, 0, 0, 0),
+    dilation: Optional[Tuple[int]] = (1, 1),
+    groups: Optional[int] = 1,
+    pad_type: Optional[PadType] = "not_set",
+    output_padding: Optional[Tuple[int]] = (),
+    output_shape: Optional[Tuple[int]] = (),
+    available_memory_proportions: Optional[List[float]] = None,
+    partials_types: Optional[List[str]] = None,
+    enable_conv_dithering: Optional[List[int]] = None,
+):
+    """Perform a convolution transpose operation on a tensor.
+
+    The convolution transpose operator consumes an input tensor and a filter, and computes the output.
+
+    If the `padding` parameter is provided the shape of the output is auto generated. `output_shape`
+    can also be explicitly specified in which case `padding` values are auto generated. See attribute
+    descriptions for more details.
+
+    See also `PyTorch Tensor.ConvTranspose2d <https://pytorch.org/docs/stable/generated/torch.nn.ConvTranspose2d.html#convtranspose2d>`__,
+    `ONNX ConvTranspose <https://github.com/onnx/onnx/blob/main/docs/Operators.md#ConvTranspose>`__.
+
+    Attributes:
+        t (Tensor):
+            Input data tensor from a previous layer.
+            If the input is a 3D tensor, the size is (N, C, L), where N is the batch size, C is the
+            number of channels, L is the length;
+            If the input is a 2D image, the size is (N, C, H, W), where N is the batch size, C is
+            the number of channels, H and W are the height and width;
+            If the input is a 3D image, the size is (N, C, D, H, W), where N is the batch size,
+            C is the number of channels, D is the depth, H and W are the height and width.
+        weight (Tensor):
+            The weight tensor that will be used in the convolutions.
+            If the input is a 3D tensor, the weight size is (M, C/group, k), where C is the number
+            of channels, k is the length of the kernel, M is the number of feature maps.
+            If the input is a 2D image, the weight size is (M, C/group, kH, kW), where C is the
+            number of channels, kH and kW are the height and width of the kernel, M is the number
+            of feature maps.
+            If the input is a 3D image, the weight size is (M, C/group, kD, kH, kW), where C is the
+            number of channels, kD, kH and kW are the depth, height and width of the kernel, M is
+            the number of feature maps.
+        padding (Tuple[int]):
+            Padding for the beginning and ending along each spatial axis, it can take any value
+            greater than or equal to 0.
+            The value represent the number of pixels added to the beginning and end part of the
+            corresponding axis.
+            `pads` format should be `[x1_begin, x2_begin...x1_end, x2_end,...]`, where
+            `xi_begin` is the number of pixels added at the beginning of axis `i` and `xi_end` is
+            the number of pixels added at the end of axis `i`.
+            If the pads parameter is provided the shape of the output is auto generated. `See ONNX Conv Transpose
+            <https://github.com/onnx/onnx/blob/main/docs/Operators.md#convtranspose>`__ for details.
+        dilation (Tuple[int]):
+            Dilation value along each spatial axis of the filter.
+        groups (int(default is 1)):
+            Number of groups input channels and output channels are divided into.
+        pad_type (PadType(default is not_set)):
+            The `pad_type` must be either "not_set", "same_upper", "same_lower" or "valid".
+            The default value is "not_set", which means explicit padding is used.
+            "same_upper" or "same_lower" mean pad the input such that
+            `output_shape[i] = ceil(input_shape[i] / strides[i])` for each axis `i`.
+            The padding is split between the two sides equally or almost equally
+            (depending on whether it is even or odd).
+            In the case that the padding is an odd number, the extra padding is added at the end for
+            "same_upper" and at the beginning for "same_lower".
+        output_padding (Tuple[int]):
+            Additional elements added to the side with higher coordinate indices in the output. Each padding
+            value in `output_padding` must be strictly less than the corresponding stride/dilation dimension.
+            Note that this attribute doesn't directly affect the computed output values. It only controls the
+            selection of the computed values, so changing this attribute only adds or removes output elements.
+            If `output_shape` is explicitly provided, `output_padding` does not contribute additional size to
+            `output_shape` but participates in the computation of the needed padding amount.
+        output_shape (Tuple[int]):
+            The shape of the output can be explicitly set which will cause padding values to be auto generated.
+            If output_shape is specified pads values are ignored. `See ONNX Conv Transpose
+            <https://github.com/onnx/onnx/blob/main/docs/Operators.md#convtranspose>`__ for details on how
+            padding is generated.
+        available_memory_proportions (List[float]):
+            The available memory proportions per conv, each [0, 1).
+         partials_types (List[str]):
+            The partials type per convolution, choose between half and float.
+        enable_conv_dithering (List[int]):
+            Enable convolution dithering per convolution.
+            If true, then convolutions with different parameters will be laid out from different tiles
+            in an effort to improve tile balance in models.
+
+    Returns:
+        Tensor:
+            Output data tensor that contains the result of the convolution. The output dimensions are functions
+             of the kernel size, stride size, pad lengths and group count.
+    """
+    ctx = get_current_context()
+    g = ctx.graph
+    pb_g = g._pb_graph
+    check_in_graph(g, t=t, weight=weight)
+    check_tensor_ipu_and_tile_set(t=t, weight=weight)
+
+    settings = ctx._get_op_settings("conv")
+    opid = _ir.OperatorIdentifier(
+        "ai.onnx", "ConvTranspose", 11, _ir.NumInputs(1, 1), 1
+    )
+    auto_pad = _convert_pad_type(pad_type)
+    sess_opts = g.ir._pb_ir.getSessionOptions().convolutionOptions
+
+    attr_param = _ir.op.Attributes()
+    options = multi_conv_options(
+        sess_opts,
+        attr_param,
+        available_memory_proportions,
+        partials_types=partials_types,
+        enable_conv_dithering=enable_conv_dithering,
+    )
+
+    op = pb_g.createConnectedOp_ConvTransposeOp(
+        {0: t.id, 1: weight.id},
+        {0: g._create_tensor_id("convtranspose_out")},
+        opid,
+        settings,
+        list(stride),
+        list(padding),
+        list(dilation),
+        groups,
+        auto_pad,
+        list(output_padding),
+        list(output_shape),
+        options,
+    )
+    return Tensor._from_pb_tensor(op.outTensor(0))

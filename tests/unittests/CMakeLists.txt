@@ -81,6 +81,7 @@ add_unit_test(unittest_tensorindextestwrapper testutil/irquery/unittest_tensorin
 add_unit_test(unittest_tensortestwrapper testutil/irquery/unittest_tensortestwrapper.cpp SUPPORT_LIBS ir-query-test-util trompeloeil)
 
 add_unit_test(unittest_op_conv op/conv.cpp)
+add_unit_test(unittest_op_convtranspose op/convtranspose.cpp)
 add_unit_test(unittest_op_dynamicop op/dynamicop.cpp SUPPORT_LIBS ir-query-test-util)
 add_unit_test(unittest_op_sgd2combo op/sgd2combo.cpp)
 add_unit_test(unittest_op_varupdate op/varupdate.cpp)

@@ -17,6 +17,7 @@
 #include "popart/op.hpp"
 #include "popart/op/conv.hpp"
 #include "popart/op/convbase.hpp"
+#include "popart/op/convtranspose.hpp"
 #include "popart/op/receptive.hpp"
 #include "popart/vendored/optional.hpp"
 
@@ -91,6 +92,29 @@ void bindConv(py::module &m) {
            py::arg("dilations"),
            py::arg("group"),
            py::arg("padType"),
+           py::arg("convOpts"));
+
+  py::class_<ConvTransposeOp, Op, std::shared_ptr<ConvTransposeOp>>(
+      sm, "ConvTransposeOp")
+      .def(py::init<const OperatorIdentifier &,
+                    const Op::Settings &,
+                    std::vector<int64_t>,
+                    std::vector<int64_t>,
+                    std::vector<int64_t>,
+                    int64_t,
+                    const AutoPad &,
+                    std::vector<int64_t>,
+                    Shape,
+                    const MultiConvOptions &>(),
+           py::arg("opid"),
+           py::arg("settings"),
+           py::arg("strides"),
+           py::arg("pads"),
+           py::arg("dilations"),
+           py::arg("group"),
+           py::arg("padType"),
+           py::arg("outputPadding"),
+           py::arg("outputShape"),
            py::arg("convOpts"));
 }
 } // namespace op

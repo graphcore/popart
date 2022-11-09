@@ -66,7 +66,7 @@ void ConvOp::setup() {
 
   // The non-optional 'group' argument can always be determined based
   // on input shapes. Check that they match
-  if (group == 0) {
+  if (group < 1) {
     throw error("group attribute in {} must be greater than zero", debugName());
   }
 

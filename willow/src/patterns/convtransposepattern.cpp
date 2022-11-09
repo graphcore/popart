@@ -86,7 +86,6 @@ bool ConvTransposePattern::apply(Op *op) const {
 
   conv->connectOutTensor(ConvOp::getOutIndex(), outTensor->id);
 
-  conv->setGroup();
   conv->restoreAttributesFromParams({convTranspose->params});
   conv->setup();
 
@@ -101,7 +100,7 @@ bool ConvTransposePattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<ConvTransposePattern>
-    convTransposePattern("ConvTranspose");
+    convTransposePattern("ConvTranspose", true, true);
 }
 
 } // namespace popart
