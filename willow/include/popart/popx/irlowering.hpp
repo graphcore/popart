@@ -41,7 +41,7 @@
 #include "popart/logging.hpp"
 #include "popart/op.hpp"
 #include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/popx/preparedtensor.hpp"
 #include "popart/popx/viewchangers.hpp"
 #include "popart/taskid.hpp"
@@ -340,7 +340,7 @@ private:
 
   void opTaskFunc(TaskId taskId, Op *, SequenceMap &seqs);
   void pipelinedOpTaskFunc(TaskId taskId, Op *, SequenceMap &seqs);
-  void growOpx(PopOpx *, SequenceMap::SequenceInterval seqInterval);
+  void growOpx(Opx *, SequenceMap::SequenceInterval seqInterval);
 
   // The name of the task associated with growing an operation
   TaskId opTaskId(Op *) const;
@@ -575,15 +575,15 @@ public:
 
   // A forward search of graph:
   //   - from inputs of the graph
-  //   - to PopOpxs with optimised poplar calls to create the tensor,
-  //     or to PopOpxs that destroy layout information of the input
+  //   - to Opxs with optimised poplar calls to create the tensor,
+  //     or to Opxs that destroy layout information of the input
   //     tensor on the output
-  //   - traversing through PopOpxs that cannot create the tensor
+  //   - traversing through Opxs that cannot create the tensor
   //     themselves, but preserve layout information from input
   //     to output tensor
   //   - tracking the route taken through the graph to the endpoints
   // Using the default arguments will return only creator candidates,
-  // with each candidate's path containing only PopOpxs that need to be
+  // with each candidate's path containing only Opxs that need to be
   // 'unwound' to correctly lay out the input tensor
   std::vector<ICreatorCandidatePtr>
   getCreatorEndpoints(const Tensor *tensor,
@@ -637,14 +637,14 @@ public:
     deviceInfo = std::move(deviceInfo_);
   }
 
-  std::unique_ptr<PopOpx> createOpx(Op *);
+  std::unique_ptr<Opx> createOpx(Op *);
 
   // 1-to-1 mapping between Ops and Opxs
-  std::map<OpId, std::unique_ptr<PopOpx>> opxs;
+  std::map<OpId, std::unique_ptr<Opx>> opxs;
 
-  PopOpx *getOpx(OpId id) { return opxs.at(id).get(); }
+  Opx *getOpx(OpId id) { return opxs.at(id).get(); }
 
-  const PopOpx *getOpx(OpId id) const { return opxs.at(id).get(); }
+  const Opx *getOpx(OpId id) const { return opxs.at(id).get(); }
 
   // Some functions useful for logging the order in which Ops are used to
   // generate poplar code / recomputed.

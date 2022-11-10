@@ -101,7 +101,7 @@ void RngStateLowering::lowerInitRngStatesFromSeed(
 }
 
 void RngStateLowering::lowerSetRngState(snap::program::Sequence &seq,
-                                        PopOpx *opx) {
+                                        Opx *opx) {
 
   Op *op = opx->op_p;
 
@@ -123,7 +123,7 @@ void RngStateLowering::lowerSetRngState(snap::program::Sequence &seq,
 }
 
 void RngStateLowering::lowerGetRngState(snap::program::Sequence &seq,
-                                        PopOpx *opx) {
+                                        Opx *opx) {
 
   Op *op = opx->op_p;
 

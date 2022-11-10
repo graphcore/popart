@@ -19,6 +19,7 @@
 #include <popart/popx/preparedtensor.hpp>
 
 #include "popart/operatoridentifier.hpp"
+#include <popart/popx/opx.hpp>
 
 namespace snap {
 class Graph;
@@ -46,95 +47,70 @@ using UnwindEndpointPtr = std::shared_ptr<UnwindEndpoint>;
 class Devicex;
 class ViewChangers;
 
-enum class InputCreatorType {
-  // PopOpx has a poplar call to a function that can
-  // lay out the input tensor on the device
-  CanCreate = 0,
-  // Cannot create the input tensor, but can
-  // allow an PopOpx downstream in the graph to
-  // create it
-  CanUnwind,
-  // Can create or unwind
-  CanCreateOrUnwind,
-  // Cannot create tensor, nor can it allow a
-  // a downstream PopOpx to create the tensor
-  Deadend,
-  // Has a potential creator, but can also allow an PopOpx downstream in the
-  // graph
-  // to create it instead.
-  CanDelegate,
-  // Has a potential creator, but can also allow an PopOpx downstream in the
-  // graph
-  // to create it instead (either propagated through the subgraph, or directly).
-  CanDelegateOrUnwind
-};
-
-class PopOpx {
+class [[deprecated("Please use popart::popx::Opx instead.")]] PopOpx
+    : public Opx {
 
 public:
   // need to pass Devicex down to here, easy
   // access to poplar objects
   PopOpx(Op *, Devicex *);
-  virtual ~PopOpx();
+  ~PopOpx() override;
 
   // create the input snap::Tensor for input at index with name
   // default : throw error (not all PopOpxs can createInput)
-  virtual snap::Tensor
-  createInputTensor(InIndex index, const poplar::DebugNameAndId &dnai) const;
+  snap::Tensor createInputTensor(
+      InIndex index, const poplar::DebugNameAndId &dnai) const override;
   // default return DEADEND, i.e. unable to create input tensor, and
   // cannot use downstream opxs as candidates to create input
   // tensor
-  virtual InputCreatorType getInputCreatorType(InIndex index) const;
-  // When an input tensor has multiple creator candidates, we choose
-  // the one with highest priority
-  double inputCreatorPriority{0.0};
+  InputCreatorType getInputCreatorType(InIndex index) const override;
 
-  virtual bool canUnwind(InIndex, OutIndex) const;
+  bool canUnwind(InIndex, OutIndex) const override;
 
   // Reverses the layout change to an input tensor for an op that returned
   // CANUNWIND
-  virtual snap::Tensor
-  unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const;
-  virtual view::RegMap unwindRegion(InIndex, OutIndex) const;
+  snap::Tensor unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex)
+      const override;
+  view::RegMap unwindRegion(InIndex, OutIndex) const override;
 
   // If the created or unwound tensor does not conform with the IR specs,
   // an PopOpx may supply a view transformation that transforms that tensor into
   // IR specs
-  virtual bool hasCreatorViewChangers(InIndex index) const;
-  virtual ViewChangers getCreatorViewChangers(InIndex index) const;
+  bool hasCreatorViewChangers(InIndex index) const override;
+  ViewChangers getCreatorViewChangers(InIndex index) const override;
 
   // For some ops (e.g. InitOpx, SubgraphOpx, IoTileCopyOpx)
   // the output tensor is created externally, and must
   // therefore exist before the PopOpx is grown.
   // Lets an PopOpx implementation specify which outputs need an external
   // creator
-  virtual bool outputCreatedExternally(OutIndex index) const;
+  bool outputCreatedExternally(OutIndex index) const override;
 
   // To create a snap::Tensor for input index index0, which
   // snap::Tensors must already exist?
-  virtual std::set<TensorId> mustExistBeforeCreate(int index0) const;
+  std::set<TensorId> mustExistBeforeCreate(int index0) const override;
 
   // To create a snap::Tensor for input index index0, which
   // snap::Tensors must already exist?
   // Allows disjunctive normal form of must exist tensors, i.e.
   // at least one full set of TensorIds in the vector must exist
-  virtual DnfTensorIds mustExistBeforeCreateDNF(int index0) const;
+  DnfTensorIds mustExistBeforeCreateDNF(int index0) const override;
 
   // adds snap::Tensors to devicex_->popTensors,
   // one for each output of op_.
-  virtual void grow(snap::program::Sequence &) const;
+  void grow(snap::program::Sequence &) const override;
   // Akin to the grow function above except it allows for growing over multiple
   // fragments. This is mostly for CallOp optimisations, the default behaviour
   // is to call the single sequence grow function.
-  virtual void grow(std::vector<snap::program::Sequence> &) const;
+  void grow(std::vector<snap::program::Sequence> &) const override;
 
   // Get the part id of the Opx grow function that creates the output tensor
-  virtual std::set<OpxGrowPartId> getInGrowPartIds(Tensor *inTensor) const;
-  virtual OpxGrowPartId getOutGrowPartId(Tensor *outTensor) const;
+  std::set<OpxGrowPartId> getInGrowPartIds(Tensor * inTensor) const override;
+  OpxGrowPartId getOutGrowPartId(Tensor * outTensor) const override;
 
   // Grows only a part of the Opx and caches the generated sequences
   // to be assembled in Opx::grow
-  virtual void growPart(OpxGrowPartId id) const;
+  void growPart(OpxGrowPartId id) const override;
 
   // clone the snap::Tensor identified by its TensorId, and copy the contents
   // of it.
@@ -150,7 +126,7 @@ public:
   // dv_p->getVirtualGraphId(). Defaults to 0 if virtualGraph is not enabled
   int64_t getVirtualGraphId() const;
   // Returns the virtual graph if enabled, else returns the dv_p->graph
-  snap::Graph &graph() const;
+  virtual snap::Graph &graph() const;
   // Returns the top level graph (dv_p->graph)
   snap::Graph &topLevelGraph() const;
   // The default assumes all PopOpx input and output tensors are laid out on the
@@ -210,9 +186,6 @@ public:
    */
   virtual snap::Graph &outGraph(OutIndex out) const;
 
-  // The Op corresponding to this PopOpx
-  Op *op_p;
-
   // Generic function to cast the op to it derived type
   template <class OP> OP &getOp() const {
     OP *d_op = dynamic_cast<OP *>(op_p);
@@ -228,7 +201,7 @@ public:
   // TODO: Reconsider the names of these two verifyOp functions
 
   // Generic function to test that op is of a given type
-  template <class OP> void verifyOp(Op *op, const OperatorIdentifier &opid) {
+  template <class OP> void verifyOp(Op * op, const OperatorIdentifier &opid) {
     // compare domain, type (Relu, etc.), but not version as an op can support
     // multiple versions
     // TODO : Consider passing in a list of support opid's (for each version)
@@ -238,7 +211,7 @@ public:
   }
 
   template <class OP>
-  void verifyOp(Op *op, std::vector<OperatorIdentifier> opids) {
+  void verifyOp(Op * op, std::vector<OperatorIdentifier> opids) {
 
     for (auto &opid : opids) {
       if (op->opid == opid) {
@@ -256,7 +229,7 @@ public:
     throw error(oss.str());
   }
 
-  template <class OP> void verifyOp(Op *op) {
+  template <class OP> void verifyOp(Op * op) {
     if (!op->isConvertibleTo<OP>()) {
       throw error("Cannot create opx type from {}", op->opid);
     }
@@ -285,10 +258,6 @@ public:
 
   void setOutTensor(OutIndex index, const snap::Tensor &tensor) const;
 
-  // Input & output tensors used by the opx when it is cached
-  std::vector<snap::Tensor> cachedInputs;
-  std::vector<snap::Tensor> *cachedOutputs = nullptr;
-
   TensorId inId(InIndex index) const;
   TensorId outId(OutIndex index) const;
 
@@ -303,21 +272,17 @@ public:
 
   // Create a tensor of 0s of specified shape
   // The tensor is broadcasted from a scalar value to reduce memory footprint
-  snap::Tensor
-      getZerosTensor(std::vector<std::size_t>, poplar::Type, std::string) const;
+  snap::Tensor getZerosTensor(
+      std::vector<std::size_t>, poplar::Type, std::string) const;
 
   // The PopOpx outputs that come from any subgraph and need to be prepared
   // This allows growing the data flows through subgraphs independently, and
   // growing the PopOpx that calls the subgraph can be deferred until after all
   // data flows through the called subgraph are grown.
-  virtual PreparedTensorInfos getOutputsToPrepare() const;
+  PreparedTensorInfos getOutputsToPrepare() const override;
 
   // The PopOpx inputs that go to any subgraph and need to be prepared
-  virtual PreparedTensorInfos getInputsToPrepare() const;
-
-protected:
-  // The Devicex to which this PopOpx belongs
-  Devicex *dv_p;
+  PreparedTensorInfos getInputsToPrepare() const override;
 
 private:
   std::string idStr() const;

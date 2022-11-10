@@ -7,7 +7,7 @@
 #include <popart/popx/opxmanager.hpp>
 
 #include "popart/operatoridentifier.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
 namespace popart {
 namespace popx {
@@ -24,7 +24,7 @@ void OpxManager::registerOpx(const OperatorIdentifier &opid,
       std::pair<OperatorIdentifier, OpxFactoryFunc>(opid, func));
 }
 
-std::unique_ptr<PopOpx> OpxManager::createOpx(Op *op, Devicex *devicex) {
+std::unique_ptr<Opx> OpxManager::createOpx(Op *op, Devicex *devicex) {
 
   OpxManager &self = getInstance();
   auto it          = self.factory.find(op->opid);

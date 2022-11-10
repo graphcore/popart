@@ -26,7 +26,7 @@ class DeviceInfo;
 
 namespace popx {
 class IrLowering;
-class PopOpx;
+class Opx;
 
 /**
  * This class is responsible for lowering RNG/SR related Poplar calls to Poplar
@@ -90,7 +90,7 @@ public:
    * @param seq The poplar sequence to load the RNG state change into.
    * @param op The Op prior for which we're making the change.
    */
-  virtual void lowerSetRngState(snap::program::Sequence &seq, PopOpx *opx);
+  virtual void lowerSetRngState(snap::program::Sequence &seq, Opx *opx);
 
   /**
    * Lower the Poplar logic required to get the RNG state after the growing
@@ -108,7 +108,7 @@ public:
    * @param seq The poplar sequence to load the RNG state change into.
    * @param op The Op prior for which we're making the change.
    */
-  virtual void lowerGetRngState(snap::program::Sequence &seq, PopOpx *opx);
+  virtual void lowerGetRngState(snap::program::Sequence &seq, Opx *opx);
 
   /**
    * @return Task to set up combinedRngStateTensor

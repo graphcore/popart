@@ -45,7 +45,7 @@
 namespace popart {
 namespace popx {
 
-PopOpx::PopOpx(Op *op_p_, Devicex *dv_p_) : op_p(op_p_), dv_p(dv_p_) {}
+PopOpx::PopOpx(Op *op_p_, Devicex *dv_p_) : Opx(op_p_, dv_p_) {}
 
 PopOpx::~PopOpx() = default;
 
@@ -212,19 +212,13 @@ bool PopOpx::hasOutput(OutIndex index) const {
 }
 
 const snap::Tensor &PopOpx::getInTensor(InIndex index) const {
-  if (!cachedInputs.empty()) {
-    return cachedInputs[index];
-  } else {
-    return get(op_p->input->id(index));
-  }
+
+  return get(op_p->input->id(index));
 }
 
 const snap::Tensor &PopOpx::getOutTensor(OutIndex index) const {
-  if (cachedOutputs && !cachedOutputs->empty()) {
-    return (*cachedOutputs)[index];
-  } else {
-    return get(op_p->output->id(index));
-  }
+
+  return get(op_p->output->id(index));
 }
 
 const snap::Tensor &PopOpx::getInView(InIndex index) const {
@@ -288,15 +282,10 @@ void PopOpx::setOutTensor(OutIndex index, const snap::Tensor &t) const {
     }
   }
 
-  // Assume that if we have cached inputs then we will use cached outputs
-  if (cachedOutputs) {
-    cachedOutputs->insert(cachedOutputs->begin() + index, t);
-  } else {
-    logging::trace("Op {} inserting poplar::Tensor {}",
-                   getOp<Op>().debugName(),
-                   op_p->output->id(index));
-    insert(op_p->output->id(index), t);
-  }
+  logging::trace("Op {} inserting poplar::Tensor {}",
+                 getOp<Op>().debugName(),
+                 op_p->output->id(index));
+  insert(op_p->output->id(index), t);
 }
 
 Tensor *PopOpx::inTensor(InIndex index) const {

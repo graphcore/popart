@@ -677,7 +677,7 @@ std::string IrLowering::getSerializedGraph() const {
   return ss.str();
 }
 
-std::unique_ptr<PopOpx> IrLowering::createOpx(Op *op) {
+std::unique_ptr<Opx> IrLowering::createOpx(Op *op) {
   if (dv_p == nullptr) {
     throw error("IrLowering::setDevice has not been called.");
   }
@@ -687,7 +687,7 @@ std::unique_ptr<PopOpx> IrLowering::createOpx(Op *op) {
   if (!opx) {
     if (op->opid == Onnx::Operators::Constant_1 ||
         op->opid == Onnx::Operators::Constant_9) {
-      throw internal_error("No PopOpx for {}", op->opid);
+      throw internal_error("No Opx for {}", op->opid);
     } else {
       auto pattern = PreAliasPatternManager::opReplacementPattern(op);
       if (pattern != "") {
@@ -794,8 +794,8 @@ IrLowering::getCreatorEndpoints(const Tensor *startTensor,
 
     // Check if any of the consumers can extend the path
     for (Op *op : tensor->consumers.getOps()) {
-      auto conOpId      = op->id;
-      const PopOpx *opx = getOpx(conOpId);
+      auto conOpId    = op->id;
+      const auto *opx = getOpx(conOpId);
 
       for (InIndex inIndex : op->input->indices(ir().getTensor(tensor->id))) {
         auto f_create = [&]() {
@@ -1899,7 +1899,7 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
   std::vector<PriTaskDependency> deps;
 
   // Add initTensorTask dependencies for externally created output tensors
-  PopOpx *opx = getOpx(op->id);
+  auto *opx = getOpx(op->id);
   for (auto t_inds : op->output->indicesMap()) {
     if (opx->outputCreatedExternally(t_inds.second.front())) {
       Tensor *tensor = t_inds.first;
@@ -2008,7 +2008,7 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
       seqs.addScopeFragments(progs_.scopeFragments(containingGraph));
       // Get the right subgraphPart for op to lower in to.
       auto subgraphPart = subgraphPartitioner->getOpSubgraphPartBegin(op);
-      PopOpx *opx       = getOpx(op->id);
+      auto *opx         = getOpx(op->id);
       logging::devicex::debug(
           "Creating output tensors for non-main {} in {}, part {}",
           opx->op_p->debugName(),
@@ -2148,8 +2148,7 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
   return priTasks;
 }
 
-void IrLowering::growOpx(PopOpx *opx,
-                         SequenceMap::SequenceInterval seqInterval) {
+void IrLowering::growOpx(Opx *opx, SequenceMap::SequenceInterval seqInterval) {
 
   if (!rngStateLowering) {
     throw internal_error("[IrLowering] Member 'rngStateLowering' unexpected "
@@ -2182,7 +2181,7 @@ void IrLowering::growOpx(PopOpx *opx,
     auto idx = in.first;
     auto id  = in.second;
     if (dv_p->lowering().tensors().contains(id)) {
-      auto tensor = opx->getInTensor(idx);
+      auto tensor = opx->snapGetInTensor(idx);
       printTensorForOpx(id, tensor);
     }
   }
@@ -2203,7 +2202,7 @@ void IrLowering::growOpx(PopOpx *opx,
       if (std::all_of(regions.begin(),
                       regions.end(),
                       [](const view::Region &r) { return r.isEmpty(); })) {
-        snap::Tensor inTensor = opx->get(inputMap.second->id);
+        snap::Tensor inTensor = opx->snapGet(inputMap.second->id);
         // Check that this isn't a phony tensor or a tensor with post-IR aliases
         if (inTensor.numElements() > 0 &&
             aliasZeroCopy->getActiveAliasedTensors({inputMap.second}, false)
@@ -2283,7 +2282,7 @@ void IrLowering::growOpx(PopOpx *opx,
     }
   } else {
     for (auto out : opx->op_p->output->tensorMap()) {
-      snap::Tensor outTensor = opx->getOutTensor(out.first);
+      auto outTensor = opx->snapGetOutTensor(out.first);
       seqIt->getPoplarSequence().add(
           poplar::program::WriteUndef(outTensor, opx->debugContext()));
     }
@@ -2298,7 +2297,7 @@ void IrLowering::growOpx(PopOpx *opx,
     auto idx = out.first;
     auto id  = out.second;
     if (dv_p->lowering().tensors().contains(id)) {
-      auto tensor = opx->getOutTensor(idx);
+      auto tensor = opx->snapGetOutTensor(idx);
       printTensorForOpx(id, tensor);
     }
   }
@@ -2324,7 +2323,7 @@ void IrLowering::growOpx(PopOpx *opx,
                                  popops::expr::IsFinite(popops::expr::_2));
       }
 
-      auto check        = popops::map(opx->graph().getPoplarGraph(),
+      auto check        = popops::map(opx->graph(),
                                popops::expr::NotEqual(lhsExpr, rhsExpr),
                                {nonModified.second.first.getPoplarTensor(),
                                 nonModified.second.second.getPoplarTensor()},
@@ -2334,7 +2333,7 @@ void IrLowering::growOpx(PopOpx *opx,
       auto checkReduced = check.flatten();
       // Convert result to boolean scalar
       if (check.numElements() > 1) {
-        checkReduced = popops::reduce(opx->graph().getPoplarGraph(),
+        checkReduced = popops::reduce(opx->graph(),
                                       checkReduced,
                                       {0},
                                       {popops::Operation::LOGICAL_OR},
@@ -2348,12 +2347,12 @@ void IrLowering::growOpx(PopOpx *opx,
                           "but the Poplar tensors disagree.",
                           opx->op_p->debugName(),
                           nonModified.first),
-          snap::Tensor{check, opx->graph()},
+          snap::Tensor{check, opx->snapGraph()},
           opx->debugContext("if"));
       auto elseProg =
           snap::program::Sequence(opx->debugContext("else"), graph());
       seqIt->getPoplarSequence().add(
-          poplar::program::If(snap::Tensor{checkReduced, opx->graph()},
+          poplar::program::If(snap::Tensor{checkReduced, opx->snapGraph()},
                               ifProg,
                               elseProg,
                               opx->debugContext("opxModifyCheck")));
@@ -2367,7 +2366,7 @@ void IrLowering::growOpx(PopOpx *opx,
 }
 
 void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
-  PopOpx *opx              = getOpx(op->id);
+  auto *opx                = getOpx(op->id);
   ExecutionContext context = op->settings.executionContext;
 
   contextOpRegistry[{context, taskId}].push_back(op);
@@ -2471,7 +2470,7 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
 }
 
 void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
-  PopOpx *opx              = getOpx(op->id);
+  auto *opx                = getOpx(op->id);
   ExecutionContext context = op->settings.executionContext;
 
   contextOpRegistry[{context, taskId}].push_back(op);
@@ -2667,7 +2666,7 @@ void IrLowering::prePlanConvolutions() {
   }
   std::map<snap::Graph *, std::vector<Op *>> convGraphsOps;
   for (Op *convOp : convOps) {
-    snap::Graph &graph = getOpx(convOp->id)->graph();
+    snap::Graph &graph = getOpx(convOp->id)->snapGraph();
     auto it            = convGraphsOps.find(&graph);
     if (it == convGraphsOps.end()) {
       convGraphsOps.emplace(&graph, std::vector<Op *>{convOp});
@@ -2733,7 +2732,7 @@ void IrLowering::prePlanMatMuls() {
   }
   std::map<snap::Graph *, std::vector<Op *>> matMulGraphsOps;
   for (Op *matMulOp : matMulOps) {
-    snap::Graph &graph = getOpx(matMulOp->id)->graph();
+    snap::Graph &graph = getOpx(matMulOp->id)->snapGraph();
     auto it            = matMulGraphsOps.find(&graph);
     if (it == matMulGraphsOps.end()) {
       matMulGraphsOps.emplace(&graph, std::vector<Op *>{matMulOp});
@@ -3100,7 +3099,7 @@ void IrLowering::prepareGraph() {
       // Separate procedure for subgraph output tensor initTensorTasks
       continue;
     }
-    PopOpx *opx = getOpx(op->id);
+    auto *opx = getOpx(op->id);
     for (auto t_inds : op->output->indicesMap()) {
       if (opx->outputCreatedExternally(t_inds.second.front())) {
         logging::devicex::trace("Adding {} output initTensorTask for {}",

@@ -22,7 +22,7 @@ class Tensor;
 namespace popx {
 
 class ICreatorCandidate;
-class PopOpx;
+class Opx;
 class ViewChangers;
 
 using ICreatorCandidatePtr = std::shared_ptr<ICreatorCandidate>;
@@ -44,9 +44,9 @@ using TensorRegions = std::vector<TensorRegion>;
 // A bundle struct to represent the path a tensor
 // takes through an Opx
 struct OpxInAndOutIndex {
-  OpxInAndOutIndex(const PopOpx *opx_, InIndex inIndex_, OutIndex outIndex_)
+  OpxInAndOutIndex(const Opx *opx_, InIndex inIndex_, OutIndex outIndex_)
       : opx(opx_), inIndex(inIndex_), outIndex(outIndex_), isDelegate(false) {}
-  OpxInAndOutIndex(const PopOpx *opx_)
+  OpxInAndOutIndex(const Opx *opx_)
       : opx(opx_), inIndex(-1), outIndex(-1), isDelegate(true) {}
   OpxInAndOutIndex() = default;
 
@@ -54,7 +54,7 @@ struct OpxInAndOutIndex {
     return opx == rhs.opx && inIndex == rhs.inIndex && outIndex == rhs.outIndex;
   }
 
-  const PopOpx *opx;
+  const Opx *opx;
   InIndex inIndex;
   OutIndex outIndex;
   bool isDelegate;
@@ -115,7 +115,7 @@ public:
 class InputCreatorCandidate : public ICreatorCandidate {
 public:
   InputCreatorCandidate(InIndex index_,
-                        const PopOpx *opx_,
+                        const Opx *opx_,
                         std::vector<OpxInAndOutIndex> pathFromInput_,
                         int64_t scheduleIndex_);
   InputCreatorCandidate()           = default;
@@ -131,7 +131,7 @@ public:
   int64_t getNumElems() const override;
 
   InIndex getIndex() const { return index; }
-  const PopOpx *getOpx() const { return opx; }
+  const Opx *getOpx() const { return opx; }
 
   // Returns the unwind path from the tensor to the creator
   std::vector<std::vector<OpxInAndOutIndex>> getPathsFromInput() final {
@@ -161,7 +161,7 @@ private:
 
   // Input index on the creating Op
   InIndex index;
-  const PopOpx *opx;
+  const Opx *opx;
   // Global schedule index to order the creators by global schedule position
   int64_t scheduleIndex;
   // Number of efficiently laid out tensor elements by the creator candidate

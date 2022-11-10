@@ -191,7 +191,7 @@ bool ICreatorCandidate::greaterThan(ICreatorCandidatePtr icc1,
 
 InputCreatorCandidate::InputCreatorCandidate(
     InIndex index_,
-    const PopOpx *opx_,
+    const Opx *opx_,
     std::vector<OpxInAndOutIndex> pathFromInput_,
     int64_t scheduleIndex_)
     : index(index_), opx(opx_), scheduleIndex(scheduleIndex_), numElements(0) {
@@ -284,7 +284,7 @@ InputCreatorCandidate::unwindOnPath(const OpxInAndOutIndex &opxOnPath,
 
   auto inInfo = opxOnPath.opx->getOp<Op>().inInfo(opxOnPath.inIndex);
 
-  auto &graph     = opxOnPath.opx->srcVirtualGraph(opxOnPath.inIndex);
+  auto &graph     = opxOnPath.opx->snapSrcVirtualGraph(opxOnPath.inIndex);
   auto fullTensor = graph.addVariable(popType(inInfo), inInfo.shape_szt(), "");
   poputil::mapTensorLinearly(graph.getPoplarGraph(),
                              fullTensor.getPoplarTensor());
