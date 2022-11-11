@@ -7,3 +7,9 @@ add_test(NAME "test_popxl_doc_examples_custom_op"
 # build the same custom operation.
 # TODO T68682 test disabled due to timed out.
 set_tests_properties("test_popxl_doc_examples_custom_op" PROPERTIES DISABLED TRUE)
+
+# Add docOnly labels to run these tests when using the `!doc-only` flag in phabricator.
+# These, and only tests with these labels will run on CI when the !doc-only flag is used.
+# If a new documentation tests is added you must set this label on this test. See T69710.
+set_tests_properties("test_popxl_doc_examples" PROPERTIES LABELS "docOnly")
+set_tests_properties("test_popxl_doc_examples_custom_op" PROPERTIES LABELS "docOnly")
