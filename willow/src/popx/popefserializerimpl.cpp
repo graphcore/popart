@@ -326,7 +326,7 @@ void WriterImpl::createPopefAnchorsFromWeights() {
 
     const popef::DataType dt      = toPopefDataType(tensor->info.dataType());
     const popart::Shape hostShape = tensor->getVariableSettings().shapeOnHost(
-        tensor->info.shape(), irLowering.getReplicationFactor());
+        tensor->info.shape(), irLowering.getGlobalReplicationFactor());
     const popef::TensorInfo tensorInfo = createTensorInfo(dt, hostShape);
 
     const bool isPerReplica = hostShape != tensor->info.shape();
