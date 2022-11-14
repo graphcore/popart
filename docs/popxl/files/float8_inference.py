@@ -1,6 +1,6 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 """
-The intention of this example is to show a simple example of float 8 inference using PopXL.
+The intention of this example is to show a simple example of float8 inference using PopXL.
 """
 
 from typing import Tuple
@@ -13,7 +13,7 @@ import argparse
 # ConvFloat8 begin
 class ConvFloat8(popxl.Module):
     """
-    Define a float 8 convolution layer in PopXL.
+    Define a float8 convolution layer in PopXL.
     """
 
     def __init__(self, opts_: argparse.Namespace) -> None:
@@ -81,7 +81,7 @@ def get_input_data(opts_: argparse.Namespace) -> Tuple[np.ndarray, np.ndarray]:
 
 
 def run_main(opts_: argparse.Namespace) -> None:
-    """Run the example float 8 convolution graph."""
+    """Run the example float8 convolution graph."""
 
     t, weight = get_input_data(opts_)
 
@@ -141,7 +141,7 @@ def run_main(opts_: argparse.Namespace) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Float 8 inference in ",
+        description="Float8 inference in PopXL",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(

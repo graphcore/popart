@@ -363,7 +363,7 @@ class TestTensorSpec:
 @pytest.mark.parametrize("log2_scale", [-2, -1, 0, 1, 2])
 @pytest.mark.parametrize("nan_on_overflow", [True, False])
 class TestFloat8Constant:
-    """Test creation of float 8 constants."""
+    """Test creation of float8 constants."""
 
     def test_create_from_scalar(
         self, dtype: dtype, log2_scale: int, nan_on_overflow: bool

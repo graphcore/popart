@@ -55,7 +55,7 @@ def get_float8_decimal_from_byte_array(
     input_: List[int], float8_format: popxl.dtype, log2_scale: int = 0
 ) -> float:
     """From a given 8 long list of 0s and 1s, return the float this represents,
-    given the provided float 8 format and log2_scale.
+    given the provided float8 format and log2_scale.
     """
     s = 1 if input_[0] == 0 else -1
     m = 1

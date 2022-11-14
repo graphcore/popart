@@ -133,7 +133,7 @@ def test_cast_then_pow2scale(float8_format: popxl.dtype, log2_scale: int):
                 # the device conversion.
                 # 1. Float16 data returned to the host from device
                 array_1 = outputs[o_d2h].astype(np.float32)
-                # 2. The float 8 array converted back to float32 on host.
+                # 2. The float8 array converted back to float32 on host.
                 array_2 = host_cast_then_pow2scale(
                     d1_float8, popxl.float32, -log2_scale
                 )

@@ -1406,14 +1406,14 @@ def constant(
             possible, please explicitly specify the dtype.
         log2_scale:
             The user's data is multiplied by `pow2(log2Scale)` before casting.
-            Only applicable when using float 8 data types.
+            Only applicable when using float8 data types.
         nan_on_overflow:
             If True produce NaN when the input values exceed the numeric range of the
             destination type selected. If False saturate the results. Only applicable
-            when using float 8 data types.
+            when using float8 data types.
 
     Raises:
-        TypeError: If a float 8 tensor is passed without a corresponding dtype.
+        TypeError: If a float8 tensor is passed without a corresponding dtype.
 
     Returns:
         Tensor: The constant required.
@@ -1425,7 +1425,7 @@ def constant(
         data.dtype == dtypes.np_dtype_float8_143
         or data.dtype == dtypes.np_dtype_float8_152
     ):
-        # You must explicitly set the data type when creating a float 8 constant.
+        # You must explicitly set the data type when creating a float8 constant.
         if dtype is None:
             raise TypeError(
                 f"Please explicitly set the data type when calling {__name__}"

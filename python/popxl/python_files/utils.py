@@ -127,7 +127,7 @@ def to_numpy(
             # But if inferred type is not float64 or float32, throw an error.
             if x.dtype not in [np.float16, np.float32, np.float64]:
                 raise TypeError(
-                    f"Type {x.dtype} is not supported for float 8 tensors."
+                    f"Type {x.dtype} is not supported for float8 tensors."
                     "Please use float16, float32 or float64 types."
                 )
 

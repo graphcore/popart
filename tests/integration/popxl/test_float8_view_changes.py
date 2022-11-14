@@ -22,12 +22,12 @@ def run_ir(ir: popxl.Ir, y: popxl.Tensor):
 
 @pytest.mark.parametrize("dtype", [popxl.float8_143, popxl.float8_152])
 class TestFloat8ViewChanges:
-    """Test various view changes for the special case of float 8 tensors.
+    """Test various view changes for the special case of float8 tensors.
     All should work as float8 tensors are poplar unsigned char under the hood."""
 
     @pytest.mark.parametrize("inplace", [True, False])
     def test_float8_slice(self, dtype, inplace):
-        """Test you can inplace/outplace slice a float 8 tensor."""
+        """Test you can inplace/outplace slice a float8 tensor."""
         data_in = np.random.random([4, 4, 4])
         data_float8 = host_pow2scale_then_cast(data_in, dtype, 0, True)
         ir = popxl.Ir()
@@ -47,7 +47,7 @@ class TestFloat8ViewChanges:
             np.testing.assert_equal(y_host, data_float8[1:3, :, :])
 
     def test_float8_dynamic_slice(self, dtype):
-        """Test you can dynamic slice a float 8 tensor."""
+        """Test you can dynamic slice a float8 tensor."""
         data_in = np.random.random([5, 12, 7])
 
         axes = [1]
@@ -69,7 +69,7 @@ class TestFloat8ViewChanges:
             np.testing.assert_equal(y_host, data_float8[:, 0:3, :])
 
     def test_float8_slice_concat(self, dtype):
-        """Test you can concat 2 float 8 tensors of the same type (even inplace),
+        """Test you can concat 2 float8 tensors of the same type (even inplace),
         and get back the same sliced tensor."""
         data_in = np.random.random([4, 4, 4])
         data_float8 = host_pow2scale_then_cast(data_in, dtype, 0, True)
@@ -96,7 +96,7 @@ class TestFloat8ViewChanges:
             np.testing.assert_equal(y_host, data_float8)
 
     def test_float8_slice_concat_different_dtypes(self, dtype):
-        """Test that you cannot concat 2 different float 8 dtypes"""
+        """Test that you cannot concat 2 different float8 dtypes"""
         data_in = np.random.random([4, 4, 4])
         data_float8 = host_pow2scale_then_cast(data_in, dtype, 0, True)
         alternate_dtype = (
@@ -126,7 +126,7 @@ class TestFloat8ViewChanges:
 
     @pytest.mark.parametrize("inplace", [True, False])
     def test_float8_reshape(self, dtype, inplace):
-        """Test you can inplace/outplace reshape a float 8 tensor."""
+        """Test you can inplace/outplace reshape a float8 tensor."""
         data_in = np.random.random([4, 4, 4])
         data_float8 = host_pow2scale_then_cast(data_in, dtype, 0, True)
         ir = popxl.Ir()
@@ -147,7 +147,7 @@ class TestFloat8ViewChanges:
 
     @pytest.mark.parametrize("inplace", [True, False])
     def test_float8_transpose(self, dtype, inplace):
-        """Test you can inplace/outplace transpose a float 8 tensor."""
+        """Test you can inplace/outplace transpose a float8 tensor."""
         data_in = np.random.random([1, 2, 3])
         data_float8 = host_pow2scale_then_cast(data_in, dtype, 0, True)
         ir = popxl.Ir()
@@ -167,7 +167,7 @@ class TestFloat8ViewChanges:
             np.testing.assert_equal(y_host, np.transpose(data_float8, (0, 2, 1)))
 
     def test_float8_gather(self, dtype):
-        """Test you can gather a float 8 tensor."""
+        """Test you can gather a float8 tensor."""
         data_in = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9]).astype(np.float32)
         data_float8 = host_pow2scale_then_cast(data_in, dtype, 0, True)
         indices = np.arange(2, dtype=np.int32)
@@ -186,7 +186,7 @@ class TestFloat8ViewChanges:
             np.testing.assert_equal(y_host, np.take(data_float8, indices, 0))
 
     def test_float8_subsample(self, dtype):
-        """Test you can subsample a float 8 tensor."""
+        """Test you can subsample a float8 tensor."""
         shape = [50, 24]
         data_in = np.random.random(shape).astype(np.float32)
         data_float8 = host_pow2scale_then_cast(data_in, dtype, 0, True)

@@ -175,6 +175,6 @@ class TestPythonDocExamples(ExamplesTester):
         self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_float8_inference(self):
-        """Test the popxl float 8 inference example"""
+        """Test the popxl float8 inference example"""
         filename = "float8_inference.py"
         self.run_python(filename, file_dir=working_dir, working_dir=working_dir)

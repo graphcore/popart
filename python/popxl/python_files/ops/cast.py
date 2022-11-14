@@ -57,7 +57,7 @@ def pow2scale_then_cast(t: Tensor, log2_scale: Tensor, data_type: dtype) -> Tens
         TypeError: If `data_type` is not of type float8_143 or float8_152.
 
     Returns:
-        Tensor: The converted float 8 tensor.
+        Tensor: The converted float8 tensor.
     """
     ctx = get_current_context()
     g = ctx.graph

@@ -90,7 +90,7 @@ and ``uint64`` will be downcast to ``int32`` and ``uint32``, respectively.
      - None
      - N/A
 
-8-Bit floating point datatypes
+8-bit floating point datatypes
 ------------------------------
 
 .. _sec_float8_datatypes:
@@ -172,14 +172,14 @@ Note that for device-based operations that support 8-bit float operands the
 `log2_scale` operand is also a tensor parameter in its own right. This means you
 can change this scaling at runtime if you so desire.
 
-8-Bit floating point inference model example
+8-bit floating point inference model example
 --------------------------------------------
 
-An example of using float 8 tensors in an inference graph is shown in the example 
+An example of using float8 tensors in an inference graph is shown in the example 
 :download:`float8_inference.py <files/float8_inference.py>`. 
-The float16 input data is loaded onto the device as-is, then cast to float8 on 
+The float16 input data is loaded onto the device as-is, then cast to float8 on the
 device with a :py:func:`~popxl.ops.pow2scale_then_cast` operator. 
-After this we do the cast on host of the trained weight data (in this example 
+After this we do the cast on the host of the trained weight data (in this example 
 the weights are randomly generated), then creating the :py:func:`popxl.variable` for the float8 weights.
 
 Note that in both cases we do not scale the values, as this is done within the :py:func:`~popxl.ops.conv_pow2scaled` operator.
@@ -189,7 +189,7 @@ Note that in both cases we do not scale the values, as this is done within the :
     :start-after: Cast begin
     :end-before: Cast end
     :name: cast-float8-example
-    :caption: Example of host-based casting to float 8
+    :caption: Example of host-based casting to float8
     :linenos:
     :lineno-match:
 
@@ -198,7 +198,7 @@ Note that in both cases we do not scale the values, as this is done within the :
       :download:`Download float8_inference.py <files/float8_inference.py>`
 
 In the PopXL :py:class:`~popxl.Module` you can see the :py:func:`~popxl.ops.conv_pow2scaled` operator which takes a 
-`log2_scale` tensor, in addition to our float 8 input and weight tensors, as well as all 
+`log2_scale` tensor, in addition to our float8 input and weight tensors, as well as all 
 of the usual parameters used in a :py:func:`~popxl.ops.conv` operator.
 
   .. literalinclude:: files/float8_inference.py
@@ -206,7 +206,7 @@ of the usual parameters used in a :py:func:`~popxl.ops.conv` operator.
     :start-after: ConvFloat8 begin
     :end-before: ConvFloat8 end
     :name: float8-module-example
-    :caption: Example of using float 8 tensors
+    :caption: Example of using float8 tensors
     :linenos:
     :lineno-match:
 
