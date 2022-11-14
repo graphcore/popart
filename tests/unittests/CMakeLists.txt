@@ -69,6 +69,7 @@ add_unit_test(unittest_pattern_sgd2decompose patterns/sgd2decompose.cpp SUPPORT_
 add_unit_test(unittest_pattern_subtractarg1gradop patterns/subtractarg1gradop.cpp)
 add_unit_test(unittest_pattern_tiedgather patterns/tiedgather.cpp)
 add_unit_test(unittest_pattern_updateinplaceprioritiesforipu patterns/updateinplaceprioritiesforipu.cpp)
+add_unit_test(unittest_pattern_convtranspose patterns/convtranspose.cpp)
 
 add_unit_test(unittest_sgd_optimizer optimizer/sgd_optimizer.cpp)
 

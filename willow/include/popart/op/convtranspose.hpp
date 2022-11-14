@@ -34,7 +34,7 @@ public:
 
   static InIndex getInIndex() { return 0; }
   static InIndex getWeightsInIndex() { return 1; }
-  static InIndex getBiasInIndex() { return 2; }
+  static InIndex getLog2ScaleInIndex() { return 2; }
 
   static OutIndex getOutIndex() { return 0; }
 
@@ -44,6 +44,12 @@ public:
   const AutoPad padType;
   const MultiConvOptions convOpts;
   ConvParameters params;
+
+  bool isPow2ScaledConvTranspose() const;
+
+  std::set<InIndex> optionalInputs() const override {
+    return {getLog2ScaleInIndex()};
+  }
 
 private:
   std::vector<int64_t> pads;

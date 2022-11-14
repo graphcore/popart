@@ -183,6 +183,12 @@ void ConvFlipWeightsGradOpx::grow(snap::program::Sequence &seq) const {
       optionFlags,
       &dv_p->convCache);
 
+  // This prevents a poplar error when doing a copy from an unsigned
+  // char tensor to a quarter tensor
+  if (convWeights.elementType() == poplar::QUARTER) {
+    convWeights = convWeights.reinterpret(poplar::UNSIGNED_CHAR);
+  }
+
   // weightsTransposeChansFlipXY must be called on each group individually
   for (int i = 0; i < params.numGroups; i++) {
     // dim 0 of weights5D and convWeights are the groups.

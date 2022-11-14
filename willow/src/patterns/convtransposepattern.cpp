@@ -38,6 +38,15 @@ bool ConvTransposePattern::apply(Op *op) const {
       convTranspose->inTensor(ConvTransposeOp::getWeightsInIndex());
   auto outTensor = convTranspose->outTensor(ConvTransposeOp::getOutIndex());
 
+  // remember if this had a log2 scale tensor input before we disconnect
+  // inputs because we want to reconnect them later to the conv op
+  Tensor *log2ScaleTensor;
+  auto isPow2ScaledConvTranspose = convTranspose->isPow2ScaledConvTranspose();
+  if (isPow2ScaledConvTranspose) {
+    log2ScaleTensor =
+        convTranspose->inTensor(ConvTransposeOp::getLog2ScaleInIndex());
+  }
+
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
 
@@ -83,6 +92,10 @@ bool ConvTransposePattern::apply(Op *op) const {
 
   conv->connectInTensor(ConvOp::getDataInIndex(), inTensor->id);
   conv->connectInTensor(ConvOp::getWeightsInIndex(), flip->outId(0));
+
+  if (isPow2ScaledConvTranspose) {
+    conv->connectInTensor(ConvOp::getLog2ScaleInIndex(), log2ScaleTensor->id);
+  }
 
   conv->connectOutTensor(ConvOp::getOutIndex(), outTensor->id);
 

@@ -1,4 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include "popart/util.hpp"
+#include "popart/util/float8util.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <memory>
@@ -42,6 +44,10 @@ std::unique_ptr<Op> ConvTransposeOp::clone() const {
 }
 
 void ConvTransposeOp::setup() {
+  // validate that either a valid set of pow2 scaled inputs is provided,
+  // or all inputs are not related to the pow2 scaled variant of this op.
+  validateOpFloat8Inputs(input.get(), getLog2ScaleInIndex(), debugName());
+
   // The non-optional 'group' argument can always be determined based
   // on input shapes. Check that they match
   if (group < 1) {
@@ -98,7 +104,13 @@ void ConvTransposeOp::setup() {
     outShape = outputShape;
   }
 
-  outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), outShape};
+  DataType outType;
+  if (isPow2ScaledConvTranspose()) {
+    outType = DataType::FLOAT16;
+  } else {
+    outType = inInfo(getInIndex()).dataType();
+  }
+  outInfo(getOutIndex()) = {outType, outShape};
 
   // Now calculate the padding
   std::vector<int64_t> lowerPadding;
@@ -226,26 +238,34 @@ void ConvTransposeOp::setParams(const std::vector<int64_t> &lowerPadding,
   params.outputTransformation.upperPadding    = zeroes;
 }
 
+bool ConvTransposeOp::isPow2ScaledConvTranspose() const {
+  return opInputsAreValidPow2ScaledInputs(input.get(), getLog2ScaleInIndex());
+}
+
 namespace {
 
-static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+static OpDefinition::DataTypes T = {DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::FLOAT8_143,
+                                    DataType::FLOAT8_152};
 
-static OpDefinition convtranspose_OpDef({OpDefinition::Inputs({
-                                             {"X", T},
-                                             {"W", T},
-                                             {"B", T},
-                                         }),
-                                         OpDefinition::Outputs({{"Y", T}}),
-                                         OpDefinition::Attributes({
-                                             {"auto_pad", {"NOTSET"}},
-                                             {"dilations", {"*"}},
-                                             {"group", {"*"}},
-                                             {"kernel_shape", {"*"}},
-                                             {"output_padding", {"*"}},
-                                             {"output_shape", {"*"}},
-                                             {"pads", {"*"}},
-                                             {"strides", {"*"}},
-                                         })});
+static OpDefinition
+    convtranspose_OpDef({OpDefinition::Inputs({
+                             {"X", T},
+                             {"W", T},
+                             {"B", {DataType::FLOAT16, DataType::FLOAT}},
+                         }),
+                         OpDefinition::Outputs({{"Y", T}}),
+                         OpDefinition::Attributes({
+                             {"auto_pad", {"NOTSET"}},
+                             {"dilations", {"*"}},
+                             {"group", {"*"}},
+                             {"kernel_shape", {"*"}},
+                             {"output_padding", {"*"}},
+                             {"output_shape", {"*"}},
+                             {"pads", {"*"}},
+                             {"strides", {"*"}},
+                         })});
 
 static OpCreator<ConvTransposeOp> convtranspose_OpCreator(
     OpDefinitions({{Onnx::Operators::ConvTranspose_1, convtranspose_OpDef},
