@@ -17,7 +17,7 @@ dataFlow = popart.DataFlow(100, anchors)
 
 # Append an Nll loss operation to the model
 builder = popart.Builder("alexnet.onnx")
-labels = builder.addInputTensor("INT32", [4])
+labels = builder.addInputTensor("INT32", [4], "label_input")
 nlll = builder.aiGraphcore.nllloss([output_name, labels])
 
 optimizer = popart.ConstSGD(0.001)

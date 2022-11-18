@@ -22,9 +22,16 @@ protobuf==3.11.2
 pytest==6.2.0
 pytest-xdist==2.5.0
 --find-links https://download.pytorch.org/whl/torch_stable.html
-torch==1.9.1+cpu; sys_platform != "darwin"
-torchvision==0.10.1+cpu; sys_platform != "darwin"
-torch==1.9.1; sys_platform == "darwin"
-torchvision==0.10.1; sys_platform == "darwin"
+# PyTorch/TorchVision :: Python < 3.10
+torch==1.9.1+cpu; sys_platform != "darwin" and python_version < '3.10'
+torchvision==0.10.1+cpu; sys_platform != "darwin" and python_version < '3.10'
+torch==1.9.1; sys_platform == "darwin" and python_version < '3.10'
+torchvision==0.10.1; sys_platform == "darwin" and python_version < '3.10'
+# PyTorch/TorchVision :: Python >= 3.10
+torch==1.11.0+cpu; sys_platform != "darwin" and python_version >= '3.10'
+torchvision==0.12.0+cpu; sys_platform != "darwin" and python_version >= '3.10'
+torch==1.11.0; sys_platform == "darwin" and python_version >= '3.10'
+torchvision==0.12.0; sys_platform == "darwin" and python_version >= '3.10'
+# End pytorch
 cppimport==21.3.7
 tqdm>=4.46.0

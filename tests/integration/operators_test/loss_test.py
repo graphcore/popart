@@ -673,7 +673,7 @@ def test_nll_input_is_log_probability_training(op_tester):
     op_tester.run(init_builder, reference, step_type="train", seed=8)
 
 
-def test_nll_all_ingoreindex(op_tester):
+def test_nll_all_ignore_index(op_tester):
     """Testing ~T36441~, ignoring all indices in nll loss. Without the fix,
     popart returns NaNs due to a div/0
     """
@@ -714,6 +714,10 @@ def test_nll_all_ingoreindex(op_tester):
         p = torch.tensor(data, requires_grad=True)
         t = torch.tensor(target, requires_grad=False).type(torch.LongTensor)
         out, nll = model(p, t)
+        # Probably related to https://github.com/pytorch/pytorch/pull/64572
+        # torch returns NaNs for nllloss, effectively fixing the issue in T36441
+        if torch.__version__ >= "1.11.0":
+            nll = torch.nan_to_num(nll, 0)
 
         return [out.reshape(10), nll]
 

@@ -16,7 +16,7 @@ def test_importing_graphs():
     print("importing_graphs.py example succeeded")
 
 
-def test_importing_ession():
+def test_importing_session():
     import importing_session  # pylint: disable=unused-import
 
     print("importing_session.py example succeeded")

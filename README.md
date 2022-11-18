@@ -90,10 +90,10 @@ pip3 install pytest pytest-forked
 pip3 install numpy==1.19.2
 ```
 
-### **PyTorch** (torch 1.9.1+cpu and torchvision 0.10.1+cpu)
+### **PyTorch** (torch 1.11.0+cpu and torchvision 0.12.0+cpu)
 
 ```sh
-pip3 install torch==1.9.1+cpu torchvision==0.10.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+pip3 install torch==1.11.0+cpu torchvision==0.12.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
 ### **Mypy** (version 0.910 or compatible)
