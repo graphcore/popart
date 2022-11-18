@@ -1,7 +1,7 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 from typing import TYPE_CHECKING, Iterable, Optional, List, Tuple, Set
 from typing_extensions import Literal
-from itertools import count
+from itertools import count, groupby, repeat, chain
 import numpy as np
 from collections import OrderedDict
 import math
@@ -361,12 +361,17 @@ class ReplicaGrouping:
             [0, 0, 1, 1] -> [0, 1, 0, 1]
             [0, 1, 2, 3] -> [0, 0, 0, 0]
 
-        Some transposes cannot be represented with just a stride and group size and therefore
-        cannot be created. For example for `num_replicas=8`, `stride=2` and `group_size=2`, the assignments
-        are `[0, 1, 0, 1, 2, 3, 2, 3]` and the transpose is `[0, 0, 1, 1, 0, 0, 1, 1]`.
-
-        Raises:
-            ValueError: If the transpose cannot be represented with a replica grouping.
+        A good way to visualise the transpose is by considering the group matrix. For example,
+        for the assignment `[0, 1, 0, 1, 2, 3, 2, 3]` the group matrix is:
+        [[0, 2],
+         [1, 3],
+         [4, 6],
+         [5, 7]]
+        Whereby the first axis is the group index and the values are the replica index.
+        The transpose of this matrix is:
+        [[0, 1, 4, 5],
+          2, 3, 6, 7]]
+        Which converts back to the assignments `[0, 0, 1, 1, 0, 0, 1, 1]`.
 
         Returns:
             ReplicaGrouping: A "transpose" replica grouping of self.
@@ -374,11 +379,40 @@ class ReplicaGrouping:
         if not self.is_const or (
             self.stride > 1 and self.stride * self.group_size != self._num_replicas
         ):
-            # 1. Stable sort the replica index by the assignment
-            # 2. The new group assignment is the sorted replica index mod group_size
-            T_assignment = sorted(zip(self.assignment, count()))
-            T_assignment = [a % self.group_size for (_, a) in T_assignment]
-            return self._ir.replica_grouping_from_assignments(assignment=T_assignment)
+            # Create the group matrix from assignments.
+            # The group matrix outer-most dimension is the group index and the values are replica index
+            # e.g. if assignment = [0, 1, 0, 1, 2, 3, 2, 3], group_size = 2
+            # group_matrix = [
+            #   [0, 2],
+            #   [1, 3],
+            #   [4, 6],
+            #   [5, 7],
+            # ]
+            group_matrix = sorted(zip(self.assignment, count()))
+            group_matrix = [
+                list(zip(*group))[1]
+                for _, group in groupby(group_matrix, key=lambda x: x[0])
+            ]
+            # Transpose the group matrix
+            # group_matrix_T = [
+            #   [0, 1, 4, 5],
+            #   [2, 3, 6, 7],
+            # ]
+            group_matrix_T = list(zip(*group_matrix))
+            # Create the assignment list from the transposed group matrix
+            # e.g. assignments_T = [0, 0, 1, 1, 0, 0, 1, 1]
+            assignments_T = list(
+                chain(
+                    *[
+                        zip(repeat(group_idx), group)
+                        for group_idx, group in enumerate(group_matrix_T)
+                    ]
+                )
+            )
+            assignments_T = [
+                group_idx for group_idx, _ in sorted(assignments_T, key=lambda x: x[1])
+            ]
+            return self._ir.replica_grouping_from_assignments(assignment=assignments_T)
         else:
             group_size = self.num_groups
             stride = 1 if self.stride > 1 else self.group_size

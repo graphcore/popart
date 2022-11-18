@@ -429,8 +429,7 @@ transpose_examples = [
 
 
 def test_transpose():
-    ir = popxl.Ir()
-    ir.replication_factor = 16
+    ir = popxl.Ir(replication=16)
     for i, example in enumerate(transpose_examples):
         input = example["input"]
         rg = ir.replica_grouping(input["stride"], input["group_size"])
@@ -441,6 +440,27 @@ def test_transpose():
         assert rg_transpose.stride == transpose["stride"], f"example {i}"
         assert rg_transpose.group_size == transpose["group_size"], f"example {i}"
         assert rg_transpose.assignment == transpose["assignment"], f"example {i}"
+
+
+transpose_from_assignment_examples = [
+    {
+        "input": [0, 1, 0, 1, 0, 1, 2, 3, 2, 3, 2, 3],
+        "transpose": [0, 0, 1, 1, 2, 2, 0, 0, 1, 1, 2, 2],
+    },
+    {
+        "input": [0, 0, 1, 1, 0, 0, 1, 1],
+        "transpose": [0, 1, 0, 1, 2, 3, 2, 3],
+    },
+]
+
+
+def test_transpose_from_assignments():
+    for i, example in enumerate(transpose_from_assignment_examples):
+        ir = popxl.Ir(len(example["input"]))
+        rg = ir.replica_grouping_from_assignments(example["input"])
+
+        rg_transpose = rg.transpose()
+        assert rg_transpose.assignment == example["transpose"], f"example {i}"
 
 
 class TestReplicaGroupingNonConst:
