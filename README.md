@@ -87,7 +87,7 @@ pip3 install pytest pytest-forked
 ### **NumPy** (version 1.19.2 or compatible)
 
 ```sh
-pip3 install numpy==1.19.2
+pip3 install numpy==1.22.3
 ```
 
 ### **PyTorch** (torch 1.11.0+cpu and torchvision 0.12.0+cpu)
