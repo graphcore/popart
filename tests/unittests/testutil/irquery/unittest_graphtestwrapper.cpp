@@ -1,8 +1,15 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE unittest_irquery_graphtestwrapper
 
-#include <boost/test/unit_test.hpp>
+#include <algorithm>
+#include <any>
 #include <cstddef>
+#include <map>
+#include <string>
+#include <tuple>
+#include <vector>
+
+#include <boost/test/unit_test.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/util.hpp>
@@ -16,11 +23,6 @@
 #undef private
 
 #include "testop.hpp"
-#include <algorithm>
-#include <map>
-#include <string>
-#include <tuple>
-#include <vector>
 
 #include "popart/datatype.hpp"
 #include "popart/graphid.hpp"

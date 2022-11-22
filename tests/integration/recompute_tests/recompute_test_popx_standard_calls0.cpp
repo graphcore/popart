@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE RecomputeTestPopxStandardCalls0
 
+#include <any>
 #include <boost/test/unit_test.hpp>
 #include <cstdint>
 #include <filereader.hpp>

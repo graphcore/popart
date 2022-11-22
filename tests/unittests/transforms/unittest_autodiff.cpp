@@ -2,6 +2,7 @@
 #define BOOST_TEST_MODULE autodiff_unittest
 
 #include <algorithm>
+#include <any>
 #include <boost/test/unit_test.hpp>
 #include <cstddef>
 #include <cstdint>

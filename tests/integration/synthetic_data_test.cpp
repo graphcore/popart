@@ -2,6 +2,7 @@
 #define BOOST_TEST_MODULE SyntheticDataTest
 
 #include <algorithm>
+#include <any>
 #include <boost/test/unit_test.hpp>
 #include <cstdint>
 #include <map>

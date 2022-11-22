@@ -1,6 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE unittest_irquery_optestwrapper
 
+#include <any>
 #include <boost/test/unit_test.hpp>
 #include <cstdint>
 #include <iostream>

@@ -1,6 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE unittest_irquery_irtestwrapper
 
+#include <any>
+#include <functional>
+#include <memory>
+#include <type_traits>
+
 #include <boost/test/unit_test.hpp>
 #include <boost/trompeloeil.hpp>
 #include <popart/graph.hpp>
@@ -11,10 +16,6 @@
 #endif
 #define private public
 #undef private
-
-#include <functional>
-#include <memory>
-#include <type_traits>
 
 #include "mock_testfailuretriggerer.hpp"
 #include "popart/graphid.hpp"

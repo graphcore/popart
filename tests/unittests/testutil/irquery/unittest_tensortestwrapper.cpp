@@ -1,6 +1,13 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE unittest_irquery_tensortestwrapper
 
+#include <algorithm>
+#include <any>
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
+
 #include <boost/test/unit_test.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -13,11 +20,6 @@
 #undef private
 
 #include "testop.hpp"
-#include <algorithm>
-#include <map>
-#include <set>
-#include <string>
-#include <vector>
 
 #include "popart/graphid.hpp"
 #include "popart/logging.hpp"

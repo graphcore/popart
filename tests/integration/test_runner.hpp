@@ -2,6 +2,7 @@
 #ifndef POPART_TESTS_INTEGRATION_TEST_RUNNER_HPP_
 #define POPART_TESTS_INTEGRATION_TEST_RUNNER_HPP_
 
+#include <any>
 #include <cassert>
 #include <cstdint>
 #include <filereader.hpp>

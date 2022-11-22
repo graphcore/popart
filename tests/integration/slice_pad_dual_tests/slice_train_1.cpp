@@ -2,6 +2,7 @@
 #define BOOST_TEST_MODULE slice_train_1
 
 #include <algorithm>
+#include <any>
 #include <boost/test/unit_test.hpp>
 #include <cstddef>
 #include <cstdint>

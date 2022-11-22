@@ -1,6 +1,11 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE TransformTest
 
+#include <any>
+#include <cstddef>
+#include <string>
+#include <typeinfo>
+
 #include <boost/test/unit_test.hpp>
 #include <popart/transforms/transform.hpp>
 
@@ -8,9 +13,6 @@
 #pragma clang diagnostic ignored "-Wkeyword-macro"
 #endif
 #define private public
-#include <cstddef>
-#include <string>
-#include <typeinfo>
 #include <popart/ir.hpp>
 
 namespace popart {

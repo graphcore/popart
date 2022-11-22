@@ -3,6 +3,7 @@
 #define POPART_TESTS_INTEGRATION_INPLACE_TESTS_ELEMENTWISEBINARY_TESTCASE_HPP_
 
 #include <algorithm>
+#include <any>
 #include <boost/test/unit_test.hpp>
 #include <cstddef>
 #include <cstdint>
