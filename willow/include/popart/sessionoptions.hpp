@@ -1329,6 +1329,53 @@ struct SessionOptions {
   /// GCL options.
   std::map<std::string, std::string> gclOptions;
 
+  struct ExperimentalSettings {
+    /**
+     * Custom transform applier settings. Enable to insert custom transform
+     * sequence at predefined checkpoint. Multiple checkpoint names and
+     * transform names can be passed for different model configurations.
+     *
+     * The predefined checkpoint names are:
+     * FWD0: Initial IR immediately after lowering from ONNX to the IR.
+     *
+     * FWD1: After the pre-alias patterns have been applied to FWD0.
+     *
+     * BWD0: After growing the backward pass (including the optimiser step).
+     * Note this happens before optimiser decomposition, so the optimiser will
+     * appear as a single special op rather than the many ops that implement it.
+     *
+     * PREALIAS: After pre-alias transforms have been applied to BWD0.
+     *
+     * MAINLOOPS: After the MainLoops transform has been applied. This transform
+     * adds explicit loop ops to the IR for device iterations (batches per step)
+     * and gradient accumulation.
+     *
+     * FINAL: The final IR after preparation.
+     *
+     * The transform names are defined by PopART and users.
+     *
+     * For example to execute 'Transform A' and 'Transform B' at 'Fwd0'
+     * checkpoint and exectue 'Transform C' at 'Fwd1' checkpoint:
+     *
+     * {
+     *  "Fwd0": [
+     *    "Transform A",
+     *    "Transform B"
+     *  ],
+     *  "Fwd1": [
+     *    "Transform C"
+     *  ]
+     * }
+     *
+     * \note This setting is experimental for inference and may change.
+     */
+    std::map<std::string, std::vector<std::string>>
+        customTransformApplierSettings;
+  };
+
+  /// Configuration setting for custom transform applier.
+  ExperimentalSettings experimentalSettings;
+
   /**
    * List of codelet files (with file extension) to be added to the Poplar
    * graph. See the Poplar documentation for poplar::Graph for more information.

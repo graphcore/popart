@@ -4,6 +4,7 @@
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/uniform_real_distribution.hpp>
 #include <builder_impl.hpp>
+#include <customtransformapplier.hpp>
 #include <graphfromlosstolossupdater.hpp>
 #include <onnxutil.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
@@ -1291,11 +1292,16 @@ void Ir::prepareImpl(const IrBundle &gb,
 
   dotCheckpoint(*this, "Fwd0");
 
+  CustomTransformApplier customTransformApplier(*this);
+  customTransformApplier.applyCustomTransforms("Fwd0");
+
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);
     applyPreAliasPatterns(graph);
   }
   dotCheckpoint(*this, "Fwd1");
+
+  customTransformApplier.applyCustomTransforms("Fwd1");
 
   if (RandomSetup::requiresRandomSeed(*this)) {
     setRequiresRandomSeed();
@@ -1366,6 +1372,8 @@ void Ir::prepareImpl(const IrBundle &gb,
 
   updateVertices();
   dotCheckpoint(*this, "Bwd0");
+
+  customTransformApplier.applyCustomTransforms("Bwd0");
 
   // Delaying this preserves all "compute" tensor names a user might want
   // to anchor, so it should be called after the transforms relevant for the
@@ -1592,11 +1600,14 @@ void Ir::prepareImpl(const IrBundle &gb,
 
   dotCheckpoint(*this, "PreAlias");
 
+  customTransformApplier.applyCustomTransforms("PreAlias");
+
   if (getSessionOptions().enableExplicitMainLoops) {
     // Add explicit training loops
     applyTransform(MainLoops::id(), getMainGraph());
     removeIsolatedTensors(true);
     dotCheckpoint(*this, "MainLoops");
+    customTransformApplier.applyCustomTransforms("MainLoops");
   }
 
   if (getSessionOptions().useHostCopyOps) {
@@ -1723,6 +1734,7 @@ void Ir::prepareImpl(const IrBundle &gb,
   validateAnchors();
 
   dotCheckpoint(*this, "Final");
+  customTransformApplier.applyCustomTransforms("Final");
   logIr();
 
   finalizeOpDebugInfo();

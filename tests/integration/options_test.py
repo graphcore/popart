@@ -141,3 +141,17 @@ def test_numIOTiles_option():
     opts = popart.SessionOptions()
     opts.numIOTiles = 42
     assert opts.numIOTiles == 42
+
+
+def test_customTransformApplierSettings():
+    opts = popart.SessionOptions()
+    assert len(opts.experimentalSettings.customTransformApplierSettings) == 0
+
+    opts.experimentalSettings.customTransformApplierSettings = {
+        "Fwd0": ["Transform A", "Transform B"],
+        "Fwd1": ["Transform C", "Transform D"],
+    }
+    assert len(opts.experimentalSettings.customTransformApplierSettings) == 2
+    print("\ncustomTransformApplierSettings dict:")
+    for opt, val in opts.experimentalSettings.customTransformApplierSettings.items():
+        print("opt:", opt, "val:", val)

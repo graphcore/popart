@@ -25,6 +25,9 @@ public:
 
   // add a transform to the list of transforms
   static bool registerTransform(Transform *transform);
+
+  // get transform's unique Id from name
+  static std::size_t getIdFromName(const std::string &transformName);
 };
 
 } // namespace popart

@@ -37,4 +37,14 @@ bool Transform::registerTransform(Transform *transform) {
   return true;
 }
 
+std::size_t Transform::getIdFromName(const std::string &transformName) {
+  for (const auto &key_value : getTransformMap()) {
+    if (key_value.second->getName() == transformName) {
+      return key_value.first;
+    }
+  }
+  logging::transform::warn("There is no transform called '{}'.", transformName);
+  return 0;
+}
+
 } // namespace popart

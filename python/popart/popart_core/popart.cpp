@@ -1349,6 +1349,14 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(py::init<int>());
   }
   {
+    py::class_<SessionOptions::ExperimentalSettings> cls(
+        m, "ExperimentalSettings");
+    cls.def(py::init<>());
+    cls.def_readwrite(
+        "_customTransformApplierSettings",
+        &SessionOptions::ExperimentalSettings::customTransformApplierSettings);
+  }
+  {
     py::class_<SessionOptions> cls(m, "SessionOptions");
     cls.def(py::init<>());
     cls.def_readwrite(
@@ -1444,6 +1452,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("explicitRecomputation",
                       &SessionOptions::explicitRecomputation,
                       DOC(popart, SessionOptions, explicitRecomputation));
+    cls.def_readwrite("experimentalSettings",
+                      &SessionOptions::experimentalSettings);
     cls.def_readwrite("batchSerializationSettings",
                       &SessionOptions::batchSerializationSettings,
                       DOC(popart, SessionOptions, batchSerializationSettings));
