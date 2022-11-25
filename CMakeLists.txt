@@ -103,7 +103,7 @@ set(boost_components
     graph
     random
 )
-find_package(Boost 1.70 REQUIRED COMPONENTS ${boost_components})
+find_package(Boost 1.80 REQUIRED COMPONENTS ${boost_components})
 
 list(TRANSFORM boost_components PREPEND Boost:: OUTPUT_VARIABLE boost_targets)
 
