@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-find_package(Boost 1.80 REQUIRED COMPONENTS unit_test_framework filesystem random system)
+find_package(Boost 1.70 REQUIRED COMPONENTS unit_test_framework filesystem random system)
 
 set(boost_targets
   unit_test_framework
