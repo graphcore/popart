@@ -7,6 +7,7 @@ import popxl
 from popxl.dtypes import dtype
 from popxl.dtypes import int8, int16
 from popxl.remote_buffer import RemoteBuffer, remote_buffer
+import sys
 
 
 @pytest.fixture(scope="function")
@@ -88,7 +89,10 @@ class TestRemoteBuffer:
                 11,
                 11,
             )  # This is not ok since it's a new value
-        assert e_info.value.args[0] == "can't set attribute"
+        if sys.version_info.major == 3 and sys.version_info.minor >= 10:
+            assert e_info.value.args[0] == "can't set attribute 'tensor_shape'"
+        else:
+            assert e_info.value.args[0] == "can't set attribute"
 
     def test_tensor_dtype(self, standard_remote_buffer: RemoteBuffer) -> None:
         """Test the setters on tensor_dtype works as expected.
@@ -103,7 +107,10 @@ class TestRemoteBuffer:
             standard_remote_buffer.tensor_dtype = (
                 int16  # This is not ok since it's a new value
             )
-        assert e_info.value.args[0] == "can't set attribute"
+        if sys.version_info.major == 3 and sys.version_info.minor >= 10:
+            assert e_info.value.args[0] == "can't set attribute 'tensor_dtype'"
+        else:
+            assert e_info.value.args[0] == "can't set attribute"
 
     def test_entries(
         self,

@@ -4,6 +4,10 @@ import onnx
 import test_util as tu
 import pytest
 
+import collections
+
+# Iterable class has been moved to the collections.abc module in Python 3.10 https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable
+collections.Iterable = collections.abc.Iterable
 
 # The builder does not currently support the `sparse_value`
 # attribute of the `Constant` op.

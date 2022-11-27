@@ -6,6 +6,10 @@ import onnx
 from onnx import helper, version_converter
 from onnx import TensorProto
 
+import collections
+
+# Iterable class has been moved to the collections.abc module in Python 3.10 https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable
+collections.Iterable = collections.abc.Iterable
 
 def test_type_cast_UINT8ToINT32():
 
