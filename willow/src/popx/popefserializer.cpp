@@ -10,6 +10,7 @@
 #include "popart/popx/devicex.hpp"
 #include "popart/popx/executablex.hpp"
 #include "popart/popx/irlowering.hpp"
+#include "popart/vendored/optional.hpp"
 #include "popx/popefserializerimpl.hpp"
 
 namespace popart {
@@ -68,6 +69,27 @@ std::unique_ptr<popart::popx::Executablex>
 Reader::deserializeExecutable(popart::Ir &ir,
                               popart::popx::IrLowering &lowering) const {
   return _impl->deserializeExecutable(ir, lowering);
+}
+
+nonstd::optional<size_t>
+Reader::checkFileForValidPoplarExecutable(const std::string &filePath) {
+  auto ifs = std::make_shared<std::ifstream>(filePath, std::ifstream::binary);
+  try {
+    popart::popx::serialization::Reader reader({ifs});
+    if (reader.containsExecutable() && reader.containsPoplarExecutable()) {
+      auto hash = reader.readExecutableHash();
+      logging::session::info("PopART cache file has been found: {}", filePath);
+      return hash;
+    } else {
+      logging::session::info("Ignoring cache file because it does not contain "
+                             "a valid PopART executable : {}",
+                             filePath);
+    }
+  } catch (const std::exception &e) {
+    logging::session::trace(
+        "Ignoring invalid cache file {}: {}", filePath, e.what());
+  }
+  return {};
 }
 
 } // namespace serialization

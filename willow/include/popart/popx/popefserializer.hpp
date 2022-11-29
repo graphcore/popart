@@ -6,6 +6,8 @@
 #include <memory>
 #include <vector>
 
+#include "popart/vendored/optional.hpp"
+
 namespace poplar {
 // Forward declaration.
 class Executable;
@@ -163,6 +165,16 @@ public:
   std::unique_ptr<popart::popx::Executablex>
   deserializeExecutable(popart::Ir &ir,
                         popart::popx::IrLowering &lowering) const;
+
+  /**
+   * Check that a PopART executable can be loaded from a PopEF file.
+   *
+   * @param filePath The full path to the popef file.
+   * @return nonstd::optional<size_t> The hash of the PopART IR if an
+   *         executable could be loaded.
+   */
+  static nonstd::optional<size_t>
+  checkFileForValidPoplarExecutable(const std::string &filePath);
 
 private:
   std::unique_ptr<ReaderImpl> _impl;

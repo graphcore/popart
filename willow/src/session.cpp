@@ -51,6 +51,7 @@
 #include "popart/voiddata.hpp"
 
 #include "engineoptionscreator.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
 class IStepIO;
@@ -59,6 +60,35 @@ class InputShapeInfo;
 class Optimizer;
 
 namespace {
+
+nonstd::optional<size_t>
+inferCacheEntryFromPath(const boost::filesystem::path &entry) {
+  const std::string &filePath = entry.string();
+  if (entry.extension().string().compare(".popef") != 0) {
+    logging::session::trace(
+        "File in cache path does not have extension '.popef': {}", filePath);
+    return {};
+  }
+
+  auto maybeStrHash = entry.stem().string();
+  auto isHash =
+      std::all_of(maybeStrHash.begin(), maybeStrHash.end(), ::isdigit);
+  if (!isHash) {
+    logging::session::trace("Cannot infer IR hash from PopEF file name: {}",
+                            maybeStrHash);
+    return {};
+  }
+
+  size_t hash;
+  std::stringstream sstream(maybeStrHash);
+  sstream >> hash;
+  logging::session::info(
+      "PopEF file inferred to have hash '{}' has been found: {}",
+      hash,
+      filePath);
+  return hash;
+}
+
 HashesMap getCacheEntries(const std::string &cachePath) {
   HashesMap cacheEntries;
   if (!boost::filesystem::is_directory(cachePath)) {
@@ -66,24 +96,14 @@ HashesMap getCacheEntries(const std::string &cachePath) {
   }
   for (auto &entry : boost::filesystem::directory_iterator(cachePath)) {
     if (boost::filesystem::is_regular_file(entry)) {
-      const std::string &filePath = entry.path().string();
-      auto ifs =
-          std::make_shared<std::ifstream>(filePath, std::ifstream::binary);
-      try {
-        popart::popx::serialization::Reader reader({ifs});
-        if (reader.containsExecutable() && reader.containsPoplarExecutable()) {
-          auto hash = reader.readExecutableHash();
-          cacheEntries.emplace(hash, entry.path().string());
-          logging::session::info("PopART cache file has been found: {}",
-                                 filePath);
-        } else {
-          logging::session::info("Ignoring file not compatible with PopArt "
-                                 "cache file structure: {}",
-                                 filePath);
-        }
-      } catch (const std::exception &e) {
-        logging::session::trace(
-            "Ignoring invalid cache file {}: {}", filePath, e.what());
+      auto possibleHash = inferCacheEntryFromPath(entry.path());
+      if (!possibleHash) {
+        possibleHash =
+            popx::serialization::Reader::checkFileForValidPoplarExecutable(
+                entry.path().string());
+      }
+      if (possibleHash) {
+        cacheEntries.emplace(*possibleHash, entry.path().string());
       }
     }
   }

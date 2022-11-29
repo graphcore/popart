@@ -140,6 +140,8 @@
 #include "popart/vertex.hpp"
 #include "popart/voiddata.hpp"
 
+#include <popart/popx/popefserializer.hpp>
+
 namespace popart {
 
 std::ostream &operator<<(std::ostream &ost, const OpsBeforeKey &o) {
@@ -490,7 +492,23 @@ void Ir::compareWithSavedHash(const HashesMap &cacheEntries) {
   }
 
   // Is the hash present in cacheEntries?
-  hashMatched_ = cacheEntries.count(*hash_) > 0;
+  bool possibleMatch = cacheEntries.count(*hash_) > 0;
+
+  if (possibleMatch) {
+    // Check that the cache file is valid and that the hash found in it matches
+    // the current IR.
+    const auto &filePath = cacheEntries.at(*hash_);
+    auto possibleHash =
+        popx::serialization::Reader::checkFileForValidPoplarExecutable(
+            filePath);
+    if (possibleHash.has_value()) {
+      hashMatched_ = *hash_ == *possibleHash;
+      if (!hashMatched_) {
+        logging::session::warn("Cache file hash did not match the IR hash, "
+                               "ignoring false cache hit.");
+      }
+    }
+  }
 }
 
 void Ir::computeHash(size_t hashSeed) {
