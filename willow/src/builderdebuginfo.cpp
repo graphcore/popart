@@ -65,17 +65,17 @@ BuilderDebugInfo::BuilderDebugInfo(
       std::string v = popart::any_cast<std::string>(p.second);
       args.insert({p.first, ProfileValue{v}});
     } else if (p.second.type() == typeid(const std::vector<std::string> &)) {
-      auto v = popart::any_cast<const std::vector<std::string> &>(p.second);
+      auto v = popart::any_cast<const std::vector<std::string>>(p.second);
       std::stringstream ss;
       ss << v;
       args.insert({p.first, ProfileValue{ss.str()}});
     } else if (p.second.type() == typeid(const std::vector<int64_t> &)) {
-      auto v = popart::any_cast<const std::vector<int64_t> &>(p.second);
+      auto v = popart::any_cast<const std::vector<int64_t>>(p.second);
       std::stringstream ss;
       ss << v;
       args.insert({p.first, ProfileValue{ss.str()}});
     } else if (p.second.type() == typeid(const std::vector<float> &)) {
-      auto v = popart::any_cast<const std::vector<float> &>(p.second);
+      auto v = popart::any_cast<const std::vector<float>>(p.second);
       std::stringstream ss;
       ss << v;
       args.insert({p.first, ProfileValue{ss.str()}});

@@ -138,13 +138,13 @@ void verifyPoolBase(std::unique_ptr<BuilderImpl> &impl,
   verifyWindowParameters(
       impl,
       inputs[0],
-      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      popart::any_cast<const std::vector<int64_t> &>(attributes["outPads"]),
-      popart::any_cast<std::vector<int64_t> &>(attributes["kernel_shape"]),
-      popart::any_cast<std::vector<int64_t> &>(attributes["dilations"]),
-      popart::any_cast<std::vector<int64_t> &>(attributes["inDilations"]),
-      popart::any_cast<const std::string &>(attributes["auto_pad"]),
+      popart::any_cast<const std::vector<int64_t>>(attributes["strides"]),
+      popart::any_cast<const std::vector<int64_t>>(attributes["pads"]),
+      popart::any_cast<const std::vector<int64_t>>(attributes["outPads"]),
+      popart::any_cast<std::vector<int64_t>>(attributes["kernel_shape"]),
+      popart::any_cast<std::vector<int64_t>>(attributes["dilations"]),
+      popart::any_cast<std::vector<int64_t>>(attributes["inDilations"]),
+      popart::any_cast<const std::string>(attributes["auto_pad"]),
       ceil_mode);
 }
 
@@ -166,7 +166,7 @@ void verifyConvBase(std::unique_ptr<BuilderImpl> &impl,
     // shape from the weight tensor's shape
     if (attributes.count("kernel_shape")) {
       auto userKShape =
-          popart::any_cast<const Shape &>(attributes["kernel_shape"]);
+          popart::any_cast<const Shape>(attributes["kernel_shape"]);
 
       if (userKShape != weightsKShape) {
         throw error(
@@ -210,12 +210,12 @@ void verifyConvBase(std::unique_ptr<BuilderImpl> &impl,
   verifyWindowParameters(
       impl,
       inputs[0],
-      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      popart::any_cast<const std::vector<int64_t> &>(attributes["outPads"]),
+      popart::any_cast<const std::vector<int64_t>>(attributes["strides"]),
+      popart::any_cast<const std::vector<int64_t>>(attributes["pads"]),
+      popart::any_cast<const std::vector<int64_t>>(attributes["outPads"]),
       weightsKShape,
-      popart::any_cast<std::vector<int64_t> &>(attributes["dilations"]),
-      popart::any_cast<std::vector<int64_t> &>(attributes["inDilations"]),
+      popart::any_cast<std::vector<int64_t>>(attributes["dilations"]),
+      popart::any_cast<std::vector<int64_t>>(attributes["inDilations"]),
       popart::any_cast<std::string>(attributes["auto_pad"]));
 }
 
@@ -300,9 +300,8 @@ void verifyPadBase(std::unique_ptr<BuilderImpl> &impl,
     return;
   }
 
-  auto rank = impl->getTensorShape(inputs[0]).size();
-  auto &pads =
-      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]);
+  auto rank  = impl->getTensorShape(inputs[0]).size();
+  auto &pads = popart::any_cast<const std::vector<int64_t>>(attributes["pads"]);
   if (pads.size() != rank * 2) {
     throw error(
         "Padding vector (length {}) doesn't contain 2 entries per input "

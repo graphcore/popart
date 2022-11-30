@@ -1,164 +1,107 @@
 #ifndef GUARD_NEURALNET_ANY_HPP
 #define GUARD_NEURALNET_ANY_HPP
 
-#include <cassert>
-#include <stdexcept>
-#include <type_traits>
-#include <typeinfo>
+#include "popart/vendored/anylite.hpp"
 #include <utility>
 
-// Code from:
-// https://codereview.stackexchange.com/questions/15269/boostany-replacement-with-stdunique-ptr-support
-// licensed under a Creative Commons Attribution-ShareAlike license:
-// https://stackoverflow.com/help/licensing
-// Licence: https://creativecommons.org/licenses/by-sa/3.0/legalcode
+#define REQUIRES_T(...) , typename std::enable_if<(__VA_ARGS__), int>::type = 0
+
 namespace popart {
 
+/**
+ * @brief Wrapper around nonstd::any.
+ *
+ * In order to be able to access nonstd::any as popart::any, we have to wrap it
+ * in a class that has identical members except they call the same method of
+ * nonstd::any in their implementation. This approach is taken because the more
+ * straightforward solution of `using any = nonstd::any` actually raises
+ * compiler errors because the declaration here conflicts with forward
+ * declarations of popart::any that appear elsewhere in the codebase.
+ */
 class any {
 public:
-  any() noexcept : content(nullptr) {}
+  constexpr any() noexcept : _impl() {}
 
-  any(any const &other)
-      : content(other.content ? other.content->clone() : nullptr) {}
+  any(any const &other) : _impl(other.get_any()) {}
 
-  any(any &&other) noexcept { *this = std::move(other); }
+  any(any &&other) : _impl(std::forward<nonstd::any>(other.get_any())) {}
 
-  template <typename ValueType,
-            typename = typename std::enable_if<!std::is_same<
-                any,
-                typename std::decay<ValueType>::type>::value>::type>
-  any(ValueType &&value)
-      : content(new holder<typename std::remove_reference<ValueType>::type>(
-            std::forward<ValueType>(value))) {}
+  template <class ValueType,
+            class T = typename std::decay<ValueType>::type REQUIRES_T(
+                !std::is_same<T, any>::value)>
+  any(ValueType &&value) noexcept : _impl(std::forward<ValueType>(value)) {}
 
-  ~any() { delete content; }
+  template <
+      class T,
+      class... Args REQUIRES_T(std::is_constructible<T, Args &&...>::value)>
+  explicit any(nonstd_lite_in_place_type_t(T), Args &&...args)
+      : _impl(std::forward<Args>(args)...) {}
 
-public: // modifiers
-  void swap(any &other) noexcept { std::swap(content, other.content); }
+  template <
+      class T,
+      class U,
+      class... Args REQUIRES_T(std::is_constructible<T,
+                                                     std::initializer_list<U> &,
+                                                     Args &&...>::value)>
+  explicit any(nonstd_lite_in_place_type_t(T),
+               std::initializer_list<U> il,
+               Args &&...args)
+      : _impl(il, std::forward<Args>(args)...) {}
 
-  any &operator=(any const &rhs) { return *this = any(rhs); }
+  ~any() = default;
 
-  any &operator=(any &&rhs) noexcept {
-    content     = rhs.content;
-    rhs.content = nullptr;
-
+  any &operator=(any const &other) {
+    any(other).swap(*this);
     return *this;
   }
 
-  template <typename ValueType,
-            typename = typename std::enable_if<!std::is_same<
-                any,
-                typename std::remove_const<typename std::remove_reference<
-                    ValueType>::type>::type>::value>::type>
-  any &operator=(ValueType &&rhs) {
-    return *this = any(std::forward<ValueType>(rhs));
+  any &operator=(any &&other) noexcept {
+    any(std::move(other)).swap(*this);
+    return *this;
   }
 
-public: // queries
-  explicit operator bool() const noexcept { return content; }
-
-  std::type_info const &type() const noexcept {
-    return content ? content->type() : typeid(void);
+  template <class ValueType,
+            class T = typename std::decay<ValueType>::type REQUIRES_T(
+                !std::is_same<T, any>::value)>
+  any &operator=(T &&value) {
+    any(std::move(value)).swap(*this);
+    return *this;
   }
 
-private: // types
-  struct placeholder {
-    placeholder() = default;
+  void reset() noexcept { _impl.reset(); }
 
-    virtual ~placeholder() noexcept {}
+  void swap(any &other) noexcept { other.get_any().swap(_impl); }
 
-    virtual placeholder *clone() const = 0;
+  bool has_value() const noexcept { return _impl.has_value(); }
 
-    virtual std::type_info const &type() const = 0;
-  };
+  const std::type_info &type() const noexcept { return _impl.type(); }
 
-  template <typename ValueType, typename = void>
-  struct holder : public placeholder {
-  public: // constructor
-    template <class T> holder(T &&value) : held(std::forward<T>(value)) {}
+  nonstd::any &get_any() noexcept { return _impl; }
+  const nonstd::any &get_any() const noexcept { return _impl; }
 
-    holder &operator=(holder const &) = delete;
-
-    placeholder *clone() const final { throw std::invalid_argument(""); }
-
-  public: // queries
-    std::type_info const &type() const noexcept { return typeid(ValueType); }
-
-  public:
-    ValueType held;
-  };
-
-  template <typename ValueType>
-  struct holder<ValueType,
-                typename std::enable_if<
-                    std::is_copy_constructible<ValueType>::value>::type>
-      : public placeholder {
-  public: // constructor
-    template <class T> holder(T &&value) : held(std::forward<T>(value)) {}
-
-    placeholder *clone() const final { return new holder<ValueType>(held); }
-
-  public: // queries
-    std::type_info const &type() const noexcept { return typeid(ValueType); }
-
-  public:
-    ValueType held;
-  };
-
-private: // representation
-  template <typename ValueType> friend ValueType *any_cast(any *) noexcept;
-
-  template <typename ValueType>
-  friend ValueType *unsafe_any_cast(any *) noexcept;
-
-  placeholder *content;
+private:
+  nonstd::any _impl;
 };
 
-template <typename ValueType>
-inline ValueType *unsafe_any_cast(any *const operand) noexcept {
-  return &static_cast<any::holder<ValueType> *>(operand->content)->held;
+// Wrappers around any_cast overloads. Because these functions are templated
+// in anylite, we can't just inject them into the popart namespace using
+// `using`. Moreover, we need these wrappers to retrieve `nonstd::any`
+// from `popart::any`.
+
+template <class V>
+inline auto any_cast(any &a) -> decltype(nonstd::any_cast<V>(a)) {
+  return nonstd::any_cast<V>(a.get_any());
 }
 
-template <typename ValueType>
-inline ValueType const *unsafe_any_cast(any const *const operand) noexcept {
-  return unsafe_any_cast<ValueType>(const_cast<any *>(operand));
+template <class V>
+inline auto any_cast(any const &a) -> decltype(nonstd::any_cast<V>(a)) {
+  return nonstd::any_cast<V>(a.get_any());
 }
 
-template <typename ValueType>
-inline ValueType *any_cast(any *const operand) noexcept {
-  return operand && (operand->type() == typeid(ValueType))
-             ? &static_cast<any::holder<ValueType> *>(operand->content)->held
-             : nullptr;
+template <class V>
+inline auto any_cast(any &&a) -> decltype(nonstd::any_cast<V>(a)) {
+  return nonstd::any_cast<V>(a.get_any());
 }
-
-template <typename ValueType>
-inline ValueType const *any_cast(any const *const operand) noexcept {
-  return any_cast<ValueType>(const_cast<any *>(operand));
-}
-
-template <typename ValueType> inline ValueType any_cast(any &operand) {
-  typedef typename std::remove_reference<ValueType>::type nonref;
-
-#ifndef NDEBUG
-  nonref *const result(any_cast<nonref>(&operand));
-
-  if (!result) {
-    throw std::bad_cast();
-  }
-  // else do nothing
-
-  return *result;
-#else
-  return *unsafe_any_cast<nonref>(&operand);
-#endif // NDEBUG
-}
-
-template <typename ValueType> inline ValueType any_cast(any const &operand) {
-  typedef typename std::remove_reference<ValueType>::type nonref;
-
-  return any_cast<nonref const &>(const_cast<any &>(operand));
-}
-
 } // namespace popart
 
 #endif // GUARD_NEURALNET_ANY_HPP

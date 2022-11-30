@@ -227,6 +227,7 @@ target_compile_definitions(popart-only
     # Ensure libpopart and users alike use the same type for nonstd::optional,
     # else linking errors will occur.
     optional_CONFIG_SELECT_OPTIONAL=optional_OPTIONAL_NONSTD
+    any_CONFIG_SELECT_ANY=any_ANY_NONSTD
 
   PRIVATE
     # Required to prevent warnings.

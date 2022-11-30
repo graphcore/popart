@@ -939,7 +939,7 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
   } else if (tinfo == typeid(std::vector<int64_t>)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::INTS);
     const std::vector<int64_t> &values =
-        popart::any_cast<const std::vector<int64_t> &>(attributeValue);
+        popart::any_cast<const std::vector<int64_t>>(attributeValue);
     for (auto i : values) {
       attr.add_ints(i);
     }
@@ -949,7 +949,7 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
   } else if (tinfo == typeid(std::vector<float>)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::FLOATS);
     const std::vector<float> &values =
-        popart::any_cast<const std::vector<float> &>(attributeValue);
+        popart::any_cast<const std::vector<float>>(attributeValue);
     for (auto f : values) {
       attr.add_floats(f);
     }
@@ -962,7 +962,7 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
   } else if (tinfo == typeid(std::vector<std::string>)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::STRINGS);
     const std::vector<std::string> &values =
-        popart::any_cast<const std::vector<std::string> &>(attributeValue);
+        popart::any_cast<const std::vector<std::string>>(attributeValue);
     for (auto &s : values) {
       attr.add_strings(s);
     }
@@ -977,7 +977,7 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
   } else if (tinfo == typeid(ONNX_NAMESPACE::GraphProto)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::GRAPH);
     const ONNX_NAMESPACE::GraphProto &graph =
-        popart::any_cast<const ONNX_NAMESPACE::GraphProto &>(attributeValue);
+        popart::any_cast<const ONNX_NAMESPACE::GraphProto>(attributeValue);
     auto *g = attr.mutable_g();
     *g      = graph;
   } else {
