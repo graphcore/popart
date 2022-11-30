@@ -1144,6 +1144,12 @@ struct SessionOptions {
    * for variables (during cache reading process), they will be automatically
    * read from the cache file.
    *
+   * Note, turning this off allows a PopART Session to optimise the host memory
+   * it consumes during model runtime. Specifically, weightsToHost() can write
+   * directly to the IR tensor data buffers. If the option were on, this would
+   * not be safe and the session would have to create separate buffers to write
+   * the fetched data to.
+   *
    * Default: `true` (enabled).
    */
   bool enableVariablesCaching = true;

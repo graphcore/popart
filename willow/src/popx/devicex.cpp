@@ -1,4 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include "popart/util/expressionchecking.hpp"
 #include <algorithm>
 #include <boost/filesystem.hpp>
 #include <cstdint>
@@ -305,9 +306,8 @@ void Devicex::remoteBufferWeightsToHost() {
       // Collect information
       const auto remoteBufferInfo =
           tensor->tensorLocationInfo.getRemoteBufferInfo();
-      auto &data           = d2hWeightBuffers[initId];
-      char *data0          = data.data();
-      const auto data0Size = data.size() * sizeof(data[0]);
+      char *data0          = getD2hWeightData(tensor);
+      const auto data0Size = getD2hWeightBufferSize(tensor);
       const auto elemSize =
           static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes());
       const unsigned nelms = tensor->info.nelms();
@@ -858,24 +858,36 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data,
     // Create temporary buffer
     tmp = std::vector<char>(downSampledSize);
 
+    // Note, if ::AllReplicas, you may still not need a d2hWeightBuffer if
+    // enablesVariableCaching is off and the replica group size is 1 (and thus
+    // the num replicas returning a value is the same as the number of groups).
+    char *addr_src_base = getD2hWeightData(tensor);
+
     // Copy the samples into the buffer
     for (auto group = 0; group < groupCount; group++) {
 
       auto replica  = variableSettings.getGroupRepresentative(group);
       auto addr_dst = tmp.data() + (group * tensor->info.nbytes());
-      auto addr_src =
-          d2hWeightBuffers.at(id).data() + (replica * tensor->info.nbytes());
+      auto addr_src = addr_src_base + (replica * tensor->info.nbytes());
       memcpy(addr_dst, addr_src, tensor->info.nbytes());
     }
     src        = static_cast<const void *>(tmp.data());
     nbytes_src = downSampledSize;
   } else {
     // Do nothing special
-    src        = static_cast<const void *>(d2hWeightBuffers.at(id).data());
-    nbytes_src = d2hWeightBuffers.at(id).size();
+    src        = static_cast<const void *>(getD2hWeightData(tensor));
+    nbytes_src = getD2hWeightBufferSize(tensor);
   }
 
   auto dst = mv_data.data;
+
+  if (src == dst) {
+    // Should only happen when this function is called as part of weightsToHost
+    // to copy from the d2hWeightBuffer to the TensorData, but these buffers are
+    // the same as the tensor did not need an intermediary d2hWeightBuffer.
+    POPART_ASSERT(!needsIntermediaryD2hWeightBuffer(tensor));
+    return;
+  }
 
   // number of bytes of the destination.
   int64_t nbytes_dst = mv_data.info.nbytes();
@@ -1416,16 +1428,10 @@ void Devicex::loadEngineAndConnectStreams() {
         int64_t n_bytes    = tensor->info.nbytes();
         logging::devicex::debug(
             "Connecting {} [type={}]", initId, tensor->tensorType());
-        if (tensor->tensorType() == TensorType::Variable) {
-          auto ret_factor =
-              tensor->getVariableSettings().numReplicasReturningVariable(
-                  getGlobalReplicationFactor());
-          d2hWeightBuffers[initId] = std::vector<char>(n_bytes * ret_factor);
-        } else {
-          d2hWeightBuffers[initId] = std::vector<char>(n_bytes);
-        }
 
-        char *data0 = d2hWeightBuffers[initId].data();
+        initD2hWeightBuffer(tensor);
+        auto *data0 = getD2hWeightData(tensor);
+
         if (!ir().streamingIsDisabledForTensor(tensor)) {
           // Only connect non-cached tensor streams,
           // RemoteBuffer handled separately
@@ -1825,6 +1831,64 @@ popx::DevicexInfo *Devicex::getDevicexInfoUnsafe() const {
 
 bool Devicex::distributedReplicatedGraphsEnabled() const {
   return ir().getSessionOptions().enableDistributedReplicatedGraphs;
+}
+
+bool Devicex::needsIntermediaryD2hWeightBuffer(const Tensor *t) const {
+  const auto globalReplicas = getGlobalReplicationFactor();
+  const auto retFactor =
+      t->getVariableSettings().numReplicasReturningVariable(globalReplicas);
+
+  const auto numGroups = t->getVariableSettings()
+                             .getReplicaGrouping(globalReplicas)
+                             .getNumGroups();
+
+  // `devicex->prepare()` must result in a cache entry whose TensorData matches
+  // the data in the Executablex. Furthermore, `weightsToHost` must not make the
+  // tensor data out-of-sync with the data in the cache.
+  //
+  // As the Executablex is essentially a view into the Ir, and so the tensor
+  // data comes from the TensorData in the Ir, we cannot update the TensorData
+  // in weightsToHost, as it would no longer match the cache entry created
+  // earlier. Therefore, we must use a separate d2hWeightBuffer for
+  // weightsToHost.
+  //
+  // However, in the case where enableVariablesCaching is off, there is no
+  // tensor data in the cache, so the above requirement is void. Therefore, we
+  // can write directly to the Ir's TensorData in weightsToHost.
+  const auto enableVariablesCaching =
+      ir().getSessionOptions().enableVariablesCaching;
+
+  // What is the case where t in executable.getWeightTensors() but not
+  // TensorType::Variable? This condition was added to maintain the semantics of
+  // the previous code.
+  return enableVariablesCaching || t->tensorType() != TensorType::Variable ||
+         retFactor != numGroups;
+}
+
+void Devicex::initD2hWeightBuffer(const Tensor *t) {
+  const auto retFactor = t->getVariableSettings().numReplicasReturningVariable(
+      getGlobalReplicationFactor());
+
+  if (needsIntermediaryD2hWeightBuffer(t)) {
+    d2hWeightBuffers[t->id] = std::vector<char>(t->info.nbytes() * retFactor);
+  } else {
+    logging::devicex::trace(
+        "Reusing TensorData for d2hWeightBuffer of tensor {}", t->id);
+  }
+}
+
+std::size_t Devicex::getD2hWeightBufferSize(const Tensor *t) const {
+  // Whether using the TensorData, or an intermediary d2hWeightBuffer, this
+  // gives the size of the buffer.
+  return t->getVariableSettings().numReplicasReturningVariable(
+             getGlobalReplicationFactor()) *
+         t->info.nbytes();
+}
+
+char *Devicex::getD2hWeightData(Tensor *t) {
+  return needsIntermediaryD2hWeightBuffer(t)
+             ? d2hWeightBuffers[t->id].data()
+             : static_cast<char *>(t->tensorData()->data());
 }
 
 } // namespace popx

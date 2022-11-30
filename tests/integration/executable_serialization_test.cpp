@@ -266,7 +266,6 @@ void checkOptionsConsistency(const std::vector<popef::Option> &opts,
 void checkCorrectionPopefMetadata(
     const popx::Executablex &exe,
     const popef::Metadata &metadata,
-    bool isTensorDataSaved,
     const std::vector<popef::TensorReader> tensors) {
   const popx::IrLowering &lowering = exe.lowering();
   const Ir &ir                     = lowering.ir();
@@ -282,7 +281,7 @@ void checkCorrectionPopefMetadata(
       lowering.getDeviceInfo()->getTarget().getTargetSystemString();
   const bool isPOD = targetSystem.find("POD") != std::string::npos;
 
-  if (isTensorDataSaved) {
+  if (opts.enableVariablesCaching) {
     checkTensorsAndAnchorsConsistency(metadata, tensors);
   }
 
@@ -366,7 +365,6 @@ void checkCorrectionPopefData(
     const popx::Executablex &exe,
     const std::vector<std::string> &popefFilePaths,
     bool isExecutableSaved                                 = true,
-    bool isTensorDataSaved                                 = true,
     const std::vector<TensorId> expectedMismatchDataForIds = {}) {
   popef::Reader reader;
   for (const auto &path : popefFilePaths) {
@@ -387,13 +385,14 @@ void checkCorrectionPopefData(
     BOOST_CHECK(reader.opaqueBlobs().at(0).executable ==
                 reader.metadata().at(0).executable());
 
-    checkCorrectionPopefMetadata(
-        exe, reader.metadata().at(0), isTensorDataSaved, popefTensors);
+    checkCorrectionPopefMetadata(exe, reader.metadata().at(0), popefTensors);
   }
+
+  const auto &opts             = exe.ir().getSessionOptions();
+  const bool isTensorDataSaved = opts.enableVariablesCaching;
 
   if (isTensorDataSaved) {
     const Tensor *seedTensor     = exe.getSeedTensor();
-    const auto &opts             = exe.ir().getSessionOptions();
     const int expectedRNGTensors = (seedTensor != nullptr ? 1 : 0) +
                                    (opts.enableLoadAndOffloadRNGState ? 1 : 0);
     const int expectedTensorsNum = exe.getWeightTensors().size() +
@@ -508,10 +507,8 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize) {
     BOOST_CHECK(reader.containsPopefMetadata());
     BOOST_CHECK(!reader.containsPoplarExecutable());
 
-    checkCorrectionPopefData(executable,
-                             {executablePath},
-                             false /* isExecutableSaved */,
-                             true /* isTensorDataSaved */);
+    checkCorrectionPopefData(
+        executable, {executablePath}, false /* isExecutableSaved */);
 
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
@@ -587,10 +584,8 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam) {
     BOOST_CHECK(reader.containsPopefMetadata());
     BOOST_CHECK(!reader.containsPoplarExecutable());
 
-    checkCorrectionPopefData(executable,
-                             {executablePath},
-                             false /* isExecutableSaved */,
-                             true /* isTensorDataSaved */);
+    checkCorrectionPopefData(
+        executable, {executablePath}, false /* isExecutableSaved */);
 
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
@@ -673,8 +668,7 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam_pre_prepared_ir) {
 
     checkCorrectionPopefData(executable,
                              {executablePath, variablesPath},
-                             false /* isExecutableSaved */,
-                             true /* isTensorDataSaved */);
+                             false /* isExecutableSaved */);
 
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
@@ -754,10 +748,8 @@ BOOST_AUTO_TEST_CASE(
     BOOST_CHECK(reader.containsPopefMetadata());
     BOOST_CHECK(!reader.containsPoplarExecutable());
 
-    checkCorrectionPopefData(executable,
-                             {executablePath},
-                             false /* isExecutableSaved */,
-                             true /* isTensorDataSaved */);
+    checkCorrectionPopefData(
+        executable, {executablePath}, false /* isExecutableSaved */);
 
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
@@ -912,8 +904,7 @@ BOOST_AUTO_TEST_CASE(
     BOOST_CHECK(!reader.containsPoplarExecutable());
     checkCorrectionPopefData(executable,
                              {executablePath, variablesPath},
-                             false /* isExecutableSaved */,
-                             true /* isTensorDataSaved */);
+                             false /* isExecutableSaved */);
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
     auto deserializedExecutable = reader.deserializeExecutable(ir, ir_lowering);
@@ -2023,7 +2014,6 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
     checkCorrectionPopefData(session->getExecutable(),
                              {cacheFile},
                              true /* isExecutableSaved */,
-                             true /* isTensorDataSaved */,
                              {A_id, B_id});
 
     // We called saveExecutable, so seedTensor has correct
@@ -2055,7 +2045,6 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
     checkCorrectionPopefData(session->getExecutable(),
                              {cacheFile},
                              true /* isExecutableSaved */,
-                             true /* isTensorDataSaved */,
                              {A_id, B_id, seedTensor->id});
 
     session->saveExecutable(execPath);
@@ -2069,7 +2058,6 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
     checkCorrectionPopefData(session->getExecutable(),
                              {cacheFile},
                              true /* isExecutableSaved */,
-                             true /* isTensorDataSaved */,
                              {seedTensor->id});
   }
 
@@ -2221,7 +2209,6 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
     checkCorrectionPopefData(session->getExecutable(),
                              {cacheFile},
                              true /* isExecutableSaved */,
-                             true /* isTensorDataSaved */,
                              {A_id, B_id});
   }
 
@@ -2266,8 +2253,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
     // stored by the IPU.
     checkCorrectionPopefData(session->getExecutable(),
                              {variablesPath},
-                             false /* isExecutableSaved */,
-                             true /* isTensorDataSaved */);
+                             false /* isExecutableSaved */);
 
     session->resetHostWeights(proto, true);
 
@@ -2275,7 +2261,6 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
     checkCorrectionPopefData(session->getExecutable(),
                              {variablesPath},
                              false /* isExecutableSaved */,
-                             true /* isTensorDataSaved */,
                              {A_id, B_id});
 
     session->weightsFromHost();
@@ -2431,7 +2416,6 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
     checkCorrectionPopefData(session->getExecutable(),
                              {cacheFile},
                              true /* isExecutableSaved */,
-                             true /* isTensorDataSaved */,
                              {A_id, B_id});
 
     session->saveExecutable(testDir);
@@ -2684,8 +2668,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_update_optimizer) {
     // stored by Executablex.
     checkCorrectionPopefData(session->getExecutable(),
                              {variablesPath},
-                             false /* isExecutableSaved */,
-                             true /* isTensorDataSaved */);
+                             false /* isExecutableSaved */);
   }
 
   BOOST_CHECK(boost::filesystem::remove_all(testDir));

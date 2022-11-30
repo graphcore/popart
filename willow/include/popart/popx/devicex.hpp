@@ -306,6 +306,25 @@ private:
   // done for inputs
   std::map<TensorId, std::vector<char>> d2hWeightBuffers;
 
+  // Does this weight need an intermediary d2hWeightBuffer, or can the
+  // TensorData be re-used?
+  // Precondition: Tensor is in `executable_.getWeightTensors()`
+  bool needsIntermediaryD2hWeightBuffer(const Tensor *) const;
+
+  // Initialise the d2hWeightBuffer for the tensor. This will either re-use the
+  // TensorData of the tensor (so do nothing) or create an intermediary
+  // d2hWeightBuffer and add it to the map `d2hWeightBuffers`.
+  // Precondition: Tensor is in `executable_.getWeightTensors()`
+  void initD2hWeightBuffer(const Tensor *);
+
+  // Get the size in bytes of the d2hWeightBuffer for this tensor.
+  // Precondition: Tensor is in `executable_.getWeightTensors()`
+  std::size_t getD2hWeightBufferSize(const Tensor *) const;
+
+  // Get a pointer to the raw data of the d2hWeightBuffer for this tensor.
+  // Precondition: Tensor is in `executable_.getWeightTensors()`
+  char *getD2hWeightData(Tensor *);
+
   // map of buffers for streaming to IPU.
   std::map<TensorId, std::vector<char>> h2dWeightBuffers;
 
