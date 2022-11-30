@@ -325,9 +325,6 @@ private:
   // Precondition: Tensor is in `executable_.getWeightTensors()`
   char *getD2hWeightData(Tensor *);
 
-  // map of buffers for streaming to IPU.
-  std::map<TensorId, std::vector<char>> h2dWeightBuffers;
-
   // Buffers for storing the hardware cycle count
   std::map<std::string, std::vector<uint64_t>> cycleCount;
 
@@ -370,25 +367,6 @@ private:
   void anchorsHostFromHostStreams(IStepIO &stepio);
 
   void doProfileChecks() const;
-
-  /**
-   * This function iterates over the h2dWeightBuffers map,
-   * for each TensorId in the map it transfers the data of the corresponding
-   * tensors tensor->tensorData()->data() to a fresh h2dWeightBuffer so that
-   * data can be transferred to device
-   * using the replicate mode.
-   *
-   * For a tensor to be added to the h2dWeightBuffers map it has to have
-   * VariableSettings such that the number of replicated groups is not
-   * broadcastable or replicatable as per ReplicatedStreamMode.
-   */
-  void initializeH2dWeightBuffers();
-
-  /**
-   * Clears h2dWeightBuffers, effectively erasing all the
-   * redundant data storage on host.
-   */
-  void deinitializeH2dWeightBuffers();
 
   // Helper function that casts deviceInfo to a DevicexInfo* and throws nice
   // errors if this is not possible. This WILL throw an error if deviceInfo is
