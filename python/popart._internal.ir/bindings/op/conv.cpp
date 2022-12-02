@@ -74,7 +74,9 @@ void bindConv(py::module &m) {
            py::arg("flatPads"),
            py::arg("flatDilations"),
            py::arg("padType"),
-           py::arg("convOpts"));
+           py::arg("convOpts"))
+      .def("getConvOptions", &MultiConvBaseOp::getConvOptions)
+      .def("setConvOptions", &MultiConvBaseOp::setConvOptions);
 
   py::class_<ConvOp, MultiConvBaseOp, std::shared_ptr<ConvOp>>(sm, "ConvOp")
       .def(py::init<const OperatorIdentifier &,
