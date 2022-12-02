@@ -51,7 +51,7 @@ public:
     reluOp->disconnectAllInputs();
     reluOp->connectInTensor(ReluOp::getInIndex(), "addOut");
     return true;
-  };
+  }
 
   virtual std::size_t getId() const final { return id(); }
 
