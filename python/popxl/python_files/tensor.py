@@ -737,6 +737,8 @@ class Variable(Tensor, tensor_type="Variable"):
     def __init__(self):
         super().__init__()
         self._replica_grouping: ReplicaGrouping
+        # Has a .base that is an np.memmap
+        self._memmap_arr: Optional[np.memmap]
 
     @debug_context_frame_offset(1)
     def copy_to_ipu(self, dst: int, src: int) -> "Tensor":
@@ -820,6 +822,11 @@ class Variable(Tensor, tensor_type="Variable"):
         else:
             return tuple([num_groups, *self.shape])
 
+    def _flush_data_if_memmap(self):
+        if self._memmap_arr is not None:
+            assert isinstance(self._memmap_arr, np.memmap)
+            self._memmap_arr.flush()
+
 
 class Constant(Tensor, tensor_type="Const"):
     """
@@ -864,10 +871,31 @@ def variable(
         with popxl.Ir().main_graph:
             a = popxl.variable(0)
 
+    To optimise the host memory used by compilation/runtime, you can pass an
+    `np.memmap` as the `data` parameter.
+
+    Note, if you do this, PopXL will not internally copy `data` into a buffer it
+    solely owns, but instead takes joint ownership of the object you passed in.
+    This means it is up to you to not clobber the contents of `data`. Letting it
+    go out of scope is ok, because PopXL maintains a reference to it.
+
+    Sometimes, PopXL has to internally make a copy of `data` into a buffer with
+    a layout and dtype that it handle natively. Doing this on an `np.memmap`
+    would defeat the point of the memory-mapping. Consequently, if `data` is an
+    `np.memmap`, in order to avoid this, ALL of the following conditions
+    must hold, or an error is thrown.
+
+      - The `data` array must be a C-array
+      - No downcasting should be required to a dtype natively supported by PopXL
+      - The `dtype` parameter must be `None` or exactly the same as
+        `data.dtype`
+
     Args:
         data:
             The data used to initialise the tensor.
-            This can be an np.ndarray, or a value NumPy can use to construct an np.ndarray.
+            This can be an np.ndarray, or a value NumPy can use to construct an
+            np.ndarray.
+            This can also be an np.memmap.
         dtype:
             The data type of the tensor to be created. If not specified NumPy
             will infer the data type and downcast to 32 bits if necessary. For
@@ -876,7 +904,8 @@ def variable(
         name:
             The name of the tensor. Defaults to `None`.
         downcast:
-            If True and no dtype is provided, 64-bit float/ints will be downcast to 32-bit variants. Defaults to True.
+            If True and no dtype is provided, 64-bit float/ints will be downcast
+            to 32-bit variants. Defaults to True.
         replica_grouping:
             The grouping of replicas to use when getting and setting variable
             values. Generally it makes sense to group replicas together that
@@ -903,6 +932,12 @@ def variable(
     Raises:
         RuntimeError: If a non-default replica group is used
         ValueError: If the tensor is tried initialised within a graph
+        ValueError: If the `data` parameter is a `np.memmap` and any of the
+        following is true:
+
+        - It is not a C-array,
+        - It requires downcasting to a dtype natively supported by PopXL,
+        - The `dtype` parameter is not `None` and conflicts with `data.dtype`.
 
     Returns:
         Variable: The desired variable.
@@ -918,6 +953,8 @@ def variable(
             "or use a constant tensor (`popxl.constant`). "
             "See popxl user guide for more details."
         )
+
+    is_mmap = isinstance(data, np.memmap)
 
     # `addVarInit` will copy the data so it's not required here
     np_data = to_numpy(
@@ -940,10 +977,17 @@ def variable(
     info = _ir.TensorInfo(popxl_dt._pb_dtype, np_data.shape)
     pb_id = g._create_tensor_id(name)
 
-    pb_g.addVarInit(pb_id, info, np_data, pb_rg._to_variable_settings(retrieval_mode))
+    pb_g.addVarInit(
+        pb_id,
+        info,
+        np_data,
+        pb_rg._to_variable_settings(retrieval_mode),
+        copyData=not is_mmap,
+    )
 
     var = Variable._from_pb_tensor(pb_g.getTensor(pb_id))
     var._replica_grouping = replica_grouping
+    var._memmap_arr = np_data if is_mmap else None
 
     return var
 
@@ -968,6 +1012,7 @@ def remote_variable(
         data:
             The data used to initialise the tensor.
             This can be an np.ndarray, or a value numpy can use to construct an np.ndarray.
+            This can also be an np.memmap, see :py:func:`~popxl.Variable`.
         remote_buffer:
             The remote buffer to store the variable.
         offset:
@@ -1008,6 +1053,12 @@ def remote_variable(
     Raises:
         RuntimeError: If a non-default replica group is used.
         ValueError: If the variable shape or dtype does not match remote buffer's.
+        ValueError: If the `data` parameter is a `np.memmap` and any of the
+        following is true:
+
+        - It is not a C-array,
+        - It requires downcasting to a dtype natively supported by PopXL,
+        - The `dtype` parameter is not `None` and conflicts with `data.dtype`.
 
     Returns:
         Variable: The remote variable.
@@ -1062,6 +1113,7 @@ def remote_replica_sharded_variable(
         data:
             The data used to initialise the tensor.
             This can be an np.ndarray, or a value numpy can use to construct an np.ndarray.
+            This can also be an np.memmap, see :py:func:`~popxl.Variable`.
         remote_buffer (RemoteBuffer): The handle to the remote buffer.
         offset (int): The offset to index the tensor shard in the remote tensor.
         dtype:
@@ -1100,6 +1152,12 @@ def remote_replica_sharded_variable(
         ValueError: If replication has not been enabled.
         ValueError: If the number of elements of `var` is not divisible by the number of replicas.
         ValueError: if the variable shape or dtype does not match remote buffer's
+        ValueError: If the `data` parameter is a `np.memmap` and any of the
+        following is true:
+
+        - It is not a C-array,
+        - It requires downcasting to a dtype natively supported by PopXL,
+        - The `dtype` parameter is not `None` and conflicts with `data.dtype`.
 
     Returns:
         Variable: The remote sharded variable.
@@ -1278,6 +1336,7 @@ def replica_sharded_variable(
         data:
             The data used to initialise the tensor.
             This can be an np.ndarray, or a value numpy can use to construct an np.ndarray.
+            This can also be an np.memmap, see :py:func:`~popxl.Variable`.
         dtype:
             The data type of the tensor to be created, if not specified Numpy
             will infer the data type and be downcasted to 32 bits if necessary.
@@ -1322,6 +1381,14 @@ def replica_sharded_variable(
             flag is set then replace values that cannot be represented by the
             requested dtype with np.nan values.
 
+    Raises:
+        ValueError: If the `data` parameter is a `np.memmap` and any of the
+        following is true:
+
+        - It is not a C-array,
+        - It requires downcasting to a dtype natively supported by PopXL,
+        - The `dtype` parameter is not `None` and conflicts with `data.dtype`.
+
     Returns:
         Tuple[Variable, Tensor]:
             A tuple of tensors:
@@ -1341,10 +1408,22 @@ def replica_sharded_variable(
         nan_on_overflow=nan_on_overflow,
     )
 
-    _dtype = dtype or dtypes.dtype.as_dtype(dtype)
+    # Infer a dtype for `replica_sharded_buffer`.
+    if dtype is not None:
+        _dtype = dtype
+    elif hasattr(data, "dtype"):
+        _dtype = dtypes.dtype.as_dtype(data.dtype)
+    else:
+        try:
+            _dtype = dtypes.dtype.as_dtype(data)
+        except ValueError:
+            _dtype = None
+
     buffer = replica_sharded_buffer(data.shape, _dtype, replica_grouping, shard_over)
 
     # Create a remote RTS variable
+    # NOTE: We pass the original `dtype`, not `_dtype`, propagating exactly what
+    #       the user intended.
     var = remote_replica_sharded_variable(
         data, buffer, 0, dtype, name, downcast, replica_grouping, retrieval_mode
     )

@@ -508,7 +508,8 @@ std::vector<char> Tensor::getDataViaGraphTraversal() const {
                   if (allInputsResolved) {
                     auto ceOp =
                         ConstExprOpManager::createConstExprOp(t->getProducer());
-                    t->setTensorData(t->info, ceOp->compute().data());
+                    t->setTensorDataFromCopyOf(ceOp->compute().data(),
+                                               t->info.nbytes());
                     changed = true;
                   }
                 }
@@ -543,8 +544,9 @@ std::vector<char> Tensor::getDataViaGraphTraversal() const {
                 }
 
                 if (constData.size() > 0 && callSitesAgree) {
-                  t->setTensorData(
-                      t->info, static_cast<void *>(constData.front().data()));
+                  t->setTensorDataFromCopyOf(
+                      static_cast<void *>(constData.front().data()),
+                      t->info.nbytes());
                   changed = true;
                 }
               }
@@ -1240,6 +1242,81 @@ std::vector<Op *> Tensor::associatedOps() const {
   }
 
   return result;
+}
+
+void Tensor::setTensorDataFromCopyOf(const void *src, std::size_t size) {
+  // if data has already been created and had a stream
+  // connected to it, changing the data will lead to
+  // the stream reading from the wrong address.
+  // Rather use TensorData::resetData.
+  if (data_) {
+    throw internal_error("Can't call Tensor::setTensorDataFromCopyOf() on "
+                         "tensor `{}` because data has "
+                         "already been assigned to it. Consider using "
+                         "`Tensor::tensorData()::resetData()`.",
+                         id);
+  }
+  data_ = std::make_unique<TensorData>(TensorData::fromCopyOf(src, size));
+}
+
+void Tensor::setTensorDataFromViewOf(void *src, std::size_t size) {
+  // if data has already been created and had a stream
+  // connected to it, changing the data will lead to
+  // the stream reading from the wrong address.
+  // Rather use TensorData::resetData.
+  if (data_) {
+    throw internal_error("Can't call Tensor::setTensorDataFromViewOf() on "
+                         "tensor `{}` because data has "
+                         "already been assigned to it. Consider using "
+                         "`Tensor::tensorData()::resetData()`.",
+                         id);
+  }
+  data_ = std::make_unique<TensorData>(TensorData::fromViewOf(src, size));
+}
+void Tensor::setTensorDataByEmplaceOf(std::vector<char> &&data) {
+  // if data has already been created and had a stream
+  // connected to it, changing the data will lead to
+  // the stream reading from the wrong address.
+  // Rather use TensorData::resetData.
+  if (data_) {
+    throw internal_error("Can't call Tensor::setTensorDataByEmplaceOf() on "
+                         "tensor `{}` because data has "
+                         "already been assigned to it. Consider using "
+                         "`Tensor::tensorData()::resetData()`.",
+                         id);
+  }
+  data_ =
+      std::make_unique<TensorData>(TensorData::fromEmplaceOf(std::move(data)));
+}
+// For copy/move ctors. Don't use universal forwarding so impl can be in .cpp,
+// so we can use std::make_unique, as header must be C++11.
+void Tensor::setTensorData(const TensorData &td) {
+  // if data has already been created and had a stream
+  // connected to it, changing the data will lead to
+  // the stream reading from the wrong address.
+  // Rather use TensorData::resetData.
+  if (data_) {
+    throw internal_error(
+        "Can't call Tensor::setTensorData() on tensor `{}` because data has "
+        "already been assigned to it. Consider using "
+        "`Tensor::tensorData()::resetData()`.",
+        id);
+  }
+  data_ = std::make_unique<TensorData>(td);
+}
+void Tensor::setTensorData(TensorData &&td) {
+  // if data has already been created and had a stream
+  // connected to it, changing the data will lead to
+  // the stream reading from the wrong address.
+  // Rather use TensorData::resetData.
+  if (data_) {
+    throw internal_error(
+        "Can't call Tensor::setTensorData() on tensor `{}` because data has "
+        "already been assigned to it. Consider using "
+        "`Tensor::tensorData()::resetData()`.",
+        id);
+  }
+  data_ = std::make_unique<TensorData>(std::move(td));
 }
 
 } // namespace popart

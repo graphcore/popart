@@ -176,8 +176,7 @@ BOOST_AUTO_TEST_CASE(serialiseAndDeserialiseTensor) {
 
     if (data.has_value()) {
       // Set data if we have any.
-      orgTensor.setTensorData(reinterpret_cast<void *>(data->data()),
-                              data->size());
+      orgTensor.setTensorDataByEmplaceOf(std::move(*data));
     }
 
     auto ss_ptr = std::make_shared<std::stringstream>();

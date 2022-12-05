@@ -423,7 +423,7 @@ void Adaptive::setTensorData(Tensor &optTensor) const {
 
   logging::ir::trace(
       "Setting TensorData for {} to {}", optTensor.str(), storedValue);
-  optTensor.setTensorData(info, convertedData.data());
+  optTensor.setTensorDataByEmplaceOf(std::move(convertedData));
 }
 
 void Adaptive::resetTensorData(Tensor &optTensor) const {

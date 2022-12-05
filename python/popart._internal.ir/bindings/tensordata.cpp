@@ -24,7 +24,7 @@ void bindTensorData(py::module &m) {
   py::class_<TensorData>(m, "TensorData")
       .def(py::init([](const TensorInfo &info, py::array data) {
              data = makeContiguous(data);
-             return TensorData(info, data.request().ptr);
+             return TensorData::fromCopyOf(data.request().ptr, info.nbytes());
            }),
            py::arg("tensorInfo"),
            py::arg("src"))

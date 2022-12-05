@@ -123,12 +123,7 @@ void bindTensor(py::module &m) {
       .def("hasTensorData", &Tensor::hasTensorData)
       // tensorData defined for different data types below
       .def("anyAlias", &Tensor::anyAlias)
-      .def("setTensorData",
-           [](Tensor &self, const TensorInfo &info, py::array data) {
-             data      = makeContiguous(data);
-             self.info = info;
-             self.setTensorData(info, data.request().ptr);
-           })
+
       .def("associatedOps", &Tensor::associatedOps)
       .def("returnedShape", &Tensor::returnedShape)
       .def("getGraph",

@@ -221,20 +221,15 @@ public:
   // Returns true if the tensor or any of it's aliases fulfill the predicate
   bool anyAlias(std::function<bool(Tensor *)> predicate) const;
 
-  template <typename... Args> void setTensorData(Args &&... args) {
-    // if data has already been created and had a stream
-    // connected to it, changing the data will lead to
-    // the stream reading from the wrong address.
-    // Rather use TensorData::resetData.
-    if (data_) {
-      throw internal_error(
-          "Can't call Tensor::setTensorData() on tensor `{}` because data has "
-          "already been assigned to it. Consider using "
-          "`Tensor::tensorData()::resetData()`.",
-          id);
-    }
-    data_.reset(new TensorData(std::forward<Args>(args)...));
-  }
+  void setTensorDataFromCopyOf(const void *src, std::size_t size);
+  void setTensorDataFromViewOf(void *src, std::size_t size);
+  void setTensorDataByEmplaceOf(std::vector<char> &&data);
+  // For copy/move ctors.
+  // Note, we don't use universal forwarding so impl can be in .cpp, as that
+  // requires a template, and we need impl to be in .cpp so we can use
+  // std::make_unique, as header must be C++11.
+  void setTensorData(const TensorData &td);
+  void setTensorData(TensorData &&td);
 
   // Get all consumer ops and the producer op
   std::vector<Op *> associatedOps() const;

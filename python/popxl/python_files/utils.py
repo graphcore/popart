@@ -69,6 +69,14 @@ def to_numpy(
     """
     Convert a `HostScalarTensor` to a numpy array and copies the data if enabled.
 
+    If x is an np.memmap and copy is False, the following conditions must be
+    satisfied (to ensure no copy is possible):
+        - x does not require downcasting
+        - dtype is None or equal to x.dtype
+        - x is in C-array form.
+    The returned array in this case will be exactly x. It will still be an
+    np.memmap.
+
     Args:
         x:
             The data used to initialise the tensor. This can be an np.ndarray,
@@ -100,9 +108,36 @@ def to_numpy(
         TypeError: If dtype is of float8 type and x is not of type np.float16,
         np.float32 or float64, torch equivalent, or native type equivalent.
 
+        ValueError: If the data parameter is a np.memmap and it is either not
+        a C-array, has a dtype that requires downcasting, or the dtype parameter
+        is not None and conflicts with data.dtype.
+
     Returns:
         np.ndarray: A NumPy array.
     """
+
+    if isinstance(x, np.memmap):
+        # Need to ensure conditions such that to_numpy will not copy.
+        if dtype is not None and dtype.as_numpy() != x.dtype:
+            raise ValueError(
+                "When passing a memory-mapped NumPy array, the `dtype` "
+                "parameter must be None or the same as the array's dtype"
+            )
+        if not x.flags.carray:
+            raise ValueError(
+                "When passing a memory-mapped NumPy array, it must "
+                "already be in C-ordered form."
+            )
+        if x.dtype in downcast_np_dtypes.keys():
+            raise ValueError(
+                "When passing a memory-mapped NumPy array, the dtype "
+                f"{dtype} is not supported, as it requires downcasting the array "
+                "into a new array with a dtype supported by PopXL."
+            )
+
+    def np_asarray_if_not_memmap(x, *args, **kwargs):
+        return x if isinstance(x, np.memmap) else np.asarray(x, *args, **kwargs)
+
     if torch_imported and isinstance(x, torch.Tensor):
         x = x.detach().numpy()
 
@@ -118,7 +153,7 @@ def to_numpy(
             nan_on_overflow = True
 
         # Convert scalars to numpy array.
-        x = np.asarray(x, order="C")
+        x = np_asarray_if_not_memmap(x, order="C")
 
         # There is no native float8 representation in Numpy currently so we use
         # structured dtypes instead. If not already converted, convert the
@@ -167,7 +202,7 @@ def to_numpy(
         if not dtype and np_dtype in downcast_np_dtypes and downcast:
             np_dtype = downcast_np_dtypes[np_dtype]
 
-        x = np.asarray(x, dtype=np_dtype, order="C")
+        x = np_asarray_if_not_memmap(x, dtype=np_dtype, order="C")
 
         # Sometimes it is not possible to infer the result type before constructing the array
         # so check again here to ensure 64-bit values are not returned when downcast=True
@@ -329,7 +364,15 @@ def _popxl_to_numpy(t: Union["Constant", "Variable"]) -> np.ndarray:
         np.ndarray: A NumPy array containing the data from the tensor,
             with the same data type as the tensor.
     """
-    from popxl.tensor import dtypes
+    from popxl.tensor import dtypes, Variable
+
+    # If _memmap_backed_np_arr exists, directly return that instead of making a
+    # new `np.asarray()` on the mmap-d data stored in the TensorData. This
+    # ensures this function returns the exact same object as what we saved on
+    # `t` (note this is not a strict requirement of this function but is nice
+    # to have).
+    if isinstance(t, Variable) and t._memmap_arr is not None:
+        return t._memmap_arr
 
     t_ = t._pb_tensor
     if t.dtype == dtypes.float64:

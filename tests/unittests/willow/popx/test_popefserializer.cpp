@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE(serializeAndDeserializePopefTensor) {
 
   std::vector<uint16_t> data(tensor.info.nelms());
   std::iota(data.begin(), data.end(), 0);
-  tensor.setTensorData(data.data(), tensor.info.nbytes());
+  tensor.setTensorDataFromCopyOf(data.data(), tensor.info.nbytes());
 
   BOOST_REQUIRE_THROW(test(tensor, popef::TensorInfo()), std::exception);
 
@@ -196,7 +196,7 @@ void testFloat8Serialization(const popart::DataType dtype,
   poplar::convertToDeviceType(
       poplar::QUARTER, metadata, data, dest.data(), true);
 
-  tensor.setTensorData(dest.data(), tensor.info.nbytes());
+  tensor.setTensorDataFromCopyOf(dest.data(), tensor.info.nbytes());
 
   BOOST_REQUIRE_THROW(test(tensor, popef::TensorInfo()), std::exception);
 

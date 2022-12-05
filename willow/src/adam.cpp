@@ -531,7 +531,7 @@ void Adam::setTensorData(Tensor &optTensor) const {
 
   logging::ir::trace(
       "Setting TensorData for {} to {}", optTensor.str(), storedValue);
-  optTensor.setTensorData(info, convertedData.data());
+  optTensor.setTensorDataByEmplaceOf(std::move(convertedData));
 }
 
 void Adam::resetTensorData(Tensor &optTensor) const {

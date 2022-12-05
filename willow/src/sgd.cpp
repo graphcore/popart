@@ -605,7 +605,7 @@ void SGD::setTensorData(Tensor &optTensor) const {
 
   logging::ir::trace(
       "Setting TensorData for {} to {}", optTensor.str(), storedValue);
-  optTensor.setTensorData(info, convertedData.data());
+  optTensor.setTensorDataByEmplaceOf(std::move(convertedData));
 }
 
 void SGD::resetTensorData(Tensor &optTensor) const {

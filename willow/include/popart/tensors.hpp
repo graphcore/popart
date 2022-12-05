@@ -6,6 +6,7 @@
 #include <iosfwd>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 #include <popart/variablesettings.hpp>
@@ -60,6 +61,11 @@ public:
                   const void *,
                   const VariableSettings &,
                   const DebugContext &dc = {});
+  void addVarInitFromViewOf(const TensorId &,
+                            const TensorInfo &,
+                            void *,
+                            const VariableSettings &,
+                            const DebugContext &dc = {});
 
   // create a Constant Tensor
   void addConstInit(const TensorId &,
@@ -120,6 +126,11 @@ private:
                TensorType,
                const VariableSettings &,
                const DebugInfo &di);
+
+  std::tuple<Tensor *, unsigned> addVarInitCore(const TensorId &name,
+                                                const TensorInfo &info,
+                                                const VariableSettings &vs,
+                                                const DebugContext &dc);
 
   Graph &graph;
 };

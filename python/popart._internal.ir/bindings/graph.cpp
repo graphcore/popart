@@ -64,15 +64,22 @@ void bindGraph(py::module &m) {
              const TensorInfo &tinfo,
              py::array data,
              const VariableSettings &vs,
-             const DebugContext &dc) {
-            data = makeContiguous(data);
-            self.addVarInit(tid, tinfo, data.request().ptr, vs, dc);
+             const DebugContext &dc,
+             const bool copyData) {
+            data       = makeContiguous(data);
+            auto c_ptr = data.request().ptr;
+            if (copyData) {
+              self.getTensors().addVarInit(tid, tinfo, c_ptr, vs, dc);
+            } else {
+              self.getTensors().addVarInitFromViewOf(tid, tinfo, c_ptr, vs, dc);
+            }
           },
           py::arg("tensorId"),
           py::arg("tensorInfo"),
           py::arg("data"),
           py::arg("vs"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          py::arg("copyData")     = true)
       .def(
           "addConstInit",
           [](Graph &self,

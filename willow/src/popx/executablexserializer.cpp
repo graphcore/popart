@@ -1,6 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include "executablexserializer.hpp"
 
+#include "popart/util/expressionchecking.hpp"
 #include <algorithm>
 #include <capnp/blob.h>
 #include <capnp/list.h>
@@ -404,14 +405,15 @@ deserializeTensor(popart::Ir &ir,
       throw error("Data for Tensor {} is null", id);
     }
 
-    tensor->setTensorData(constData.info, constData.data);
+    tensor->setTensorDataFromCopyOf(constData.data, constData.info.nbytes());
   } else if (tensorReader) {
     const size_t bufferSize = tensorReader->info.tensorInfo().sizeInBytes();
     std::vector<char> tensorBuffer(bufferSize);
     std::unique_ptr<std::istream> tensorStream(
         tensorReader->getStandaloneDataStream());
     tensorStream->read(tensorBuffer.data(), bufferSize);
-    tensor->setTensorData(tensorBuffer.data(), bufferSize);
+    POPART_ASSERT_EQ(tensorBuffer.size(), bufferSize);
+    tensor->setTensorDataByEmplaceOf(std::move(tensorBuffer));
   }
 
   return tensor;

@@ -150,8 +150,8 @@ void BackwardsGraphCreatorHelper::growGradGraph(
     auto bwdTensor = fwdTensor->clone(bwdGraph);
     bwdTensor->id  = bwdId;
     if (fwdTensor->hasTensorData()) {
-      bwdTensor->setTensorData(fwdTensor->info,
-                               fwdTensor->tensorData()->data());
+      bwdTensor->setTensorDataFromCopyOf(fwdTensor->tensorData()->data(),
+                                         fwdTensor->tensorData()->size());
     }
     fwdToBwdTensorIdMap[fwdTensor->id] = bwdTensor->id;
     bwdGraph.getTensors().moveIntoTensors(std::move(bwdTensor));

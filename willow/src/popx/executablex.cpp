@@ -235,7 +235,8 @@ void Executablex::setRandomSeedValue(uint64_t value) {
   if (seedTensor->hasTensorData()) {
     seedTensor->tensorData()->resetData(seedTensor->info, seedData.data());
   } else {
-    seedTensor->setTensorData(seedTensor->info, seedData.data());
+    POPART_ASSERT_EQ(seedData.size(), seedTensor->info.nbytes());
+    seedTensor->setTensorDataByEmplaceOf(std::move(seedData));
   }
 }
 

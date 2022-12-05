@@ -799,7 +799,8 @@ void Graph::copyFrom(const Graph &other,
       auto tensorClone = tensor->clone(*this);
       tensorClone->id  = newId;
       if (tensor->hasTensorData()) {
-        tensorClone->setTensorData(tensor->info, tensor->tensorData()->data());
+        tensorClone->setTensorDataFromCopyOf(tensor->tensorData()->data(),
+                                             tensor->tensorData()->size());
       }
       this->getTensors().moveIntoTensors(std::move(tensorClone));
       auto tensorClonePtr = this->getTensors().get(newId);

@@ -232,6 +232,7 @@ class Session:
         # NOTE: Internally detects if host weights out-of-sync and marks them as
         #       in-sync.
         self._pb_session.copyDeviceWeightsToHost()
+        self._flush_variable_mmaps()
 
     def weights_from_host(self) -> None:
         """Copy the weights to device from the host.
@@ -833,3 +834,7 @@ class Session:
         if self.ir.instance_replication_factor > 1:
             _extra_input_dims += (self.ir.instance_replication_factor,)
         return _extra_input_dims
+
+    def _flush_variable_mmaps(self):
+        for v in self.ir.main_graph.variables:
+            v._flush_data_if_memmap()

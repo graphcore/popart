@@ -2431,8 +2431,8 @@ void Ir::registerInputTensors() {
         default:
           throw error("Cannot set tensor data for current SyntheticDataMode");
         }
-
-        synStreamTensor->setTensorData(info, data.data());
+        POPART_ASSERT_EQ(data.size(), info.nbytes());
+        synStreamTensor->setTensorDataByEmplaceOf(std::move(data));
       }
     }
   }

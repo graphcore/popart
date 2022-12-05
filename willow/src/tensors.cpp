@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <onnxutil.hpp>
 #include <ostream>
 #include <string>
 #include <unordered_map>
@@ -17,6 +18,7 @@
 #include <popart/tensordebuginfo.hpp>
 #include <popart/tensors.hpp>
 #include <popart/variablesettings.hpp>
+#include <popart/voiddata.hpp>
 
 #include "popart/dataflow.hpp"
 #include "popart/datatype.hpp"
@@ -238,6 +240,25 @@ void Tensors::addVarInit(const TensorId &name,
                          const void *src,
                          const VariableSettings &vs,
                          const DebugContext &debugContext) {
+
+  auto [init, nbytes] = addVarInitCore(name, info, vs, debugContext);
+  init->setTensorDataFromCopyOf(src, nbytes);
+}
+
+void Tensors::addVarInitFromViewOf(const TensorId &name,
+                                   const TensorInfo &info,
+                                   void *src,
+                                   const VariableSettings &vs,
+                                   const DebugContext &debugContext) {
+  auto [init, nbytes] = addVarInitCore(name, info, vs, debugContext);
+  init->setTensorDataFromViewOf(src, nbytes);
+}
+
+std::tuple<Tensor *, unsigned>
+Tensors::addVarInitCore(const TensorId &name,
+                        const TensorInfo &info,
+                        const VariableSettings &vs,
+                        const DebugContext &debugContext) {
   popart::TensorDebugInfo di(debugContext, name, info, TensorType::Variable);
   logging::devicex::debug("AddVarInit.info {}, {}", name, info.shape());
   insert(name, std::unique_ptr<Tensor>(new Tensor(name, vs, graph, di)));
@@ -255,7 +276,8 @@ void Tensors::addVarInit(const TensorId &name,
   logging::debug(
       "addVarInit({}) --({})-->({})", name, init->info.shape(), shape_on_host);
   TensorInfo ex_info(info.dataType(), shape_on_host);
-  init->setTensorData(ex_info, src);
+
+  return std::make_pair(init, ex_info.nbytes());
 }
 
 void Tensors::addConstInit(const TensorId &name,
@@ -269,7 +291,7 @@ void Tensors::addConstInit(const TensorId &name,
 
   Tensor *init = get(name);
   init->info   = info;
-  init->setTensorData(info, src);
+  init->setTensorDataFromCopyOf(src, info.nbytes());
 }
 
 void Tensors::makeConstInit(const TensorId &name, const void *src) {
@@ -280,7 +302,7 @@ void Tensors::makeConstInit(const TensorId &name, const void *src) {
     throw error("cannot make an existing tensor const if it has a producer");
   }
   tensor->setTensorType(TensorType::Const);
-  tensor->setTensorData(tensor->info, src);
+  tensor->setTensorDataFromCopyOf(src, tensor->info.nbytes());
 }
 
 void Tensors::addInit(const TensorId &name,
@@ -289,6 +311,15 @@ void Tensors::addInit(const TensorId &name,
                       const DebugInfo &di) {
   addInit(name, pt, tt, VariableSettings(), di);
 }
+
+namespace {
+TensorData TensorDataFromOnnxProto(const ONNX_NAMESPACE::TensorProto &tp) {
+  ConstVoidData cv_data = onnxutil::getConstData(tp);
+  // Would be able to emplace here if ConstVoidData was stored as a vector<char>
+  // instead of raw pointer.
+  return TensorData::fromCopyOf(cv_data.data, cv_data.info.nbytes());
+}
+} // namespace
 
 void Tensors::addInit(const TensorId &name,
                       const ONNX_NAMESPACE::TensorProto *pt,
@@ -311,7 +342,7 @@ void Tensors::addInit(const TensorId &name,
           info.shape(),
           graph.getIr().getSessionOptions().getGlobalReplicationFactor(),
           name));
-  init->setTensorData(*pt);
+  init->setTensorData(TensorDataFromOnnxProto(*pt));
 }
 
 void Tensors::addStream(TensorId tenId,

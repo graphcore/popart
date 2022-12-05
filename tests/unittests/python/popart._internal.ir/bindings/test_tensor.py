@@ -1,5 +1,4 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-import numpy as np
 import popart
 import popart._internal.ir as _ir
 import pytest
@@ -102,29 +101,6 @@ def test_tensor_has_tensor_data():
     g = ir.createGraph("g")
     t = _ir.Tensor("t", _ir.TensorType.ActGrad, g)
     assert not t.hasTensorData()
-    buffer = np.random.rand(2, 3, 4)
-    tInfo = _ir.TensorInfo(_ir.DataType.FLOAT, buffer.shape)
-    t.setTensorData(tInfo, buffer)
-    assert t.hasTensorData()
-
-
-def test_tensor_tensor_data():
-    """Test the tensorData() and setTensorData() methods of a
-    popart._internal.ir.Tensor object.
-    """
-    ir = _ir.Ir()
-    g = ir.createGraph("g")
-    t = _ir.Tensor("t", _ir.TensorType.ActGrad, g)
-
-    with pytest.raises(popart.popart_exception) as e_info:
-        t.dataAsFloat32()
-        assert e_info.value.args[0] == "Data not set for t"
-
-    buffer = np.random.rand(2, 3, 4).astype(np.float32)
-    tInfo = _ir.TensorInfo(_ir.DataType.FLOAT, buffer.shape)
-    t.setTensorData(tInfo, buffer)
-
-    assert np.allclose(t.dataAsFloat32(), buffer)
 
 
 def test_tensor_get_graph():
