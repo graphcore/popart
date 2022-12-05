@@ -31,7 +31,7 @@ class TestCast:
 
         with g:
             a = popxl.variable(1, popxl.float16, name="t0")
-            log2_scale = popxl.constant(0, popxl.int8, name="log2_scale")
+            log2_scale = popxl.constant(0, popxl.int32, name="log2_scale")
             b = ops.pow2scale_then_cast(a, log2_scale, dtype)
 
         assert b.dtype == dtype
@@ -56,7 +56,7 @@ class TestCast:
             )
             data = host_pow2scale_then_cast(data, from_dtype, 0)
             a = ops.host_load(input0, "a")
-            log2_scale = popxl.constant(0, popxl.int8, name="log2_scale")
+            log2_scale = popxl.constant(0, popxl.int32, name="log2_scale")
             b = ops.cast_then_pow2scale(a, log2_scale, to_dtype)
 
         assert b.dtype == to_dtype

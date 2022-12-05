@@ -4,7 +4,14 @@ from popxl.dtypes import dtype
 from popxl.context import get_current_context, op_debug_context
 from popxl.tensor import Tensor
 from .utils import check_in_graph
-from popxl import float8_143, float8_152, float16, float32
+from popxl import float8_143, float8_152, float16, float32, int32
+
+
+def _check_float8_cast_log2scale_properties(log2_scale: Tensor):
+    if log2_scale.rank > 0:
+        raise ValueError("Log2 scale argument must be a scalar tensor")
+    elif log2_scale.dtype != int32:
+        raise TypeError("Log2 scale tensor must be of type popxl.int32")
 
 
 @op_debug_context
@@ -65,6 +72,7 @@ def pow2scale_then_cast(t: Tensor, log2_scale: Tensor, data_type: dtype) -> Tens
 
     if data_type not in [float8_143, float8_152]:
         raise TypeError(f"Data type {data_type} not supported for {__name__}")
+    _check_float8_cast_log2scale_properties(log2_scale)
 
     check_in_graph(g, t=t, log2_scale=log2_scale)
 
@@ -105,7 +113,7 @@ def cast_then_pow2scale(t: Tensor, log2_scale: Tensor, data_type: dtype):
 
     if data_type not in [float16, float32]:
         raise TypeError(f"Data type {data_type} not supported for {__name__}")
-
+    _check_float8_cast_log2scale_properties(log2_scale)
     check_in_graph(g, t=t, log2_scale=log2_scale)
 
     settings = ctx._get_op_settings("cast_then_pow2scale")

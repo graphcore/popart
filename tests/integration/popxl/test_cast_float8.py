@@ -1,12 +1,13 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-
 import numpy as np
-import pytest
-from popxl.utils import host_pow2scale_then_cast, host_cast_then_pow2scale
 import popxl
 import popxl.ops as ops
+import pytest
 from popxl import float8_143, float8_152
-from utils import get_representable_float_8_np_array, get_float8_data
+from popxl.utils import host_cast_then_pow2scale, host_pow2scale_then_cast
+from utils import get_float8_data, get_representable_float_8_np_array
+
+import popart
 
 
 @pytest.mark.parametrize(
@@ -31,7 +32,7 @@ def test_pow2scale_then_cast(float8_format: popxl.dtype, log2_scale: int):
     # so we must set nan_on_overflow = True on host.
     d1 = get_representable_float_8_np_array(shape, float8_format, log2_scale)
 
-    d2 = np.array(log2_scale, np.int8)
+    d2 = np.array(log2_scale, np.int32)
     ir = popxl.Ir()
     main = ir.main_graph
     with main:
@@ -42,7 +43,7 @@ def test_pow2scale_then_cast(float8_format: popxl.dtype, log2_scale: int):
         )
         input1 = popxl.h2d_stream(
             d2.shape,
-            popxl.int8,
+            popxl.int32,
             name="in_stream_0",
         )
         input_ = ops.host_load(input0, "input_")
@@ -60,7 +61,7 @@ def test_pow2scale_then_cast(float8_format: popxl.dtype, log2_scale: int):
 
                 # These should match exactly as the host conversion should be the same as
                 # the device conversion.
-                # 1. uint8 tensor returned from device, converted to popxl float8 numpy type
+                # 1. uint32 tensor returned from device, converted to popxl float8 numpy type
                 array_1 = outputs[o_d2h]
                 # 2. Original fp32 data converted on the host as popxl float8 numpy type
                 array_2 = host_pow2scale_then_cast(
@@ -102,7 +103,7 @@ def test_cast_then_pow2scale(float8_format: popxl.dtype, log2_scale: int):
     d1_float8 = get_float8_data(float8_format, log2_scale, shape)
 
     # When converting back again we will negate the scale.
-    d2 = np.array(-log2_scale, np.int8)
+    d2 = np.array(-log2_scale, np.int32)
     ir = popxl.Ir()
 
     main = ir.main_graph
@@ -114,7 +115,7 @@ def test_cast_then_pow2scale(float8_format: popxl.dtype, log2_scale: int):
         )
         input1 = popxl.h2d_stream(
             d2.shape,
-            popxl.int8,
+            popxl.int32,
             name="in_stream_0",
         )
         input_ = ops.host_load(input0, "input_")
@@ -141,3 +142,42 @@ def test_cast_then_pow2scale(float8_format: popxl.dtype, log2_scale: int):
 
                 # regenerate array
                 d1_float8 = get_float8_data(float8_format, log2_scale, shape)
+
+
+# (cast op, dtype casted from, dtype casted to)
+@pytest.mark.parametrize(
+    "cast_op_and_types",
+    [
+        (ops.cast_then_pow2scale, float8_143, popxl.float16),
+        (ops.pow2scale_then_cast, popxl.float16, float8_143),
+    ],
+)
+@pytest.mark.parametrize("log2_scale", [-50, 100])
+def test_raise_on_log2scale_not_in_range(cast_op_and_types, log2_scale):
+    """Test that a poplar runtime error is raised if the log2scale tensor
+    contains a value outside of a 6 bit signed integer range when casting."""
+    ir = popxl.Ir()
+    cast_op, from_dtype, to_dtype = cast_op_and_types
+
+    # Explicitly set set the option to throw if the log2scale tensor is not in range
+    opts = ir._pb_ir.getSessionOptions()
+    opts.throwIfLog2ScaleTensorNotInRange = True
+
+    t = np.random.rand(10, 10)
+    with ir.main_graph:
+        input_t = popxl.variable(t, dtype=from_dtype, name="input")
+        log2_scale_t = popxl.constant(log2_scale, dtype=popxl.int32, name="log2scale")
+
+        o = cast_op(input_t, log2_scale_t, data_type=to_dtype)
+
+        # print the tensor to prevent AliasZeroCopy from disabling the cast op
+        ops.print_tensor(o)
+
+    with popxl.Session(ir, "ipu_model") as session:
+        with pytest.raises(popart.poplar_application_runtime_error):
+            session.run()
+
+    # If we set the option to throw to false, this should run fine
+    opts.throwIfLog2ScaleTensorNotInRange = False
+    with popxl.Session(ir, "ipu_model") as session:
+        session.run()

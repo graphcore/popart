@@ -1,4 +1,5 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+#include "popart/ir.hpp"
 #include <snap/Program.hpp>
 #include <poplar/MetadataCreation.hpp>
 #include <poplar/Quarter.hpp>
@@ -36,10 +37,16 @@ Pow2ScaleThenCastOpx::Pow2ScaleThenCastOpx(Op *op, Devicex *devicex)
 }
 
 void Pow2ScaleThenCastOpx::grow(snap::program::Sequence &prog) const {
-
+  Pow2ScaleThenCastOp op = getOp<Pow2ScaleThenCastOp>();
   auto popartScaleTensor =
       getInTensor(Pow2ScaleThenCastOp::getlog2ScaleInIndex());
 
+  if (op.getIr().getSessionOptions().throwIfLog2ScaleTensorNotInRange) {
+    auto assertProg =
+        createAssertLog2ScaleInRangeProg(graph(), popartScaleTensor, -32, 32);
+
+    prog.getPoplarSequence().add(assertProg);
+  }
   // We need to negate the scale tensor here, to ensure we are always
   // multiplying by the scale factor. This "undoes" the negation done in
   // poplibs.

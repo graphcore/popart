@@ -1,4 +1,5 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+#include "popart/ir.hpp"
 #include <set>
 #include <snap/Program.hpp>
 #include <poplar/Graph.hpp>
@@ -39,8 +40,17 @@ CastThenPow2ScaleOpx::CastThenPow2ScaleOpx(Op *op, Devicex *devicex)
 }
 
 void CastThenPow2ScaleOpx::grow(snap::program::Sequence &prog) const {
+  CastThenPow2ScaleOp op = getOp<CastThenPow2ScaleOp>();
   auto popartScaleTensor =
       getInTensor(CastThenPow2ScaleOp::getlog2ScaleInIndex());
+
+  if (op.getIr().getSessionOptions().throwIfLog2ScaleTensorNotInRange) {
+    auto assertProg =
+        createAssertLog2ScaleInRangeProg(graph(), popartScaleTensor, -32, 32);
+
+    prog.getPoplarSequence().add(assertProg);
+  }
+
   // Note this input tensor is expected to be in poplar::UINT8 format. At the
   // popart level it is FLOAT8_152 or FLOAT8_143 data type.
 
