@@ -75,7 +75,7 @@ public:
 private:
   // make the tensor `name` into a constInit tensor
   static void
-  makeTensorConstInit(const TensorId name, const void *data, Graph &);
+  makeTensorConstInit(const TensorId name, std::vector<char> data, Graph &);
 };
 
 // Manager class for ConstExprOp's
