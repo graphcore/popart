@@ -5,7 +5,7 @@ import popxl.ops
 import pytest
 import pathlib
 from types import MethodType
-from typing import Tuple, Generator, Callable, Mapping, Any
+from typing import Tuple, Generator, Callable, Optional
 
 from popxl_test_device_helpers import mk_session_with_test_device
 
@@ -16,47 +16,79 @@ Their setup will create a Variable and, if appropriate, remote_load a Tensor.
 Their teardown will remote_store the tensor.
 """
 _TestFixtureImpl = Generator[Tuple[popxl.tensor.Variable, popxl.Tensor], None, None]
-_TestFixture = Callable[[np.ndarray, Mapping[str, Any]], _TestFixtureImpl]
+_TestFixture = Callable[
+    [np.ndarray, Optional[popxl.dtype], Optional[popxl.ReplicaGrouping]],
+    _TestFixtureImpl,
+]
 
 
-def onchip_var(w_data: np.ndarray, **kwargs: Any) -> _TestFixtureImpl:
-    w = popxl.variable(w_data, name="w", **kwargs)
+def onchip_var(
+    w_data: np.ndarray,
+    dtype: Optional[popxl.dtype] = None,
+    replica_grouping: Optional[popxl.ReplicaGrouping] = None,
+) -> _TestFixtureImpl:
+    w = popxl.variable(w_data, name="w", dtype=dtype, replica_grouping=replica_grouping)
     yield w, w
 
 
-def remote_var(w_data: np.ndarray, **kwargs: Any) -> _TestFixtureImpl:
-    rb = popxl.remote_buffer(w_data.shape, popxl.dtypes.dtype.as_dtype(w_data.dtype))
-    w_var = popxl.remote_variable(w_data, rb, 0, name="w_var", **kwargs)
-    w = popxl.ops.remote_load(rb, 0)
+def remote_var(
+    w_data: np.ndarray,
+    dtype: Optional[popxl.dtype] = None,
+    replica_grouping: Optional[popxl.ReplicaGrouping] = None,
+) -> _TestFixtureImpl:
+    if replica_grouping is not None and replica_grouping.num_groups > 1:
+        rb_shape = w_data.shape[1:]
+    else:
+        rb_shape = w_data.shape
 
-    yield w_var, w
-
-    popxl.ops.remote_store(rb, 0, w)
-
-
-def remote_replica_sharded_var(w_data: np.ndarray, **kwargs: Any) -> _TestFixtureImpl:
-    rb = popxl.replica_sharded_buffer(
-        w_data.shape, popxl.dtypes.dtype.as_dtype(w_data.dtype)
+    rb = popxl.remote_buffer(rb_shape, popxl.dtypes.dtype.as_dtype(w_data.dtype))
+    w_var = popxl.remote_variable(
+        w_data, rb, 0, name="w_var", dtype=dtype, replica_grouping=replica_grouping
     )
-    w_var = popxl.remote_replica_sharded_variable(w_data, rb, 0, name="w_var", **kwargs)
+    w = popxl.ops.remote_load(rb, 0)
+
+    yield w_var, w
+
+    popxl.ops.remote_store(rb, 0, w)
+
+
+def remote_replica_sharded_var(
+    w_data: np.ndarray,
+    dtype: Optional[popxl.dtype] = None,
+    replica_grouping: Optional[popxl.ReplicaGrouping] = None,
+) -> _TestFixtureImpl:
+    rb = popxl.replica_sharded_buffer(
+        w_data.shape,
+        popxl.dtypes.dtype.as_dtype(w_data.dtype),
+        replica_grouping=replica_grouping,
+    )
+    w_var = popxl.remote_replica_sharded_variable(
+        w_data, rb, 0, name="w_var", dtype=dtype, replica_grouping=replica_grouping
+    )
     w = popxl.ops.remote_load(rb, 0)
 
     yield w_var, w
 
     # See T67437: Must have all-gather or scatter-reduce on an RTS tensor.
-    w_gathered = popxl.ops.collectives.replicated_all_gather(w)
-    w = popxl.ops.collectives.replica_sharded_slice(w_gathered)
+    w_gathered = popxl.ops.collectives.replicated_all_gather(w, group=replica_grouping)
+    w = popxl.ops.collectives.replica_sharded_slice(w_gathered, group=replica_grouping)
     popxl.ops.remote_store(rb, 0, w)
 
 
-def replica_sharded_var(w_data: np.ndarray, **kwargs: Any) -> _TestFixtureImpl:
-    w_var, w = popxl.replica_sharded_variable(w_data, name="w_var", **kwargs)
+def replica_sharded_var(
+    w_data: np.ndarray,
+    dtype: Optional[popxl.dtype] = None,
+    replica_grouping: Optional[popxl.ReplicaGrouping] = None,
+) -> _TestFixtureImpl:
+    w_var, w = popxl.replica_sharded_variable(
+        w_data, name="w_var", dtype=dtype, replica_grouping=replica_grouping
+    )
 
     yield w_var, w
 
     # See T67437: Must have all-gather or scatter-reduce on an RTS tensor.
-    w_gathered = popxl.ops.collectives.replicated_all_gather(w)
-    w = popxl.ops.collectives.replica_sharded_slice(w_gathered)
+    w_gathered = popxl.ops.collectives.replicated_all_gather(w, group=replica_grouping)
+    w = popxl.ops.collectives.replica_sharded_slice(w_gathered, group=replica_grouping)
 
 
 @pytest.mark.parametrize(
@@ -215,3 +247,51 @@ def test_requires_downcasting_throws(
         test(None)
         # Test when dtype explicitly passed.
         test(popxl.dtypes.double)
+
+
+@pytest.mark.parametrize(
+    "create_var_fixture",
+    [onchip_var, remote_var, remote_replica_sharded_var, replica_sharded_var],
+)
+def test_non_const_rg_warns(
+    tmpdir: pathlib.Path,
+    capfd: pytest.CaptureFixture[str],
+    create_var_fixture: _TestFixture,
+):
+    ir = popxl.Ir(replication=8)
+
+    rg = ir.replica_grouping_from_assignments([0, 0, 1, 1, 0, 0, 1, 1])
+    assert not rg.is_const, "Bad test: expected non-const replica grouping"
+
+    # Numpy bug? Doesn't work if pass a Path object, but works with string.
+    w_filepath = str(tmpdir / "w.npy")
+    w_data = np.memmap(
+        w_filepath,
+        dtype=np.float32,
+        shape=(
+            rg.num_groups,
+            rg.group_size * 2,
+        ),
+        mode="w+",
+    )
+
+    def clear_log():
+        capfd.readouterr()
+
+    with ir.main_graph:
+        clear_log()
+        next(create_var_fixture(w_data, replica_grouping=rg))
+        log = capfd.readouterr().err
+
+    import re
+
+    # Comes from popxl.variable in tensor.py
+    warn_msg = re.escape(
+        f"you have passed np.memmap data and the non-const replica grouping `{rg}`"
+    )
+    pattern = re.compile(warn_msg)
+    matches = re.findall(pattern, log)
+
+    assert (
+        len(matches) == 1
+    ), f"Failed to find warning message for non-const replica grouping in log. Log was:\n{log}"

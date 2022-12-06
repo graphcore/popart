@@ -880,7 +880,7 @@ def variable(
     go out of scope is ok, because PopXL maintains a reference to it.
 
     Sometimes, PopXL has to internally make a copy of `data` into a buffer with
-    a layout and dtype that it handle natively. Doing this on an `np.memmap`
+    a layout and dtype that it can handle natively. Doing this on an `np.memmap`
     would defeat the point of the memory-mapping. Consequently, if `data` is an
     `np.memmap`, in order to avoid this, ALL of the following conditions
     must hold, or an error is thrown.
@@ -889,6 +889,12 @@ def variable(
       - No downcasting should be required to a dtype natively supported by PopXL
       - The `dtype` parameter must be `None` or exactly the same as
         `data.dtype`
+
+    Furthermore, the implementation of non-const replica groupings requires
+    making copies of various slices within `data`. Therefore, if you pass a
+    non-const replica grouping with an `np.memmap`, you will get a warning. See
+    :py:meth:`popxl.Ir.replica_grouping_from_assignment` for how to create such
+    groupings.
 
     Args:
         data:
@@ -967,15 +973,24 @@ def variable(
     )
     popxl_dt = dtypes.dtype.as_dtype(np_data)
 
+    pb_id = g._create_tensor_id(name)
+
     replica_grouping = replica_grouping if replica_grouping else g.ir.replica_grouping()
 
     pb_rg = replica_grouping
     if not replica_grouping.is_const:
+        if is_mmap:
+            import popart
+
+            popart.getLogger().warn(
+                f"In creation of variable {pb_id}, you have passed np.memmap "
+                f"data and the non-const replica grouping `{pb_rg}`, which "
+                "requires us to make a copy of your np.memmap data."
+            )
         np_data = np_data[replica_grouping.to_device_map]
         pb_rg = replica_grouping.const_rg
 
     info = _ir.TensorInfo(popxl_dt._pb_dtype, np_data.shape)
-    pb_id = g._create_tensor_id(name)
 
     pb_g.addVarInit(
         pb_id,
