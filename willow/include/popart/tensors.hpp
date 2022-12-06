@@ -78,6 +78,7 @@ public:
 
   // make an existing tensor a const init tensor
   void makeConstInit(const TensorId &, const void *);
+  void makeConstInit(const TensorId &, std::vector<char> &&);
 
   // create a Tensor of type Stream
   void addStream(TensorId, const TensorInfo &, const DebugContext &dc = {});
@@ -131,6 +132,8 @@ private:
                                                 const TensorInfo &info,
                                                 const VariableSettings &vs,
                                                 const DebugContext &dc);
+
+  void makeConstInitHelper(const TensorId &);
 
   Graph &graph;
 };
