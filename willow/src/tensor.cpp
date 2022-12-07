@@ -1,5 +1,4 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include "popart/util/expressionchecking.hpp"
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <cstdint>
@@ -509,8 +508,8 @@ std::vector<char> Tensor::getDataViaGraphTraversal() const {
                   if (allInputsResolved) {
                     auto ceOp =
                         ConstExprOpManager::createConstExprOp(t->getProducer());
-                    t->setTensorDataByEmplaceOf(ceOp->compute());
-                    POPART_ASSERT_EQ(t->tensorData()->size(), t->info.nbytes());
+                    t->setTensorDataFromCopyOf(ceOp->compute().data(),
+                                               t->info.nbytes());
                     changed = true;
                   }
                 }
@@ -520,7 +519,7 @@ std::vector<char> Tensor::getDataViaGraphTraversal() const {
 
                 bool callSitesAgree = true;
 
-                std::optional<std::vector<char>> firstFoundConstData;
+                std::vector<std::vector<char>> constData;
 
                 for (Op *c : callSites) {
                   for (int i = 0; i < c->getCalledGraphs().size(); ++i) {
@@ -536,20 +535,18 @@ std::vector<char> Tensor::getDataViaGraphTraversal() const {
                             c->inTensor(index)->tensorData()->data());
                         std::vector<char> data;
                         data.assign(ptr, ptr + t->info.nbytes());
-                        if (!firstFoundConstData) {
-                          firstFoundConstData = std::move(data);
-                        } else {
-                          callSitesAgree &= *firstFoundConstData == data;
-                        }
+                        constData.push_back(data);
+                        callSitesAgree &= constData.at(0) ==
+                                          constData.at(constData.size() - 1);
                       }
                     }
                   }
                 }
 
-                if (firstFoundConstData && callSitesAgree) {
-                  POPART_ASSERT_EQ(firstFoundConstData->size(),
-                                   t->info.nbytes());
-                  t->setTensorDataByEmplaceOf(std::move(*firstFoundConstData));
+                if (constData.size() > 0 && callSitesAgree) {
+                  t->setTensorDataFromCopyOf(
+                      static_cast<void *>(constData.front().data()),
+                      t->info.nbytes());
                   changed = true;
                 }
               }

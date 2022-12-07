@@ -1,5 +1,4 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include "popart/util/expressionchecking.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <map>
@@ -295,7 +294,7 @@ void Tensors::addConstInit(const TensorId &name,
   init->setTensorDataFromCopyOf(src, info.nbytes());
 }
 
-void Tensors::makeConstInitHelper(const TensorId &name) {
+void Tensors::makeConstInit(const TensorId &name, const void *src) {
   insertConstId(name);
 
   auto *tensor = get(name);
@@ -303,19 +302,7 @@ void Tensors::makeConstInitHelper(const TensorId &name) {
     throw error("cannot make an existing tensor const if it has a producer");
   }
   tensor->setTensorType(TensorType::Const);
-}
-
-void Tensors::makeConstInit(const TensorId &name, const void *src) {
-  auto tensor = get(name);
-  makeConstInitHelper(name);
   tensor->setTensorDataFromCopyOf(src, tensor->info.nbytes());
-}
-
-void Tensors::makeConstInit(const TensorId &name, std::vector<char> &&src) {
-  auto tensor = get(name);
-  makeConstInitHelper(name);
-  POPART_ASSERT_EQ(src.size(), tensor->info.nbytes());
-  tensor->setTensorDataByEmplaceOf(std::move(src));
 }
 
 void Tensors::addInit(const TensorId &name,

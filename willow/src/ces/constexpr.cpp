@@ -62,7 +62,7 @@ void ConstExprUtil::processOp(Op *op, Graph &graph) {
   auto constOp = ConstExprOpManager::createConstExprOp(op);
 
   auto data = constOp->compute();
-  makeTensorConstInit(op->outTensor(0)->id, std::move(data), graph);
+  makeTensorConstInit(op->outTensor(0)->id, data.data(), graph);
   op->disconnectAllInputs();
 
   if (op->input->n() > 0 || op->output->n() > 0) {
@@ -105,14 +105,14 @@ void ConstExprUtil::foldConstants(Graph &graph) {
 }
 
 void ConstExprUtil::makeTensorConstInit(const TensorId name,
-                                        std::vector<char> data,
+                                        const void *data,
                                         Graph &graph) {
   // disconnect producer
   auto current_tensor = graph.getTensors().get(name);
   auto producer       = current_tensor->getProducer();
   producer->disconnectOutTensor(current_tensor);
 
-  graph.getTensors().makeConstInit(name, std::move(data));
+  graph.getTensors().makeConstInit(name, data);
 }
 
 bool ConstExprUtil::isComputable(Op *op, Graph &graph) {
