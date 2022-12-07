@@ -984,9 +984,13 @@ def variable(
 
             popart.getLogger().warn(
                 f"In creation of variable {pb_id}, you have passed np.memmap "
-                f"data and the non-const replica grouping `{pb_rg}`, which "
-                "requires us to make a copy of your np.memmap data."
+                f"data and a non-const replica grouping, which requires us to "
+                "make a copy of your np.memmap data. Your "
+                "variable will be treated as NOT an np.memmap."
             )
+            is_mmap = False
+
+        # Note, this NumPy advanced indexing always performs a copy.
         np_data = np_data[replica_grouping.to_device_map]
         pb_rg = replica_grouping.const_rg
 

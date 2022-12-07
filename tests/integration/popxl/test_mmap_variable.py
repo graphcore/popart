@@ -57,10 +57,16 @@ def remote_replica_sharded_var(
     dtype: Optional[popxl.dtype] = None,
     replica_grouping: Optional[popxl.ReplicaGrouping] = None,
 ) -> _TestFixtureImpl:
+    shard_over = (
+        replica_grouping.const_rg.group_size if replica_grouping is not None else None
+    )
+    collective_rg = replica_grouping.const_rg if replica_grouping is not None else None
+
     rb = popxl.replica_sharded_buffer(
         w_data.shape,
         popxl.dtypes.dtype.as_dtype(w_data.dtype),
         replica_grouping=replica_grouping,
+        shard_over=shard_over,
     )
     w_var = popxl.remote_replica_sharded_variable(
         w_data, rb, 0, name="w_var", dtype=dtype, replica_grouping=replica_grouping
@@ -70,8 +76,8 @@ def remote_replica_sharded_var(
     yield w_var, w
 
     # See T67437: Must have all-gather or scatter-reduce on an RTS tensor.
-    w_gathered = popxl.ops.collectives.replicated_all_gather(w, group=replica_grouping)
-    w = popxl.ops.collectives.replica_sharded_slice(w_gathered, group=replica_grouping)
+    w_gathered = popxl.ops.collectives.replicated_all_gather(w, group=collective_rg)
+    w = popxl.ops.collectives.replica_sharded_slice(w_gathered, group=collective_rg)
     popxl.ops.remote_store(rb, 0, w)
 
 
@@ -80,15 +86,24 @@ def replica_sharded_var(
     dtype: Optional[popxl.dtype] = None,
     replica_grouping: Optional[popxl.ReplicaGrouping] = None,
 ) -> _TestFixtureImpl:
+    shard_over = (
+        replica_grouping.const_rg.group_size if replica_grouping is not None else None
+    )
+    collective_rg = replica_grouping.const_rg if replica_grouping is not None else None
+
     w_var, w = popxl.replica_sharded_variable(
-        w_data, name="w_var", dtype=dtype, replica_grouping=replica_grouping
+        w_data,
+        name="w_var",
+        dtype=dtype,
+        replica_grouping=replica_grouping,
+        shard_over=shard_over,
     )
 
     yield w_var, w
 
     # See T67437: Must have all-gather or scatter-reduce on an RTS tensor.
-    w_gathered = popxl.ops.collectives.replicated_all_gather(w, group=replica_grouping)
-    w = popxl.ops.collectives.replica_sharded_slice(w_gathered, group=replica_grouping)
+    w_gathered = popxl.ops.collectives.replicated_all_gather(w, group=collective_rg)
+    w = popxl.ops.collectives.replica_sharded_slice(w_gathered, group=collective_rg)
 
 
 @pytest.mark.parametrize(
@@ -170,8 +185,8 @@ def test_mmap_variable(
 
 
 """
-In the following tests, we use the fixtures, but only use the setup stage to
-create the variables; we do not need to remote_store.
+In the following error-case tests, we use the fixtures, but only use the setup
+stage to create the variables; we do not need to remote_store.
 """
 
 
@@ -258,6 +273,11 @@ def test_non_const_rg_warns(
     capfd: pytest.CaptureFixture[str],
     create_var_fixture: _TestFixture,
 ):
+    """
+    Test that a warning is emitted when you try to combine an np.memmap
+    with a non-const replica grouping.
+    """
+
     ir = popxl.Ir(replication=8)
 
     rg = ir.replica_grouping_from_assignments([0, 0, 1, 1, 0, 0, 1, 1])
@@ -287,7 +307,7 @@ def test_non_const_rg_warns(
 
     # Comes from popxl.variable in tensor.py
     warn_msg = re.escape(
-        f"you have passed np.memmap data and the non-const replica grouping `{rg}`"
+        "you have passed np.memmap data and a non-const replica grouping"
     )
     pattern = re.compile(warn_msg)
     matches = re.findall(pattern, log)
@@ -295,3 +315,61 @@ def test_non_const_rg_warns(
     assert (
         len(matches) == 1
     ), f"Failed to find warning message for non-const replica grouping in log. Log was:\n{log}"
+
+
+@pytest.mark.parametrize(
+    "create_var_fixture",
+    [onchip_var, remote_var, remote_replica_sharded_var, replica_sharded_var],
+)
+def test_non_const_rg_runs_without_error(
+    tmpdir: pathlib.Path,
+    create_var_fixture: _TestFixture,
+):
+    """
+    When passing a non-const replica grouping with an np.memmap, PopXL will fall
+    back to treating the data as not an mmap.
+
+    We test that the rest of the workflow (compile, run, etc) runs correctly and
+    without error.
+    """
+
+    ir = popxl.Ir(replication=8)
+
+    rg = ir.replica_grouping_from_assignments([0, 0, 1, 1, 0, 0, 1, 1])
+    assert not rg.is_const, "Bad test: expected non-const replica grouping"
+
+    # Numpy bug? Doesn't work if pass a Path object, but works with string.
+    w_filepath = str(tmpdir / "w.npy")
+    w_data = np.memmap(
+        w_filepath,
+        dtype=np.float32,
+        shape=(
+            rg.num_groups,
+            rg.group_size * 2,
+        ),
+        mode="w+",
+    )
+    w_data.fill(1.0)
+
+    expected_final_w_data = w_data + 1
+
+    create_var_f = create_var_fixture(w_data, replica_grouping=rg)
+
+    with ir.main_graph, popxl.in_sequence():
+        # Setup (create w_var and w)
+        w_var, w = next(create_var_f)
+        w += 1
+        # Teardown. There may be no teardown, this is OK.
+        try:
+            next(create_var_f)
+        except StopIteration:
+            pass
+
+    with mk_session_with_test_device(ir) as sess:
+        sess.run()
+
+    actual_updated_w = sess.get_tensor_data(w_var)
+
+    assert np.array_equal(
+        actual_updated_w, expected_final_w_data
+    ), "Actual updated w does not match expected value"
