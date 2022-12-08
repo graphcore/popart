@@ -24,6 +24,7 @@ public:
                   int64_t axis_,
                   int64_t axis_size_,
                   ScatterReduction reduction_,
+                  int64_t group_size_,
                   const nonstd::optional<float> &available_memory_proportion_,
                   const Op::Settings &settings_);
 
@@ -33,6 +34,7 @@ public:
 
   // Which axis to scatter reduce on.
   int64_t getAxis() const { return axis; }
+  int64_t getGroupSize() const { return group_size; }
 
   ScatterReduction getReduction() const { return reduction; }
 
@@ -67,6 +69,7 @@ private:
   int64_t axis;
   int64_t axis_size;
   ScatterReduction reduction;
+  int64_t group_size;
   nonstd::optional<float> available_memory_proportion;
   bool index_broadcasted;
 };
@@ -87,6 +90,7 @@ public:
   void setup() final;
 
   int64_t getAxis() const { return axis; }
+  int64_t getGroupSize() const { return group_size; }
 
   ScatterReduction getReduction() const { return reduction; }
 
@@ -117,6 +121,7 @@ private:
   Shape backward_shape;
   int64_t axis;
   ScatterReduction reduction;
+  int64_t group_size;
   nonstd::optional<float> available_memory_proportion;
   bool index_broadcasted;
   bool has_initial_values;

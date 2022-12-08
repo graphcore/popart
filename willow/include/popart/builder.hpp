@@ -1067,6 +1067,45 @@ public:
       const DebugContext &debugContext                   = {});
 
   /**
+   * Add a grouped scatterreduce operation to the model.
+   *
+   * Reduces all the values from the source tensor `src` at the indices
+   * specified along the given axis by `index` for each group. In some
+   * frameworks this is also known as a split-apply-combine operation as well as
+   * a reduce or aggregate by key.  In this analogy the `src` input is the data
+   * we are splitting and the `indices` define the groups for the reduction
+   * operation.
+   *
+   * In pseudocode the operator can be expressed as:
+   * ```{.py}
+   *  for g in range(group_size):
+   *      for i in range(axis_size):
+   *          output[g][i] = reduce(src[g][index == i])
+   * ```
+   * where the looping over output indices is implicitly handled by poplar.
+   *
+   * \param args A vector of tensor ids as [`src`, `index`, `initial_values`].
+   *      `initial_values` is optional and if omitted the output will be
+   *      initialised based on the selected reduction type. For example, a
+   *      tensor of zeros is used to initialise the output tensor for
+   *      `ScatterReduction::Sum`.
+   * \param axis_size The size of the reduced axis.
+   * \param axis The axis to reduce along. Default = -1.
+   * \param reduction The type of reduction to apply. Default =
+   *      `ScatterReduction::Sum`.
+   * \param group_size The number of groups to reduce. Default = 1.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
+   */
+  TensorId
+  groupedscatterreduce(const std::vector<TensorId> &args,
+                       Attributes::Int axis_size,
+                       Attributes::Int axis             = -1,
+                       ScatterReduction reduction       = ScatterReduction::Sum,
+                       Attributes::Int group_size       = 1,
+                       const DebugContext &debugContext = {});
+
+  /**
    * Add a scatterreduce operation to the model.
    *
    * Reduces all the values from the source tensor `src` at the indices

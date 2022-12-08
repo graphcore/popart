@@ -75,9 +75,11 @@ popops::SlicePlan createSlicePlan(const snap::Graph &graph,
                                   const popart::TensorInfo &sliceableInfo,
                                   const popart::TensorInfo &indicesInfo,
                                   const poplar::OptionFlags &options,
-                                  nonstd::optional<size_t> axis) {
-  auto numEntries   = static_cast<size_t>(sliceableInfo.nelms());
-  auto numLookups   = static_cast<size_t>(indicesInfo.nelms());
+                                  nonstd::optional<size_t> axis,
+                                  size_t group_size) {
+  const bool isGrouped = group_size > 1;
+  auto numEntries   = static_cast<size_t>(sliceableInfo.nelms()) / group_size;
+  auto numLookups   = static_cast<size_t>(indicesInfo.nelms()) / group_size;
   size_t outputSize = 1;
 
   if (numLookups == 0 || numEntries == 0) {
@@ -86,41 +88,63 @@ popops::SlicePlan createSlicePlan(const snap::Graph &graph,
 
   if (axis.has_value()) {
     numEntries = sliceableInfo.shape_szt()[*axis];
-    outputSize = sliceableInfo.nelms() / numEntries;
+    outputSize = (sliceableInfo.nelms() / numEntries) / group_size;
   }
 
-  return popops::embedding::plan(graph.getPoplarGraph(),
-                                 popType(sliceableInfo),
-                                 numEntries,
-                                 outputSize,
-                                 {numLookups},
-                                 options);
+  if (isGrouped)
+    return popops::embedding::plan(graph.getPoplarGraph(),
+                                   popType(sliceableInfo),
+                                   group_size,
+                                   numEntries,
+                                   outputSize,
+                                   {numLookups},
+                                   options);
+  else
+    return popops::embedding::plan(graph.getPoplarGraph(),
+                                   popType(sliceableInfo),
+                                   numEntries,
+                                   outputSize,
+                                   {numLookups},
+                                   options);
 }
 
 snap::Tensor createDataTensor(snap::Graph &graph,
                               const popart::TensorInfo &dataInfo,
                               const popops::SlicePlan &plan,
                               unsigned int axis,
+                              unsigned int group_size,
                               bool broadcasted,
                               const poplar::DebugNameAndId &dnai) {
-  auto numSlices  = static_cast<size_t>(dataInfo.nelms());
+  auto numSlices  = static_cast<size_t>(dataInfo.nelms()) / group_size;
   auto outputSize = 1UL;
 
   if (!broadcasted) {
     numSlices  = dataInfo.shape_szt().at(axis);
-    outputSize = dataInfo.nelms() / numSlices;
+    outputSize = (dataInfo.nelms() / numSlices) / group_size;
   }
 
-  auto out = popops::createSliceableTensor(graph.getPoplarGraph(),
-                                           popType(dataInfo),
-                                           {numSlices, outputSize},
-                                           {0},
-                                           {1},
-                                           plan,
-                                           poplar::OptionFlags(),
-                                           dnai);
+  const bool isGrouped = group_size > 1;
+  auto out             = isGrouped
+                 ? popops::createGroupedSliceableTensor(graph.getPoplarGraph(),
+                                                        popType(dataInfo),
+                                                        group_size,
+                                                        {numSlices, outputSize},
+                                                        {0},
+                                                        {1},
+                                                        plan,
+                                                        poplar::OptionFlags(),
+                                                        dnai)
+                 : popops::createSliceableTensor(graph.getPoplarGraph(),
+                                                 popType(dataInfo),
+                                                 {numSlices, outputSize},
+                                                 {0},
+                                                 {1},
+                                                 plan,
+                                                 poplar::OptionFlags(),
+                                                 dnai);
 
-  return alignToAxis(snap::Tensor{out, graph}, dataInfo.shape(), axis);
+  return alignToAxis(
+      snap::Tensor{out, graph}, dataInfo.shape(), axis, group_size);
 }
 
 snap::Tensor createUpdateTensor(snap::Graph &graph,
@@ -128,53 +152,78 @@ snap::Tensor createUpdateTensor(snap::Graph &graph,
                                 const popart::TensorInfo &indicesInfo,
                                 const popops::SlicePlan &plan,
                                 unsigned int axis,
+                                unsigned int group_size,
                                 bool broadcasted,
                                 const poplar::DebugNameAndId &dnai) {
-  auto numSlices  = static_cast<size_t>(dataInfo.nelms());
+  auto numSlices  = static_cast<size_t>(dataInfo.nelms()) / group_size;
   auto outputSize = 1UL;
 
   if (!broadcasted) {
     numSlices  = dataInfo.shape_szt().at(axis);
-    outputSize = dataInfo.nelms() / numSlices;
+    outputSize = (dataInfo.nelms() / numSlices) / group_size;
   }
 
-  auto numLookups = static_cast<size_t>(indicesInfo.nelms());
-  auto out        = popops::createSliceTensor(graph.getPoplarGraph(),
-                                       popType(dataInfo),
-                                       {numSlices, outputSize},
-                                       {0},
-                                       {1},
-                                       numLookups,
-                                       plan,
-                                       poplar::OptionFlags(),
-                                       dnai);
+  auto numLookups      = static_cast<size_t>(indicesInfo.nelms()) / group_size;
+  const bool isGrouped = group_size > 1;
+  auto out             = isGrouped
+                 ? popops::createGroupedSliceTensor(graph.getPoplarGraph(),
+                                                    popType(dataInfo),
+                                                    group_size,
+                                                    {numSlices, outputSize},
+                                                    {0},
+                                                    {1},
+                                                    numLookups,
+                                                    plan,
+                                                    poplar::OptionFlags(),
+                                                    dnai)
+                 : popops::createSliceTensor(graph.getPoplarGraph(),
+                                             popType(dataInfo),
+                                             {numSlices, outputSize},
+                                             {0},
+                                             {1},
+                                             numLookups,
+                                             plan,
+                                             poplar::OptionFlags(),
+                                             dnai);
   if (broadcasted) {
-    return alignToAxis(snap::Tensor{out, graph}, indicesInfo.shape(), axis);
+    return alignToAxis(
+        snap::Tensor{out, graph}, indicesInfo.shape(), axis, group_size);
   }
 
   auto shape  = dataInfo.shape();
   shape[axis] = numLookups;
-  return alignToAxis(snap::Tensor{out, graph}, shape, axis);
+  return alignToAxis(snap::Tensor{out, graph}, shape, axis, group_size);
 }
 
 snap::Tensor createIndicesTensor(snap::Graph &graph,
                                  const popart::TensorInfo &indicesInfo,
                                  const popops::SlicePlan &plan,
                                  unsigned int axis,
+                                 unsigned int group_size,
                                  bool broadcasted,
                                  const poplar::DebugNameAndId &dnai) {
-  auto numLookups = static_cast<size_t>(indicesInfo.nelms());
-  auto indices    = popops::createIndicesTensor(graph.getPoplarGraph(),
-                                             {0},
-                                             numLookups,
-                                             plan,
-                                             poplar::OptionFlags(),
-                                             dnai);
+  auto numLookups      = static_cast<size_t>(indicesInfo.nelms()) / group_size;
+  const bool isGrouped = group_size > 1;
+  auto indices =
+      isGrouped ? popops::createGroupedIndicesTensor(graph.getPoplarGraph(),
+                                                     group_size,
+                                                     {0},
+                                                     numLookups,
+                                                     plan,
+                                                     poplar::OptionFlags(),
+                                                     dnai)
+                : popops::createIndicesTensor(graph.getPoplarGraph(),
+                                              {0},
+                                              numLookups,
+                                              plan,
+                                              poplar::OptionFlags(),
+                                              dnai);
 
   indices = indices.reinterpret(popType(indicesInfo));
 
   if (broadcasted) {
-    return alignToAxis(snap::Tensor{indices, graph}, indicesInfo.shape(), axis);
+    return alignToAxis(
+        snap::Tensor{indices, graph}, indicesInfo.shape(), axis, group_size);
   }
 
   indices = indices.reshape(indicesInfo.shape_szt());
@@ -183,11 +232,13 @@ snap::Tensor createIndicesTensor(snap::Graph &graph,
 
 snap::Tensor alignToAxis(const snap::Tensor &input,
                          const popart::Shape &shape,
-                         unsigned axis) {
+                         unsigned axis,
+                         unsigned group_size) {
+  const unsigned axisStartDim = group_size > 1 ? 1 : 0;
   nd::Shape ndShape(shape);
-  ndShape     = ndShape.dimRoll(nd::Dimension(axis), nd::Dimension(0));
+  ndShape = ndShape.dimRoll(nd::Dimension(axis), nd::Dimension(axisStartDim));
   auto output = input.reshape(ndShape.get_u64());
-  output      = output.dimRoll(0, axis);
+  output      = output.dimRoll(axisStartDim, axis);
   return output;
 }
 

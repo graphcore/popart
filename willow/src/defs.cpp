@@ -1533,6 +1533,54 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(SliceShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
+    GroupedScatterReduce,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Reduces all the values from the input data tensor at the "
+                "specified indices along the given axis for each group.")
+        .Input(0, "data", "Input tensor", "T")
+        .Input(1, "indices", "Indices defining the scatter operation", "T")
+        .Input(2,
+               "initial_values",
+               "Optional values used to initialise the output tensor",
+               "T")
+        .Output(0, "output", "Output tensor", "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(uint8)",
+             "tensor(uint16)",
+             "tensor(uint32)",
+             "tensor(uint64)",
+             "tensor(int8)",
+             "tensor(int16)",
+             "tensor(int32)",
+             "tensor(int64)",
+             "tensor(float16)",
+             "tensor(float)",
+             "tensor(bool)"},
+            "Input and output types can be any type supported by the IPU.")
+        .Attr("axis_size",
+              "The size of the output in the scatter axis.",
+              AttributeProto::INT,
+              true)
+        .Attr("axis",
+              "axis to apply the scatter reduction on (default = -1)",
+              AttributeProto::INT,
+              static_cast<int64_t>(-1))
+        .Attr("reduction",
+              "Reduction applied to the scatter operation (default = \"sum\")",
+              AttributeProto::STRING,
+              "sum")
+        .Attr("group_size",
+              "The group size (default = 1) of the data.",
+              AttributeProto::INT,
+              static_cast<int64_t>(1))
+        .TypeAndShapeInferenceFunction(ScatterReduceShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
     ScatterReduce,
     AiGraphcore,
     popart::Domain::ai_graphcore,

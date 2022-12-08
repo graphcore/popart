@@ -1264,15 +1264,19 @@ std::vector<TensorId> AiGraphcoreOpset1::reducemedian(
   return outputs;
 }
 
-TensorId AiGraphcoreOpset1::scatterreduce(const std::vector<TensorId> &args,
-                                          Attributes::Int axis_size,
-                                          Attributes::Int axis,
-                                          ScatterReduction reduction,
-                                          const DebugContext &debugContext) {
+TensorId
+AiGraphcoreOpset1::groupedscatterreduce(const std::vector<TensorId> &args,
+                                        Attributes::Int axis_size,
+                                        Attributes::Int axis,
+                                        ScatterReduction reduction,
+                                        Attributes::Int group_size,
+                                        const DebugContext &debugContext) {
   auto reductionStr = ScatterReduceOp::reductionToString(reduction);
 
-  std::map<std::string, popart::any> attributes = {
-      {"axis", axis}, {"axis_size", axis_size}, {"reduction", reductionStr}};
+  std::map<std::string, popart::any> attributes = {{"axis", axis},
+                                                   {"axis_size", axis_size},
+                                                   {"reduction", reductionStr},
+                                                   {"group_size", group_size}};
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
   attributes.insert({sDebugInfoId, di.getId()});
 
@@ -1284,6 +1288,15 @@ TensorId AiGraphcoreOpset1::scatterreduce(const std::vector<TensorId> &args,
 
   di.setOutputs(outputs);
   return outputs.at(0);
+}
+
+TensorId AiGraphcoreOpset1::scatterreduce(const std::vector<TensorId> &args,
+                                          Attributes::Int axis_size,
+                                          Attributes::Int axis,
+                                          ScatterReduction reduction,
+                                          const DebugContext &debugContext) {
+  return groupedscatterreduce(
+      args, axis_size, axis, reduction, 1, debugContext);
 }
 
 TensorId AiGraphcoreOpset1::swish(const std::vector<TensorId> &args,

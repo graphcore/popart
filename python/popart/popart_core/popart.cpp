@@ -2687,6 +2687,14 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("axis")         = -1,
             py::arg("reduction")    = ScatterReduction::Sum,
             py::arg("debugContext") = std::string());
+    cls.def("groupedscatterreduce",
+            &AiGraphcoreOpset1::groupedscatterreduce,
+            py::arg("args") = pybind11::list(),
+            py::arg("axis_size"),
+            py::arg("axis")         = -1,
+            py::arg("reduction")    = ScatterReduction::Sum,
+            py::arg("group_size")   = 1,
+            py::arg("debugContext") = std::string());
     cls.def("ctcbeamsearchdecoder",
             &AiGraphcoreOpset1::ctcbeamsearchdecoder,
             py::arg("args"),

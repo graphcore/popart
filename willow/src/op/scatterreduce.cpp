@@ -65,10 +65,11 @@ ScatterReduceOp::ScatterReduceOp(
     int64_t axis_,
     int64_t axis_size_,
     ScatterReduction reduction_,
+    int64_t group_size_,
     const nonstd::optional<float> &available_memory_proportion_,
     const Op::Settings &settings_)
     : Op(_opid, settings_), backward_shape(), axis(axis_),
-      axis_size(axis_size_), reduction(reduction_),
+      axis_size(axis_size_), reduction(reduction_), group_size(group_size_),
       available_memory_proportion(available_memory_proportion_),
       index_broadcasted(true) {}
 
@@ -121,6 +122,7 @@ void ScatterReduceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
   os.appendAttribute("reduction", reductionToString(reduction));
+  os.appendAttribute("group_size", group_size);
   os.appendAttribute("backward_shape", backward_shape);
   os.appendAttribute("available_memory_proportion",
                      available_memory_proportion);
@@ -156,10 +158,13 @@ void ScatterReduceOp::checkIndexBroadcasted() {
   // Allow shape mismatches when the index can be expanded to match the data
   nd::Shape expandedShape(indicesShape);
 
-  if (indicesRank == 1) {
+  // Skip group dim in comparison.
+  const bool isGrouped      = group_size > 1;
+  const size_t isGroupedSzt = static_cast<size_t>(isGrouped);
+  if ((indicesRank - isGroupedSzt) == 1) {
     // Insert leading singleton dimensions ahead of the reduction axis
-    for (size_t i = 0; i < axis; i++) {
-      expandedShape = expandedShape.unsqueeze(0);
+    for (size_t i = isGroupedSzt; i < axis; i++) {
+      expandedShape = expandedShape.unsqueeze(isGroupedSzt);
     }
   }
 
@@ -183,8 +188,10 @@ void ScatterReduceOp::checkIndexBroadcasted() {
 
   // We can use a vectorised implementation in the case when the indices are a
   // vector +/- singleton dimensions.
+  // Check first not group dim with axis.
   auto nonSingletonDims = expandedShape.nonSingletonDimensions();
-  if (nonSingletonDims.size() == 1 && nonSingletonDims[0] == axis) {
+  if (nonSingletonDims.size() == (1 + isGroupedSzt) &&
+      nonSingletonDims[isGroupedSzt] == axis) {
     index_broadcasted = false;
   } else {
     // This can likely be supported through a pattern that inserts the
@@ -197,6 +204,7 @@ ScatterReduceGradOp::ScatterReduceGradOp(const ScatterReduceOp &op)
     : Op(Onnx::CustomGradOperators::ScatterReduceGradOp, op.getSettings()),
       mapper(), grad_out_info(), backward_shape(op.getBackwardShape()),
       axis(op.getAxis()), reduction(op.getReduction()),
+      group_size(op.getGroupSize()),
       available_memory_proportion(op.getAvailableMemoryProportion()),
       index_broadcasted(op.indexBroadcasted()),
       has_initial_values(op.hasInput(op.initialValuesInIndex())) {
@@ -255,6 +263,7 @@ void ScatterReduceGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("axis", axis);
   os.appendAttribute("reduction",
                      ScatterReduceOp::reductionToString(reduction));
+  os.appendAttribute("group_size", group_size);
   os.appendAttribute("available_memory_proportion",
                      available_memory_proportion);
   os.appendAttribute("index_broadcasted", index_broadcasted);
@@ -292,7 +301,8 @@ static OpDefinition
                         OpDefinition::Outputs({{"output", T}}),
                         OpDefinition::Attributes({{"axis", {"*"}},
                                                   {"axis_shape", {"*"}},
-                                                  {"reduction", {"*"}}})});
+                                                  {"reduction", {"*"}},
+                                                  {"group_size", {"*"}}})});
 
 static OpCreator<ScatterReduceOp> ScatterReduceOpCreator(
     OpDefinitions({
@@ -309,6 +319,14 @@ static OpCreator<ScatterReduceOp> ScatterReduceOpCreator(
 
       int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", -1);
 
+      int64_t group_size =
+          info.attributes.getAttribute<Attributes::Int>("group_size", 1);
+
+      if (group_size < 1) {
+        throw error("ScatterReduceOp group_size = {} is not valid: must be > 0",
+                    group_size);
+      }
+
       auto reduction =
           info.attributes.getAttribute<Attributes::String>("reduction", "sum");
 
@@ -324,6 +342,7 @@ static OpCreator<ScatterReduceOp> ScatterReduceOpCreator(
                               axis,
                               axis_size,
                               ScatterReduceOp::reductionFromString(reduction),
+                              group_size,
                               available_memory_proportion,
                               info.settings));
     },

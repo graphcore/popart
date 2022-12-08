@@ -39,6 +39,7 @@ private:
   std::unique_ptr<ReductionStrategy> strategy;
   popops::SlicePlan plan;
   size_t axis;
+  size_t group_size;
 };
 
 class ScatterReduceGradOpx : public PopOpx {
@@ -58,6 +59,7 @@ private:
   std::unique_ptr<ReductionStrategy> strategy;
   popops::SlicePlan plan;
   size_t axis;
+  size_t group_size;
 };
 
 } // namespace popx

@@ -85,10 +85,13 @@ snap::Tensor broadcastShape(snap::Tensor a, snap::Tensor b_) {
 snap::Tensor linearizeIndices(const PopOpx &opx,
                               snap::program::Sequence &prog,
                               snap::Tensor indices,
-                              int numDataCols) {
+                              int numDataCols,
+                              unsigned group_size) {
   // Linearize the indices: map from 2-d indices to 1-d
-  auto result     = indices.flatten(1, indices.rank());
-  int numCols     = static_cast<int>(result.dim(1));
+  const bool isGrouped        = group_size > 1;
+  const unsigned startAxisDim = isGrouped ? 1 : 0;
+  auto result     = indices.flatten(startAxisDim + 1, indices.rank());
+  int numCols     = static_cast<int>(result.dim(startAxisDim + 1));
   auto colIndices = scatterutilx::linspace(opx.graph(),
                                            0,
                                            numCols,
@@ -112,8 +115,9 @@ snap::Tensor linearizeIndices(const PopOpx &opx,
                            prog,
                            opx.getDebugNameAndId("indicesAddColIds"));
 
-  result = result.flatten();
-  result = result.expand({1});
+  std::size_t isGroupedSzt = static_cast<std::size_t>(isGrouped);
+  result                   = result.flatten(isGroupedSzt, result.rank());
+  result                   = result.expand({1 + isGroupedSzt});
   return result;
 }
 
@@ -193,9 +197,9 @@ snap::Tensor growScatterUpdateGrad(const PopOpx &opx,
     grad    = grad.expand({1});
   } else {
     auto numCols = indices.numElements() / indices.shape().at(0);
-    indices      = scatterutilx::linearizeIndices(opx, prog, indices, numCols);
-    grad         = grad.flatten();
-    grad         = grad.expand({1});
+    indices = scatterutilx::linearizeIndices(opx, prog, indices, numCols, 1U);
+    grad    = grad.flatten();
+    grad    = grad.expand({1});
   }
 
   // Assume indices are non-negative
@@ -211,7 +215,7 @@ snap::Tensor growScatterUpdateGrad(const PopOpx &opx,
                                    poplar::OptionFlags(),
                                    dnai);
 
-  return alignToAxis(snap::Tensor(result, graph), gradOutShape, axis);
+  return alignToAxis(snap::Tensor(result, graph), gradOutShape, axis, 1U);
 }
 
 } // namespace scatterutilx

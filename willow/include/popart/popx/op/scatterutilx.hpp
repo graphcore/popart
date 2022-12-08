@@ -50,7 +50,8 @@ snap::Tensor broadcastShape(snap::Tensor, snap::Tensor);
 snap::Tensor linearizeIndices(const PopOpx &opx,
                               snap::program::Sequence &prog,
                               snap::Tensor indices,
-                              int numDataCols);
+                              int numDataCols,
+                              unsigned group_size);
 
 void growScatter(snap::program::Sequence &prog,
                  snap::Graph &,

@@ -35,12 +35,14 @@ popops::SlicePlan createSlicePlan(const snap::Graph &graph,
                                   const popart::TensorInfo &sliceableInfo,
                                   const popart::TensorInfo &indicesInfo,
                                   const poplar::OptionFlags &options,
-                                  nonstd::optional<size_t> axis = {});
+                                  nonstd::optional<size_t> axis = {},
+                                  size_t group_size             = 1);
 
 snap::Tensor createDataTensor(snap::Graph &graph,
                               const popart::TensorInfo &dataInfo,
                               const popops::SlicePlan &plan,
                               unsigned int axis,
+                              unsigned int group_size,
                               bool broadcasted,
                               const poplar::DebugNameAndId &dnai);
 
@@ -49,6 +51,7 @@ snap::Tensor createUpdateTensor(snap::Graph &graph,
                                 const popart::TensorInfo &indicesInfo,
                                 const popops::SlicePlan &plan,
                                 unsigned int axis,
+                                unsigned int group_size,
                                 bool broadcasted,
                                 const poplar::DebugNameAndId &dnai);
 
@@ -56,13 +59,15 @@ snap::Tensor createIndicesTensor(snap::Graph &graph,
                                  const popart::TensorInfo &indicesInfo,
                                  const popops::SlicePlan &plan,
                                  unsigned int axis,
+                                 unsigned int group_size,
                                  bool broadcasted,
                                  const poplar::DebugNameAndId &dnai);
 
 // Align input to have same axes alignment and shape as popart IR.
 snap::Tensor alignToAxis(const snap::Tensor &input,
                          const popart::Shape &shape,
-                         unsigned int axis);
+                         unsigned int axis,
+                         unsigned int group_size);
 } // namespace popx
 } // namespace popart
 

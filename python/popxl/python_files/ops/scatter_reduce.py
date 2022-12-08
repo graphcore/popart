@@ -22,13 +22,14 @@ reduction_dict = {
 
 
 @op_debug_context
-def scatter_reduce(
+def grouped_scatter_reduce(
     data: Tensor,
     indices: Tensor,
     reduction: ScatterReductionType,
     initial_values: Optional[Tensor] = None,
     axis: int = 0,
     axis_size: Optional[int] = None,
+    group_size: Optional[int] = 1,
     available_memory_proportion: Optional[float] = None,
 ) -> Tensor:
 
@@ -64,7 +65,7 @@ def scatter_reduce(
     available_memory_proportion = convert_optional_float(available_memory_proportion)
 
     opid = _ir.OperatorIdentifier(
-        "ai.graphcore", "ScatterReduce", 1, _ir.NumInputs(2, 3), 1
+        "ai.graphcore", "ScatterReduce", 1, _ir.NumInputs(2, 4), 1
     )
     settings = ctx._get_op_settings("scatterreduce")
     op = pb_g.createConnectedOp_ScatterReduceOp(
@@ -73,9 +74,32 @@ def scatter_reduce(
         opid=opid,
         axis_=axis,
         axis_size_=axis_size,
+        group_size_=group_size,
         available_memory_proportion_=available_memory_proportion,
         reduction_=reduction_type,
         settings=settings,
     )
 
     return Tensor._from_pb_tensor(op.outTensor(0))
+
+
+@op_debug_context
+def scatter_reduce(
+    data: Tensor,
+    indices: Tensor,
+    reduction: ScatterReductionType,
+    initial_values: Optional[Tensor] = None,
+    axis: int = 0,
+    axis_size: Optional[int] = None,
+    available_memory_proportion: Optional[float] = None,
+) -> Tensor:
+    return grouped_scatter_reduce(
+        data,
+        indices,
+        reduction,
+        initial_values,
+        axis,
+        axis_size,
+        1,
+        available_memory_proportion,
+    )
