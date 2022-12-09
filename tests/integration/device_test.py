@@ -157,8 +157,6 @@ def test_attached_state():
 @tu.requires_ipu_model
 def test_set_and_get_ipu_model_version():
     dm = popart.DeviceManager()
-    device = dm.createIpuModelDevice({"ipuVersion": "ipu1"})
-    assert device.version == "ipu1"
 
     device = dm.createIpuModelDevice({"ipuVersion": "ipu2"})
     assert device.version == "ipu2"
