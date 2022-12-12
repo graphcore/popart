@@ -571,7 +571,7 @@ public: // methods
    *
    *    - `numIPUs`: The number of IPUs to compile for
    *    - `ge`: The number of tiles per IPU (Default: defaultManyTiles).
-   *    - `ipuVersion`: The ipu architecture (Default: "ipu1").
+   *    - `ipuVersion`: The ipu architecture (Default: "ipu2").
    *    - `syncPattern`: The setting for synchronisation in a multi-IPU system.
    *
    * \param options Configuration settings for the IPU Model.

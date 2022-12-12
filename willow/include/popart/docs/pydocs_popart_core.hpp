@@ -4980,7 +4980,7 @@ The following options are supported:
 
    - :code:`numIPUs`: The number of IPUs to compile for
    - :code:`ge`: The number of tiles per IPU (Default: defaultManyTiles).
-   - :code:`ipuVersion`: The ipu architecture (Default: "ipu1").
+   - :code:`ipuVersion`: The ipu architecture (Default: "ipu2").
    - :code:`syncPattern`: The setting for synchronisation in a multi-IPU system.
 
 
@@ -4991,7 +4991,7 @@ Returns:
  A simulated :code:`OfflineIpu` device.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_createOfflineIPUDevice =
-    R"doc(Create a simulated :code:`OfflineIpu` device for testing purposes. This resembles an IPU and is used for offline compilation. The following options are supported: - :code:`numIPUs`: The number of IPUs to compile for - :code:`ge`: The number of tiles per IPU (Default: defaultManyTiles). - :code:`ipuVersion`: The ipu architecture (Default: "ipu1"). - :code:`syncPattern`: The setting for synchronisation in a multi-IPU system. Args: options: Configuration settings for the IPU Model. Returns: A simulated :code:`OfflineIpu` device.)doc";
+    R"doc(Create a simulated :code:`OfflineIpu` device for testing purposes. This resembles an IPU and is used for offline compilation. The following options are supported: - :code:`numIPUs`: The number of IPUs to compile for - :code:`ge`: The number of tiles per IPU (Default: defaultManyTiles). - :code:`ipuVersion`: The ipu architecture (Default: "ipu2"). - :code:`syncPattern`: The setting for synchronisation in a multi-IPU system. Args: options: Configuration settings for the IPU Model. Returns: A simulated :code:`OfflineIpu` device.)doc";
 
 static const char *__doc_popart_DeviceManager_createOfflineIpuFromDeviceInfo =
     R"doc(Create a simulated :code:`OfflineIpu` device from the description of another
