@@ -80,7 +80,9 @@ void bindMatmul(py::module &m) {
       .def("setAvailableMemoryProportion",
            &MatMulBaseOp::setAvailableMemoryProportion)
       .def("getPartialsType", &MatMulBaseOp::getPartialsType)
-      .def("setPartialsType", &MatMulBaseOp::setPartialsType);
+      .def("setPartialsType", &MatMulBaseOp::setPartialsType)
+      .def("setUseFullyConnectedPass", &MatMulBaseOp::setUseFullyConnectedPass)
+      .def("useFullyConnectedPass", &MatMulBaseOp::useFullyConnectedPass);
 
   py::class_<MatMulOp, MatMulBaseOp, std::shared_ptr<MatMulOp>>(sm, "MatMulOp")
       .def(py::init<const popart::OperatorIdentifier &,
