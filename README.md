@@ -1,23 +1,15 @@
 # Building PopART
 
-These instructions assume you are building PopART on Ubuntu 18.04. These instructions describe how to install every required dependency. If you are starting from an existing Ubuntu 18.04 installation you may already have some of these dependencies installed. If so, please ensure the versions of these dependencies are compatible with these instructions. Other linux-based operating systems may also work but package names and supported versions of packages may vary.
-
-**NOTE**: There is an experimental Dockerfile available in `build_scripts\Dockerfile` which you can use to generate a Docker environment that contains all third-party dependencies you need to compile and run PopART. If you are using this container, please start reading from section "[Installing Graphcore Library Dependencies](#installing-graphcore-library-dependencies)". Note that this approach has been subjected to limited testing.
+These instructions assume you are building PopART on Ubuntu 20.04. These instructions describe how to install every required dependency. If you are starting from an existing Ubuntu 20.04 installation you may already have some of these dependencies installed. If so, please ensure the versions of these dependencies are compatible with these instructions. Other Linux-based operating systems may also work but package names and supported versions of packages may vary.
 
 ## Installing Required Tooling
 
-You will need the following tools installed on your system if you have not got them installed already:
+You will need the following tools installed on your system if they are not installed already:
 
 ### Wget, Git
 
 ```sh
 sudo apt-get install wget git -y
-```
-
-### Python (version 3.6.7 or greater, version 2.x is not supported)
-
-```sh
-sudo apt-get install python3 -y
 ```
 
 ### PIP3 (package installer for python 3)
@@ -41,92 +33,26 @@ sudo apt-get install ninja-build -y
 sudo apt-get install pkg-config -y
 ```
 
-### CMake (version 3.12.0 or greater)
-
-Unfortunately, Ubuntu 18.04's default CMake package does not meet the version requirement and hence you have to build CMake from source. Version 3.17.2 is known to work with PopART. To do this, in a directory of your choice, download the source from the [CMake download page](http://www.cmake.org/download) and build and install CMake as follows:
-
-```sh
-wget https://cmake.org/files/v3.17/cmake-3.17.2.tar.gz
-tar xzvf cmake-3.17.2.tar.gz
-rm cmake-3.17.2.tar.gz
-pushd cmake-3.17.2
-./bootstrap --parallel=8 -- -DCMAKE_USE_OPENSSL=OFF
-make -j8
-sudo make install
-popd
-```
-
-**NOTE**: The `--parallel=8` and `-j8` switches are used to reduce build times by building with up to 8 threads.
-
-For more information, see: <http://www.cmake.org/download>.
-
 ## Installing Required PIP Packages
 
-PopART requires the following PIP packages to be installed:
-
-### ONNX (version 1.6.0 or compatible)
-
+All Python dependencies necessary for building and running PopART can be found in `requirements.txt`. Install them by running
 ```sh
-pip3 install onnx==1.6.0
+python3 -m pip install -r requirements.txt
 ```
 
-### Protobuf (version 3.6.1 or compatible with ONNX version)
-
+If you would like to contribute to PopART, additional dependencies are required for development.
+These are found in `requirements/dev.txt` and can be installed by running:
 ```sh
-pip3 install protobuf>=3.6.1
-```
-
-**NOTE**: The argument `>=3.6.1` is necessary because the python package index may not have version 3.6.1 for the version of python installed on your system.
-
-### pytest and pytest-forked (default versions)
-
-```sh
-pip3 install pytest pytest-forked
-```
-
-### **NumPy** (version 1.19.2 or compatible)
-
-```sh
-pip3 install numpy==1.22.3
-```
-
-### **PyTorch** (torch 1.11.0+cpu and torchvision 0.12.0+cpu)
-
-```sh
-pip3 install torch==1.11.0+cpu torchvision==0.12.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-```
-
-### **Mypy** (version 0.910 or compatible)
-
-```sh
-pip3 install mypy==0.910
-```
-
-### **jinja2** (version 3.0.3 or compatible)
-
-```sh
-pip3 install Jinja2=3.0.3
-```
-
-### **libclang** (version 12.0.0 or compatible)
-
-```sh
-pip3 install libclang==12.0.0
-```
-
-### **cppimport** (version 21.3.7 or compatible)
-
-```sh
-pip3 install cppimport==21.3.7
+python3 -m pip install -r requirements/dev.txt
 ```
 
 ## Installing Third-Party Library Dependencies
 
-PopART compiles against a number of libraries that you will need to have available on your system:
+PopART compiles against a number of libraries that must be available on your system:
 
 ### Spdlog (version 1.8.0)
 
-The version of the spdlog library in Ubuntu 18.04 (`spdlog-dev`) is not compatible with PopART. Instead, you need to build version 1.8.0 from source. To do this, in a directory of your choice, download the source from the [spdlog github page](https://github.com/gabime/spdlog/tree/v1.8.0) and build and install as follows:
+The version of the spdlog library in Ubuntu 20.04 (`spdlog-dev`) is not compatible with PopART. Instead, you need to build version 1.8.0 from source. To do this, in a directory of your choice, download the source from the [spdlog GitHub page](https://github.com/gabime/spdlog/tree/v1.8.0) and build and install as follows:
 
 ```sh
 export SPDLOG_INSTALL_DIR=$(pwd)/spdlog-1.8.0/install_dir/
@@ -139,7 +65,7 @@ cmake .. -GNinja -DCMAKE_INSTALL_PREFIX=$SPDLOG_INSTALL_DIR && cmake --build . -
 
 ### Pybind11 (version 2.6.2 or compatible)
 
-The version of the pybind11 library in Ubuntu 18.04 (`pybind11-dev`) is 2.0.1, which is not compatible with PopART. Instead, you need to build version 2.6.2 from source. To do this, in a directory of your choice, download the source from the [pybind github page](https://github.com/pybind/pybind11/releases) and build and install as follows:
+The version of the pybind11 library in Ubuntu 20.04 (`pybind11-dev`) is 2.4.3, which is not compatible with PopART. Instead, you need to build version 2.6.2 from source. To do this, in a directory of your choice, download the source from the [pybind GitHub page](https://github.com/pybind/pybind11/releases) and build and install as follows:
 
 ```sh
 export PYBIND11_INSTALL_DIR=$(pwd)/pybind11-2.6.2/install_dir/
@@ -164,16 +90,16 @@ popd
 
 For more information, see: <https://github.com/pybind/pybind11/blob/master/docs/compiling.rst>.
 
-### Boost (version 1.70.0 or compatible)
+### Boost (version 1.80.0 or compatible)
 
-The boost library in Ubuntu 18.04 (`libboost-dev`) is 1.65.1, which is not compatible with PopART. Instead, you have to build version 1.70.0 from source. To do this, in a directory of your choice, download the source from the [boost download page](https://www.boost.org/users/history/version_1_70_0.html) and build and install as follows:
+The Boost library in Ubuntu 20.04 (`libboost-dev`) is 1.71.1, which is not compatible with PopART. Instead, you have to build version 1.80.0 from source. To do this, in a directory of your choice, download the source from the [Boost download page](https://www.boost.org/users/history/version_1_80_0.html) and build and install as follows:
 
 ```sh
-export BOOST_INSTALL_DIR=$(pwd)/boost_1_70_0/install_dir/
-wget https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz
-tar xvfz boost_1_70_0.tar.gz
-rm boost_1_70_0.tar.gz
-pushd boost_1_70_0
+export BOOST_INSTALL_DIR=$(pwd)/boost_1_80_0/install_dir/
+wget https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_80_0.tar.gz
+tar xvfz boost_1_80_0.tar.gz
+rm boost_1_80_0.tar.gz
+pushd boost_1_80_0
 mkdir install_dir
 ./bootstrap.sh --prefix=$BOOST_INSTALL_DIR
 ./b2 -j8 link=static runtime-link=static --abbreviate-paths variant=release toolset=gcc "cxxflags= -fno-semantic-interposition -fPIC" cxxstd=14 --with-test --with-system --with-filesystem --with-program_options --with-graph --with-random install
@@ -184,36 +110,11 @@ popd
 
 **NOTE**: You will need the value of `BOOST_INSTALL_DIR` later.
 
-For more information, see: <https://www.boost.org/doc/libs/1_70_0/more/getting_started/unix-variants.html>.
-
-### Building protobuf (version 3.6.1 or compatible with ONNX version) from source
-
-The protobuf library in Ubuntu 18.04 (`libprotobuf-dev`) is version 3.0.0. Again, you need to build version 3.6.1 from source. To do this, in a directory of your choice, download the source from the [protobuf github page](https://github.com/protocolbuffers/protobuf/releases) and build and install as follows:
-
-```sh
-export PROTOBUF_INSTALL_DIR=$(pwd)/protobuf-3.6.1/install_dir/
-wget https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz 
-tar xvfz protobuf-cpp-3.6.1.tar.gz
-rm protobuf-cpp-3.6.1.tar.gz
-pushd protobuf-3.6.1
-mkdir install_dir
-CXXFLAGS=-fPIC CFLAGS=-fPIC ./configure \
-  --prefix=$PROTOBUF_INSTALL_DIR
-make -j8
-make check
-make install
-popd
-```
-
-**NOTE**: The `-j8` switch is used to reduce build times by building with up to threads.
-
-**NOTE**: You will need the value of `PROTOBUF_INSTALL_DIR` later.
-
-For more information, see: <https://developers.google.com/protocol-buffers/docs/downloads>.
+For more information, see: <https://www.boost.org/doc/libs/1_80_0/more/getting_started/unix-variants.html>.
 
 ### Building ONNX (version 1.6.0 or compatible) from source
 
-The ONNX library also needs to be compiled from source. To do this, in a directory of your choice, download the source from the [ONNX github page](https://github.com/onnx/onnx/releases) and build and install as follows:
+The ONNX library also needs to be compiled from source. To do this, in a directory of your choice, download the source from the [ONNX GitHub page](https://github.com/onnx/onnx/releases) and build and install as follows:
 
 ```sh
 export ONNX_INSTALL_DIR=$(pwd)/onnx-1.6.0/install_dir/
@@ -261,7 +162,7 @@ For more information, see: <https://capnproto.org/install.html>
 
 ### Trompeloeil (version 35 or compatible)
 
-Trompeloeil can be downloaded from the [trompeloeil github page](https://github.com/rollbear/trompeloeil/releases/tag/v35). In a directory of your choice, download and install as follows:
+Trompeloeil can be downloaded from the [trompeloeil GitHub page](https://github.com/rollbear/trompeloeil/releases/tag/v35). In a directory of your choice, download and install as follows:
 
 ```sh
 export TROMPELOEIL_INSTALL_DIR=$(pwd)/trompeloeil-35/install_dir/
@@ -311,9 +212,9 @@ For more information, see:  <https://www.graphcore.ai/developer>.
 
 ## Configuring & Building PopART
 
-Note that only Ubuntu 18.04 is supported for building PopART externally.
+Note that only Ubuntu 20.04 is supported for building PopART externally.
 
-To build PopART, do the following in the directory where you checked out the repository:
+To build PopART, run the following commands in the directory where you checked out the repository:
 
 ```sh
 export POPART_INSTALL_DIR=$(pwd)/popart/install_dir/
@@ -338,14 +239,13 @@ ninja install
 popd
 ```
 
-You could use any method supported by CMake to point it at dependencies. See the`find_package` documentation in the [CMake documentation](https://cmake.org/cmake/help/v3.12/command/find_package.html). We have chosen to use `<verbatim pkg name>_ROOT` variables that point to the package installation directory.
+You could use any method supported by CMake to point it at dependencies. See the`find_package` documentation in the [CMake documentation](https://cmake.org/cmake/help/v3.16/command/find_package.html). We have chosen to use `<verbatim pkg name>_ROOT` variables that point to the package installation directory.
 
 **DEPRECATION**: `<uppercase pkg name>_INSTALL_DIR` variables, except `POPLAR_INSTALL_DIR`, have been deprecated and will be removed in a future release.
 
 **NOTE**: Other CMake switches are available:
 
 * `-DPOPART_BUILD_TESTING=0` - Switch that can be used to avoid compiling PopART test.
-* `-DPOPLIBS_INCLUDE_DIR=<dir>`, `-DLIBPVTI_INCLUDE_DIR=<dir>`, etc. - Internal switches that could be used to target alternative internal Poplar libraries.
 * `-DPOPART_STRICT_COMPARATOR_CHECKS=1` - Check for `nullptr` and invalid pointers when comparing containers of pointers.
 
 **NOTE**: If you prefer building with `make` instead of `ninja`, remove the `-GNinja` switch.
@@ -358,7 +258,7 @@ You could use any method supported by CMake to point it at dependencies. See the
 
 ### Application Examples
 
-There are a number of advanced PopART applications available in Graphcore's [example repository](https://github.com/graphcore/examples/tree/master/applications/popart) on Github.
+There are a number of advanced PopART applications available in Graphcore's [example repository](https://github.com/graphcore/examples) on Github. See the [README](https://github.com/graphcore/examples#readme) for a full list of examples implemented using PopART and PopXL
 
 ## Licensing
 
@@ -541,3 +441,6 @@ SHALL THE COPYRIGHT HOLDERS OR ANYONE DISTRIBUTING THE SOFTWARE BE LIABLE
 FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
+
+Relevant Files:
+* `willow/include/popart/vendored/anylite.hpp`
