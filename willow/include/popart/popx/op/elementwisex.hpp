@@ -167,6 +167,11 @@ public:
   snap::Tensor
   unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const override;
   view::RegMap unwindRegion(InIndex, OutIndex) const override;
+
+private:
+  // Returns true if input at index can be constructed by the
+  // poputil::createBroadcastOperand
+  bool broadcastCreatorAvailable(InIndex index) const;
 };
 
 // non-inplace elementwise binary operations
