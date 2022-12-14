@@ -219,6 +219,8 @@ __all__ = [
     "nll_loss_with_softmax_grad",
     # negate.py
     "negate",
+    # pow.py
+    "pow",
     # print_tensor.py
     "print_tensor",
     # prod.py
