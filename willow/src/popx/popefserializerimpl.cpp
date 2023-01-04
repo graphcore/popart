@@ -159,14 +159,20 @@ void WriterImpl::serializePoplarEngine() {
 }
 
 void WriterImpl::serializePopefMetadata() {
-  const auto &ir_lowering = _executablex.lowering();
-  const auto &ir          = ir_lowering.ir();
-  const auto &opts        = ir.getSessionOptions();
+  const auto &ir_lowering   = _executablex.lowering();
+  const auto &ir            = ir_lowering.ir();
+  const auto &opts          = ir.getSessionOptions();
+  const auto &dataFlow      = ir.getDataFlow();
+  const auto batchesPerStep = dataFlow.batchesPerStep();
 
   const bool isInference =
       ir.getExecutionMode() == Ir::ExecutionMode::Inference;
   const int64_t numProcs =
       opts.enableDistributedReplicatedGraphs ? opts.globalReplicationFactor : 1;
+
+  auto deviceIteration = batchesPerStep;
+  if (!isInference && opts.enableGradientAccumulation)
+    deviceIteration *= opts.getAccumulationFactor();
 
   popef::Metadata metadata;
   metadata.setReplicationFactor(ir_lowering.getReplicationFactor());
@@ -181,6 +187,7 @@ void WriterImpl::serializePopefMetadata() {
   metadata.setDeviceOptions(convertOptionFlagsToOptions(
       ir_lowering.getDeviceInfo()->getOptionFlags()));
   metadata.setSeedHandle(_seedHandle);
+  metadata.setDeviceIteration(deviceIteration);
 
   std::vector<popef::Anchor> &metadataAnchors = metadata.anchors();
   metadataAnchors.insert(metadataAnchors.begin(),
