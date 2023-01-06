@@ -1,9 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
+#include <poplar/Tensor.hpp>
 #include <popnn/NonLinearity.hpp>
 #include <popnn/NonLinearityDef.hpp>
 #include <popops/Rearrange.hpp>
@@ -12,8 +9,16 @@
 #include <popart/popx/opxmanager.hpp>
 
 #include "popart/graphcoreoperators.hpp"
+#include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
+
+namespace poplar {
+class Graph;
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -26,25 +31,25 @@ SwishOpx::SwishOpx(Op *op, Devicex *devicex)
   verifyOp<SwishOp>(op, Onnx::CustomOperators::Swish);
 }
 
-snap::Tensor SwishComputex::outplace(snap::program::Sequence &prog,
-                                     snap::Graph &graph,
-                                     const snap::Tensor &tensor,
-                                     const poplar::DebugNameAndId &dnai,
-                                     const std::string &debug_prefix) const {
+poplar::Tensor SwishComputex::outplace(poplar::program::Sequence &prog,
+                                       poplar::Graph &graph,
+                                       const poplar::Tensor &tensor,
+                                       const poplar::DebugNameAndId &dnai,
+                                       const std::string &debug_prefix) const {
   auto out_tensor = cloneNcopy(prog, graph, tensor, dnai);
   inplace(prog, graph, out_tensor, dnai, debug_prefix);
   return out_tensor;
 }
 
-void SwishComputex::inplace(snap::program::Sequence &prog,
-                            snap::Graph &graph,
-                            const snap::Tensor &tensor,
+void SwishComputex::inplace(poplar::program::Sequence &prog,
+                            poplar::Graph &graph,
+                            const poplar::Tensor &tensor,
                             const poplar::DebugNameAndId &dnai,
                             const std::string &debug_prefix) const {
-  popnn::nonLinearityInPlace(graph.getPoplarGraph(),
+  popnn::nonLinearityInPlace(graph,
                              popnn::NonLinearityType::SWISH,
-                             tensor.getPoplarTensor(),
-                             prog.getPoplarSequence(),
+                             tensor,
+                             prog,
                              {dnai, debug_prefix});
 }
 
@@ -53,31 +58,25 @@ SwishInplaceOpx::SwishInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<SwishInplaceOp>(op, Onnx::CustomOperators::SwishInplace);
 }
 
-SwishGradOpx::SwishGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+SwishGradOpx::SwishGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<SwishGradOp>(op, Onnx::CustomGradOperators::SwishGrad);
 }
 
-void SwishGradOpx::grow(snap::program::Sequence &prog) const {
-  const auto grad =
-      getInTensor(SwishGradOp::getGradInIndex()).getPoplarTensor();
-  const auto input =
-      getInTensor(SwishGradOp::getFwdArgInIndex()).getPoplarTensor();
+void SwishGradOpx::grow(poplar::program::Sequence &prog) const {
+  const auto grad  = getInTensor(SwishGradOp::getGradInIndex());
+  const auto input = getInTensor(SwishGradOp::getFwdArgInIndex());
 
-  auto gradRearranged =
-      popops::rearrange::regroupIfBeneficial(graph().getPoplarGraph(),
-                                             grad,
-                                             input,
-                                             prog.getPoplarSequence(),
-                                             debugContext("regroup"));
+  auto gradRearranged = popops::rearrange::regroupIfBeneficial(
+      graph(), grad, input, prog, debugContext("regroup"));
 
-  auto output = popnn::nonLinearityInputGradient(graph().getPoplarGraph(),
+  auto output = popnn::nonLinearityInputGradient(graph(),
                                                  popnn::NonLinearityType::SWISH,
                                                  input,
                                                  gradRearranged,
-                                                 prog.getPoplarSequence(),
+                                                 prog,
                                                  debugContext("swish_grad"));
 
-  setOutTensor(SwishGradOp::getOutIndex(), snap::Tensor{output, graph()});
+  setOutTensor(SwishGradOp::getOutIndex(), output);
 }
 
 namespace {

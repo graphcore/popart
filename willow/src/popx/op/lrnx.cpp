@@ -1,14 +1,13 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
+#include <ext/new_allocator.h>
 #include <string>
 #include <vector>
+#include <poplar/Graph.hpp>
+#include <poplar/Program.hpp>
+#include <poplar/Tensor.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
@@ -17,7 +16,8 @@
 #include <popart/popx/opxmanager.hpp>
 
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/opx.hpp"
 
 namespace popart {
 class Op;
@@ -36,27 +36,22 @@ namespace pe = popops::expr;
 namespace popart {
 namespace popx {
 
-LRNOpx::LRNOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+LRNOpx::LRNOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<LRNOp>(op, {Onnx::Operators::LRN_1});
 }
 
 namespace {
-snap::Tensor getScale(snap::Graph &graph,
-                      const snap::Tensor &input,
-                      snap::program::Sequence &prog,
-                      const float alpha,
-                      const float bias,
-                      const int64_t size,
-                      const poplar::DebugContext &debugContext) {
+poplar::Tensor getScale(poplar::Graph &graph,
+                        const poplar::Tensor &input,
+                        poplar::program::Sequence &prog,
+                        const float alpha,
+                        const float bias,
+                        const int64_t size,
+                        const poplar::DebugContext &debugContext) {
   const poplar::DebugInfo di(debugContext, "");
-  auto square     = snap::Tensor{popops::square(graph.getPoplarGraph(),
-                                            input.getPoplarTensor(),
-                                            prog.getPoplarSequence(),
-                                            {di}),
-                             graph};
+  auto square     = popops::square(graph, input, prog, {di});
   auto square_sum = graph.clone(square, {di});
-  prog.getPoplarSequence().add(
-      poplar::program::Copy(square, square_sum, false, {di}));
+  prog.add(poplar::program::Copy(square, square_sum, false, {di}));
   auto channels = input.dim(1);
 
   auto left  = ((size - 1) / 2);
@@ -66,19 +61,18 @@ snap::Tensor getScale(snap::Graph &graph,
     // i == 0 added by default,
     if ((i != 0L) &&
         (channels - std::max<int64_t>(0L, i)) - std::max<int64_t>(0L, -i) > 0)
-      snap::popops::addInPlace(
-          graph,
-          square_sum.slice(std::max<int64_t>(0L, -i),
-                           channels - std::max<int64_t>(0L, i),
-                           1),
-          square.slice(std::max<int64_t>(0L, i),
-                       channels - std::max<int64_t>(0L, -i),
-                       1),
-          prog,
-          {di});
+      popops::addInPlace(graph,
+                         square_sum.slice(std::max<int64_t>(0L, -i),
+                                          channels - std::max<int64_t>(0L, i),
+                                          1),
+                         square.slice(std::max<int64_t>(0L, i),
+                                      channels - std::max<int64_t>(0L, -i),
+                                      1),
+                         prog,
+                         {di});
   }
 
-  auto scale = snap::popops::map(
+  auto scale = popops::map(
       graph,
       pe::Add(pe::Const(bias), pe::Mul(pe::Const(alpha / size), pe::_1)),
       {square_sum},
@@ -89,7 +83,7 @@ snap::Tensor getScale(snap::Graph &graph,
 }
 } // namespace
 
-void LRNOpx::grow(snap::program::Sequence &prog) const {
+void LRNOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<LRNOp>();
   const auto input = getInTensor(LRNOp::getInIndex());
 
@@ -101,21 +95,21 @@ void LRNOpx::grow(snap::program::Sequence &prog) const {
                         op.getSize(),
                         debugContext("scale"));
 
-  auto output = snap::popops::map(
-      graph(),
-      pe::Mul(pe::_1, pe::Pow(pe::_2, pe::Const(-op.getBeta()))),
-      {input, scale},
-      prog,
-      debugContext("output"));
+  auto output =
+      popops::map(graph(),
+                  pe::Mul(pe::_1, pe::Pow(pe::_2, pe::Const(-op.getBeta()))),
+                  {input, scale},
+                  prog,
+                  debugContext("output"));
 
   setOutTensor(LRNOp::getOutIndex(), output);
 }
 
-LRNGradOpx::LRNGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+LRNGradOpx::LRNGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<LRNGradOp>(op, Onnx::GradOperators::LRNGrad);
 }
 
-void LRNGradOpx::grow(snap::program::Sequence &prog) const {
+void LRNGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op       = getOp<LRNGradOp>();
   const auto input     = getInTensor(LRNGradOp::getInIndex());
   const auto fwd_input = getInTensor(LRNGradOp::getFwdInInIndex());
@@ -128,7 +122,7 @@ void LRNGradOpx::grow(snap::program::Sequence &prog) const {
                         op.getSize(),
                         debugContext("scale"));
 
-  auto output = snap::popops::map(
+  auto output = popops::map(
       graph(),
       pe::Mul(
           pe::_1,

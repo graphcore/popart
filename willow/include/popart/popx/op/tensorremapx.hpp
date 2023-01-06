@@ -2,15 +2,15 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_TENSORREMAPX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_TENSORREMAPX_HPP_
 
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -18,13 +18,14 @@ class Op;
 namespace popx {
 class Devicex;
 
-class TensorRemapOpx : public PopOpx {
+class TensorRemapOpx : public Opx {
 public:
   TensorRemapOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   bool outputCreatedExternally(OutIndex) const final;
   InputCreatorType getInputCreatorType(InIndex index) const final;
-  snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
+  poplar::Tensor
+      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 

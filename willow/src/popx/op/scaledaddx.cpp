@@ -1,8 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <vector>
+#include <poplar/Tensor.hpp>
 #include <popops/ScaledAdd.hpp>
 #include <popart/op/scaledadd.hpp>
 #include <popart/popx/op/scaledaddx.hpp>
@@ -12,7 +10,13 @@
 #include "popart/graphcoreoperators.hpp"
 #include "popart/logging.hpp"
 #include "popart/operatoridentifier.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -20,7 +24,7 @@ class Op;
 namespace popx {
 class Devicex;
 
-ScaledAddOpx::ScaledAddOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+ScaledAddOpx::ScaledAddOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ScaledAddOp>(op,
                         {Onnx::AiGraphcore::OpSet1::ScaledAdd,
                          Onnx::CustomOperators::ScaledAddLhsInplace,
@@ -39,59 +43,44 @@ ScaledAddRhsInplaceOpx::ScaledAddRhsInplaceOpx(Op *op, Devicex *devicex)
                                   {Onnx::CustomOperators::ScaledAddRhsInplace});
 }
 
-snap::Tensor ScaledAddOpx::compute(snap::program::Sequence &prog,
-                                   snap::Tensor in0,
-                                   snap::Tensor in1,
-                                   snap::Tensor s0,
-                                   snap::Tensor s1,
-                                   float s0f,
-                                   float s1f,
-                                   bool inplace) const {
+poplar::Tensor ScaledAddOpx::compute(poplar::program::Sequence &prog,
+                                     poplar::Tensor in0,
+                                     poplar::Tensor in1,
+                                     poplar::Tensor s0,
+                                     poplar::Tensor s1,
+                                     float s0f,
+                                     float s1f,
+                                     bool inplace) const {
   if (!inplace) {
     in0 = cloneNcopy(prog, in0);
   }
 
   if (s0.valid() && s1.valid()) {
-    popops::scaledAddTo(graph().getPoplarGraph(),
-                        in0.getPoplarTensor(),
-                        s0.getPoplarTensor(),
-                        in1.getPoplarTensor(),
-                        s1.getPoplarTensor(),
-                        prog.getPoplarSequence(),
-                        debugContext("t_t_t_t"));
+    popops::scaledAddTo(
+        graph(), in0, s0, in1, s1, prog, debugContext("t_t_t_t"));
   } else if (s0.valid() && !s1.valid()) {
     throw error("Unsupported tensor scale0 with non-tensor scale1.");
   } else if (hasInput(ScaledAddOp::getScale1InIndex())) {
     if (s0f != 1.0) {
       throw error("Unsupported scale0 {} with tensor scale1.", s0f);
     }
-    popops::scaledAddTo(graph().getPoplarGraph(),
-                        in0.getPoplarTensor(),
-                        in1.getPoplarTensor(),
-                        s1.getPoplarTensor(),
-                        prog.getPoplarSequence(),
-                        debugContext("t_1_t_t"));
+    popops::scaledAddTo(graph(), in0, in1, s1, prog, debugContext("t_1_t_t"));
   } else {
-    popops::scaledAddTo(graph().getPoplarGraph(),
-                        in0.getPoplarTensor(),
-                        s0f,
-                        in1.getPoplarTensor(),
-                        s1f,
-                        prog.getPoplarSequence(),
-                        debugContext("t_c_t_c"));
+    popops::scaledAddTo(
+        graph(), in0, s0f, in1, s1f, prog, debugContext("t_c_t_c"));
   }
   return in0;
 }
 
-void ScaledAddOpx::grow(snap::program::Sequence &prog) const {
+void ScaledAddOpx::grow(poplar::program::Sequence &prog) const {
   auto &scaledAddOp = getOp<ScaledAddOp>();
 
-  snap::Tensor out;
+  poplar::Tensor out;
 
   auto in0 = getInTensor(ScaledAddOp::getArg0InIndex());
   auto in1 = getInTensor(ScaledAddOp::getArg1InIndex());
 
-  snap::Tensor s0, s1;
+  poplar::Tensor s0, s1;
 
   if (hasInput(ScaledAddOp::getScale0InIndex())) {
     s0 = getInTensor(ScaledAddOp::getScale0InIndex());
@@ -112,15 +101,15 @@ void ScaledAddOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(ScaledAddOp::getOutIndex(), out);
 }
 
-void ScaledAddLhsInplaceOpx::grow(snap::program::Sequence &prog) const {
+void ScaledAddLhsInplaceOpx::grow(poplar::program::Sequence &prog) const {
   auto &scaledAddOp = getOp<ScaledAddLhsInplaceOp>();
 
-  snap::Tensor out;
+  poplar::Tensor out;
 
   auto in0 = getInTensor(ScaledAddOp::getArg0InIndex());
   auto in1 = getInTensor(ScaledAddOp::getArg1InIndex());
 
-  snap::Tensor s0, s1;
+  poplar::Tensor s0, s1;
 
   if (hasInput(ScaledAddOp::getScale0InIndex())) {
     s0 = getInTensor(ScaledAddOp::getScale0InIndex());
@@ -141,15 +130,15 @@ void ScaledAddLhsInplaceOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(ScaledAddOp::getOutIndex(), out);
 }
 
-void ScaledAddRhsInplaceOpx::grow(snap::program::Sequence &prog) const {
+void ScaledAddRhsInplaceOpx::grow(poplar::program::Sequence &prog) const {
   auto &scaledAddOp = getOp<ScaledAddRhsInplaceOp>();
 
-  snap::Tensor out;
+  poplar::Tensor out;
 
   auto in0 = getInTensor(ScaledAddOp::getArg0InIndex());
   auto in1 = getInTensor(ScaledAddOp::getArg1InIndex());
 
-  snap::Tensor s0, s1;
+  poplar::Tensor s0, s1;
 
   if (hasInput(ScaledAddOp::getScale0InIndex())) {
     s0 = getInTensor(ScaledAddOp::getScale0InIndex());

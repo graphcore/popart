@@ -5,18 +5,18 @@
 #include <cstdint>
 #include <gcl/CollectiveBalancedReorder.hpp>
 #include <gcl/Collectives.hpp>
+#include <map>
 #include <set>
-#include <snap/Tensor.hpp>
+#include <poplar/Program.hpp>
 #include <poplar/Tensor.hpp>
 #include <popart/names.hpp>
 #include <popart/op/collectives/collectives.hpp>
+#include <popart/popx/opx.hpp>
 #include <popart/popx/opxstate.hpp>
-#include <popart/popx/popopx.hpp>
 #include <popart/popx/viewchangers.hpp>
 #include <popart/replicatedtensorsharding.hpp>
 
 namespace popart {
-class CommGroup;
 class ReplicaGrouping;
 class Op;
 class Tensor;
@@ -50,7 +50,7 @@ public:
       int64_t nelms_,
       ReplicatedTensorShardingGroupId group_)
       : nelms(nelms_), group(group_) {}
-  snap::Tensor apply(snap::Tensor tensor) const final {
+  poplar::Tensor apply(poplar::Tensor tensor) const final {
     return tensor.slice(0, nelms, 0);
   }
   bool containsAllDataRegions() const final { return false; }
@@ -79,11 +79,9 @@ public:
       const gcl::CollectiveBalancedReorder *cbr_,
       ReplicatedTensorShardingGroupId group_)
       : cbr(cbr_), group(group_) {}
-  snap::Tensor apply(snap::Tensor tensor) const final {
-    return snap::Tensor{
-        cbr->undoRearrangeForCollective(tensor.getPoplarTensor())
-            .reshape(cbr->getReferenceShape()),
-        tensor};
+  poplar::Tensor apply(poplar::Tensor tensor) const final {
+    return cbr->undoRearrangeForCollective(tensor).reshape(
+        cbr->getReferenceShape());
   }
   bool operator==(const ViewChanger &rhs) const final {
     if (const ReplicatedGatherOutScatterInViewChanger *other =
@@ -99,7 +97,7 @@ private:
   ReplicatedTensorShardingGroupId group;
 };
 
-class CollectivesBaseOpx : public PopOpx {
+class CollectivesBaseOpx : public Opx {
 public:
   CollectivesBaseOpx(Op *, Devicex *);
 
@@ -147,7 +145,7 @@ public:
    * \a CBR (collective balanced reorder) rearrangement.
    *
    * \a CBR is set in the collective Ops themselves either during
-   * \c Opx::unwindTensorLayout, \c Opx:createInputTensor or \c Opx::grow
+   * \c Opx::unwindTensorLayout, \c Opx:createInput or \c Opx::grow
    * by calling \c createCollectiveBalancedReorder
    *
    * The third variable would use a separate VarUpdateOp, and therefore is in a
@@ -184,7 +182,7 @@ public:
    * \return New CBR for the input/output tensor of the collective Op
    */
   gcl::CollectiveBalancedReorder *createCollectiveBalancedReorder(
-      snap::Tensor tensor,
+      poplar::Tensor tensor,
       ReplicatedTensorShardingIndicesIndex groupIndex) const;
 };
 /**

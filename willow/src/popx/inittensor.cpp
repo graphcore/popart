@@ -1,11 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <set>
-#include <snap/Graph.hpp>
-#include <snap/Tensor.hpp>
 #include <sstream>
 #include <string>
 #include <utility>
+#include <poplar/Graph.hpp>
 #include <poplar/TensorCloneMethod.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <poputil/TileMapping.hpp>
@@ -21,7 +20,7 @@
 #include "popart/opdebuginfo.hpp"
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/linearmapper.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/popx/poptensors.hpp"
 #include "popart/popx/preparedtensor.hpp"
 #include "popart/popx/viewchangers.hpp"
@@ -36,7 +35,7 @@ namespace popx {
 
 namespace {
 
-snap::Graph &getGraph(Tensor *t, IrLowering &irLowering) {
+poplar::Graph &getGraph(Tensor *t, IrLowering &irLowering) {
   auto vgid = t->getVirtualGraphIdAndTileSetUnsafe();
 
   if (vgid.first == unusedVGraphId) {
@@ -146,7 +145,9 @@ bool InitTensorCloning::initTensor(IrLowering &irLowering) const {
   Tensor *t = irLowering.ir().getTensor(srcId);
   auto vgid = t->getVirtualGraphIdAndTileSetUnsafe();
 
-  auto &dstGraph = getGraph(t, irLowering);
+  auto &dstGraph = vgid.first == unusedVGraphId
+                       ? irLowering.graph()
+                       : irLowering.getVirtualGraph(vgid.first, vgid.second);
 
   logging::debug("Cloning tensor {} to {} (vgid: {} tileset: {}). Source "
                  "TensorInfo is: {}",
@@ -158,7 +159,7 @@ bool InitTensorCloning::initTensor(IrLowering &irLowering) const {
 
   auto src = irLowering.tensors().get(getSrcId());
 
-  snap::Tensor dst;
+  poplar::Tensor dst;
 
   if (t->hasProducer()) {
     Op *producer = t->getProducer();
@@ -331,9 +332,9 @@ bool InitTensorRTS::initTensor(IrLowering &irLowering) const {
   auto &dstGraph = getGraph(dstTensor, irLowering);
 
   auto newTensor = poputil::cloneToGraph(
-      srcGraph.getPoplarGraph(),
-      dstGraph.getPoplarGraph(),
-      irLowering.tensors().get(srcId).getPoplarTensor(),
+      srcGraph,
+      dstGraph,
+      irLowering.tensors().get(srcId),
       {poplar::DebugNameAndId(dstTensor->str(),
                               dstTensor->getDebugInfo().getId(),
                               dstTensor->getDebugInfo().getPathName())},
@@ -343,7 +344,7 @@ bool InitTensorRTS::initTensor(IrLowering &irLowering) const {
     irLowering.tensors().setViewChangers(
         getDstId(), irLowering.tensors().getViewChangers(getSrcId()));
   }
-  irLowering.tensors().insert(getDstId(), {newTensor, dstGraph});
+  irLowering.tensors().insert(getDstId(), newTensor);
   irLowering.addEfficientlyCreatedInputTensors(dstTensor->id);
   return true;
 }

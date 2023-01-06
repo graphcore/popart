@@ -1,9 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
-#include <vector>
+#include <string>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popops/ScaledAdd.hpp>
@@ -11,11 +9,14 @@
 #include <popart/popx/op/sgd1nesterovx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/error.hpp"
 #include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -25,81 +26,69 @@ class Op;
 namespace popx {
 class Devicex;
 
-SGD1NesterovOpx::SGD1NesterovOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+SGD1NesterovOpx::SGD1NesterovOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<SGD1NesterovOp>(op, {Onnx::CustomOperators::SGD1Nesterov});
 }
 
 // return s0 * in0 + s1 * in1.
-snap::Tensor SGD1NesterovOpx::compute(snap::program::Sequence &prog,
-                                      snap::Tensor in0,
-                                      snap::Tensor in1,
-                                      snap::Tensor s0,
-                                      snap::Tensor s1,
-                                      float s0f,
-                                      float s1f,
-                                      bool inplace) const {
+poplar::Tensor SGD1NesterovOpx::compute(poplar::program::Sequence &prog,
+                                        poplar::Tensor in0,
+                                        poplar::Tensor in1,
+                                        poplar::Tensor s0,
+                                        poplar::Tensor s1,
+                                        float s0f,
+                                        float s1f,
+                                        bool inplace) const {
   if (!inplace) {
     in0 = cloneNcopy(prog, in0);
   }
 
   if (s0.valid() && s1.valid()) {
-    popops::scaledAddTo(graph().getPoplarGraph(),
-                        in0.getPoplarTensor(),
-                        s0.getPoplarTensor(),
-                        in1.getPoplarTensor(),
-                        s1.getPoplarTensor(),
-                        prog.getPoplarSequence(),
-                        debugContext("nonConstScaledAddS0S1"));
-  } else if (s0.valid() && !s1.valid()) {
-    snap::popops::mapInPlace(
-        graph(),
-        pe::Mul(pe::_1, pe::Cast(pe::_2, in0.elementType())),
-        {in0, s0},
-        prog,
-        debugContext("nonConstScalingS0"));
     popops::scaledAddTo(
-        graph().getPoplarGraph(),
-        in0.getPoplarTensor(),
-        in1.getPoplarTensor(),
+        graph(), in0, s0, in1, s1, prog, debugContext("nonConstScaledAddS0S1"));
+  } else if (s0.valid() && !s1.valid()) {
+    popops::mapInPlace(graph(),
+                       pe::Mul(pe::_1, pe::Cast(pe::_2, in0.elementType())),
+                       {in0, s0},
+                       prog,
+                       debugContext("nonConstScalingS0"));
+    popops::scaledAddTo(
+        graph(),
+        in0,
+        in1,
         s1f,
-        prog.getPoplarSequence(),
+        prog,
         debugContext("constScaledAddS1_" + std::to_string(s1f)));
   } else if (!s0.valid() && s1.valid()) {
-    snap::popops::mapInPlace(
-        graph(),
-        pe::Mul(pe::_1, pe::Const(s0f)),
-        {in0},
-        prog,
-        debugContext("constScalingS0_" + std::to_string(s0f)));
-    popops::scaledAddTo(graph().getPoplarGraph(),
-                        in0.getPoplarTensor(),
-                        in1.getPoplarTensor(),
-                        s1.getPoplarTensor(),
-                        prog.getPoplarSequence(),
-                        debugContext("nonConstScaledAddS1"));
+    popops::mapInPlace(graph(),
+                       pe::Mul(pe::_1, pe::Const(s0f)),
+                       {in0},
+                       prog,
+                       debugContext("constScalingS0_" + std::to_string(s0f)));
+    popops::scaledAddTo(
+        graph(), in0, in1, s1, prog, debugContext("nonConstScaledAddS1"));
   } else {
-    popops::scaledAddTo(graph().getPoplarGraph(),
-                        in0.getPoplarTensor(),
+    popops::scaledAddTo(graph(),
+                        in0,
                         s0f,
-                        in1.getPoplarTensor(),
+                        in1,
                         s1f,
-                        prog.getPoplarSequence(),
+                        prog,
                         debugContext("constScaledAddS0_" + std::to_string(s0f) +
                                      "_S1_" + std::to_string(s1f)));
   }
   return in0;
 }
 
-void SGD1NesterovOpx::grow(snap::program::Sequence &prog) const {
+void SGD1NesterovOpx::grow(poplar::program::Sequence &prog) const {
   auto &op = getOp<SGD1NesterovOp>();
 
   auto grad     = getInTensor(SGD1NesterovOp::getGradInIndex());
   auto weight   = getInTensor(SGD1NesterovOp::getWeightInIndex());
   auto velocity = getInTensor(SGD1NesterovOp::getVelocityInIndex());
-  snap::Tensor out;
+  poplar::Tensor out;
 
-  snap::Tensor ils, wd, ngsf, mm;
+  poplar::Tensor ils, wd, ngsf, mm;
 
   if (hasInput(SGD1NesterovOp::getInverseLossScaleInIndex())) {
     ils = getInTensor(SGD1NesterovOp::getInverseLossScaleInIndex());

@@ -1,10 +1,10 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <memory>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <string>
 #include <vector>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/error.hpp>
@@ -18,15 +18,15 @@
 #include "popart/operators.hpp"
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -52,9 +52,9 @@ EluOpx::EluOpx(Op *op, Devicex *devicex)
   verifyOp<EluOp>(op, {Onnx::Operators::Elu_1, Onnx::Operators::Elu_6});
 }
 
-void EluComputex::inplace(snap::program::Sequence &prog,
-                          snap::Graph &graph,
-                          const snap::Tensor &tensor,
+void EluComputex::inplace(poplar::program::Sequence &prog,
+                          poplar::Graph &graph,
+                          const poplar::Tensor &tensor,
                           const poplar::DebugNameAndId &dnai,
                           const std::string &debug_prefix) const {
 
@@ -69,7 +69,7 @@ void EluComputex::inplace(snap::program::Sequence &prog,
   exprs.push_back(std::make_unique<pe::Add>(pe::Max(pe::Const(0.0f), pe::_1),
                                             *exprs.back()));
 
-  snap::popops::mapInPlace(
+  popops::mapInPlace(
       graph, *exprs.back(), {tensor}, prog, {dnai, debug_prefix});
 }
 
@@ -81,11 +81,11 @@ EluInplaceOpx::EluInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<EluInplaceOp>(op, Onnx::CustomOperators::EluInplace);
 }
 
-EluGradOpx::EluGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+EluGradOpx::EluGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<EluGradOp>(op, Onnx::GradOperators::EluGrad);
 }
 
-void EluGradOpx::grow(snap::program::Sequence &prog) const {
+void EluGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op       = getOp<EluGradOp>();
   const auto input     = getInTensor(EluGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(EluGradOp::getFwdArgInIndex());
@@ -108,11 +108,11 @@ void EluGradOpx::grow(snap::program::Sequence &prog) const {
       *exprs.back()));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
-  auto output = snap::popops::map(graph(),
-                                  *exprs.back(),
-                                  {input, fwd_input},
-                                  prog,
-                                  debugContext("elu_grad"));
+  auto output = popops::map(graph(),
+                            *exprs.back(),
+                            {input, fwd_input},
+                            prog,
+                            debugContext("elu_grad"));
 
   setOutTensor(EluGradOp::getOutIndex(), output);
 }

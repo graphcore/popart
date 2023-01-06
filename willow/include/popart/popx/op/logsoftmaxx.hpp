@@ -5,20 +5,20 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <vector>
+#include <poplar/Tensor.hpp>
 #include <popart/popx/op/elementwisex.hpp>
 
 #include "popart/popx/debugcontextx.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -32,19 +32,19 @@ public:
   LogSoftmaxComputex(int64_t ax, const std::vector<size_t> &os)
       : axis(ax), outShape(os) {}
 
-  snap::Tensor outplace(snap::program::Sequence &,
-                        snap::Graph &,
-                        const snap::Tensor &,
-                        const poplar::DebugNameAndId &,
-                        const std::string &) const final;
+  poplar::Tensor outplace(poplar::program::Sequence &,
+                          poplar::Graph &,
+                          const poplar::Tensor &,
+                          const poplar::DebugNameAndId &,
+                          const std::string &) const final;
 
-  void inplace(snap::program::Sequence &,
-               snap::Graph &,
-               const snap::Tensor &,
+  void inplace(poplar::program::Sequence &,
+               poplar::Graph &,
+               const poplar::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
 
-  snap::Tensor reshape(const snap::Tensor &) const final;
+  poplar::Tensor reshape(const poplar::Tensor &) const final;
 
 private:
   int64_t axis;
@@ -64,10 +64,10 @@ public:
 class LogSoftmaxGradOpx : public ElementWiseUnaryOpx {
 public:
   LogSoftmaxGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
-  snap::Tensor cloneNcopyGrouped(snap::program::Sequence &s,
-                                 const snap::Tensor &t) const;
+  poplar::Tensor cloneNcopyGrouped(poplar::program::Sequence &s,
+                                   const poplar::Tensor &t) const;
 };
 
 } // namespace popx

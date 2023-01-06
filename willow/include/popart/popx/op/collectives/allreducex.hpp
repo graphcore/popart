@@ -2,16 +2,16 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_COLLECTIVES_ALLREDUCEX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_COLLECTIVES_ALLREDUCEX_HPP_
 
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/names.hpp>
 #include <popart/op/collectives/collectives.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -19,15 +19,16 @@ class Op;
 namespace popx {
 class Devicex;
 
-class AllReduceOpx : public PopOpx {
+class AllReduceOpx : public Opx {
 public:
   AllReduceOpx(Op *, Devicex *);
 
-  void grow(snap::program::Sequence &) const;
+  void grow(poplar::program::Sequence &) const;
 
   InputCreatorType getInputCreatorType(int index0) const;
 
-  snap::Tensor unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const;
+  poplar::Tensor
+  unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const;
 
   view::RegMap unwindRegion(InIndex, OutIndex) const;
 

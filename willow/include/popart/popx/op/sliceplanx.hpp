@@ -2,15 +2,16 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SLICEPLANX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SLICEPLANX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
 #include <cstddef>
-#include <snap/Tensor.hpp>
 #include <poplar/OptionFlags.hpp>
+#include <poplar/Tensor.hpp>
 #include <popops/DynamicSlice.hpp>
 #include <popart/names.hpp>
 #include <popart/vendored/optional.hpp>
 
-namespace snap {
+#include "popart/popx/debugcontextx.hpp"
+
+namespace poplar {
 class Graph;
 }
 
@@ -31,43 +32,43 @@ poplar::OptionFlags
 createSlicePlanOptions(SlicePlanUsedFor usedFor,
                        nonstd::optional<float> availableMemoryProportion = {});
 
-popops::SlicePlan createSlicePlan(const snap::Graph &graph,
+popops::SlicePlan createSlicePlan(const poplar::Graph &graph,
                                   const popart::TensorInfo &sliceableInfo,
                                   const popart::TensorInfo &indicesInfo,
                                   const poplar::OptionFlags &options,
                                   nonstd::optional<size_t> axis = {},
                                   size_t group_size             = 1);
 
-snap::Tensor createDataTensor(snap::Graph &graph,
-                              const popart::TensorInfo &dataInfo,
-                              const popops::SlicePlan &plan,
-                              unsigned int axis,
-                              unsigned int group_size,
-                              bool broadcasted,
-                              const poplar::DebugNameAndId &dnai);
-
-snap::Tensor createUpdateTensor(snap::Graph &graph,
+poplar::Tensor createDataTensor(poplar::Graph &graph,
                                 const popart::TensorInfo &dataInfo,
-                                const popart::TensorInfo &indicesInfo,
                                 const popops::SlicePlan &plan,
                                 unsigned int axis,
                                 unsigned int group_size,
                                 bool broadcasted,
                                 const poplar::DebugNameAndId &dnai);
 
-snap::Tensor createIndicesTensor(snap::Graph &graph,
-                                 const popart::TensorInfo &indicesInfo,
-                                 const popops::SlicePlan &plan,
-                                 unsigned int axis,
-                                 unsigned int group_size,
-                                 bool broadcasted,
-                                 const poplar::DebugNameAndId &dnai);
+poplar::Tensor createUpdateTensor(poplar::Graph &graph,
+                                  const popart::TensorInfo &dataInfo,
+                                  const popart::TensorInfo &indicesInfo,
+                                  const popops::SlicePlan &plan,
+                                  unsigned int axis,
+                                  unsigned int group_size,
+                                  bool broadcasted,
+                                  const poplar::DebugNameAndId &dnai);
+
+poplar::Tensor createIndicesTensor(poplar::Graph &graph,
+                                   const popart::TensorInfo &indicesInfo,
+                                   const popops::SlicePlan &plan,
+                                   unsigned int axis,
+                                   unsigned int group_size,
+                                   bool broadcasted,
+                                   const poplar::DebugNameAndId &dnai);
 
 // Align input to have same axes alignment and shape as popart IR.
-snap::Tensor alignToAxis(const snap::Tensor &input,
-                         const popart::Shape &shape,
-                         unsigned int axis,
-                         unsigned int group_size);
+poplar::Tensor alignToAxis(const poplar::Tensor &input,
+                           const popart::Shape &shape,
+                           unsigned int axis,
+                           unsigned int group_size);
 } // namespace popx
 } // namespace popart
 

@@ -1,7 +1,4 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/popx/op/negatex.hpp>
@@ -9,6 +6,12 @@
 
 #include "popart/operators.hpp"
 #include "popart/popx/op/elementwisex.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class NegateGradOp;
@@ -23,14 +26,13 @@ NegateOpx::NegateOpx(Op *op, Devicex *devicex)
   verifyOp<NegateOp>(op, Onnx::Operators::Neg_6);
 }
 
-void NegateOpx::grow(snap::program::Sequence &prog) const {
+void NegateOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0,
-               snap::Tensor{popops::map(graph().getPoplarGraph(),
-                                        popops::expr::UnaryOpType::NEGATE,
-                                        getInTensor(0).getPoplarTensor(),
-                                        prog.getPoplarSequence(),
-                                        debugContext()),
-                            graph()});
+               popops::map(graph(),
+                           popops::expr::UnaryOpType::NEGATE,
+                           getInTensor(0),
+                           prog,
+                           debugContext()));
 }
 
 NegateGradOpx::NegateGradOpx(Op *op, Devicex *devicex)
@@ -38,14 +40,13 @@ NegateGradOpx::NegateGradOpx(Op *op, Devicex *devicex)
   verifyOp<NegateGradOp>(op, Onnx::GradOperators::NegGrad);
 }
 
-void NegateGradOpx::grow(snap::program::Sequence &prog) const {
+void NegateGradOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0,
-               snap::Tensor{popops::map(graph().getPoplarGraph(),
-                                        popops::expr::UnaryOpType::NEGATE,
-                                        getInTensor(0).getPoplarTensor(),
-                                        prog.getPoplarSequence(),
-                                        debugContext()),
-                            graph()});
+               popops::map(graph(),
+                           popops::expr::UnaryOpType::NEGATE,
+                           getInTensor(0),
+                           prog,
+                           debugContext()));
 }
 
 namespace {

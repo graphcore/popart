@@ -1,31 +1,25 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/util/float8util.hpp"
 #include <algorithm>
 #include <boost/range/algorithm.hpp>
 #include <boost/range/algorithm_ext.hpp>
 #include <cstddef>
 #include <cstdint>
+#include <ext/new_allocator.h>
 #include <functional>
 #include <iosfwd>
 #include <iterator>
 #include <numeric>
 #include <set>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/poplin/MatMul.hpp>
 #include <string>
 #include <utility>
 #include <vector>
-#include <poplar/ArrayRef.hpp>
-#include <poplar/MetadataCreation.hpp>
 #include <poplar/OptionFlags.hpp>
 #include <poplar/Program.hpp>
 #include <poplar/StringRef.hpp>
+#include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <poplin/MatMul.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/Expr.hpp>
+#include <popops/ExprOp.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/matmul.hpp>
@@ -38,20 +32,18 @@
 #include <popart/util.hpp>
 
 #include "popart/basicoptionals.hpp"
+#include "popart/datatype.hpp"
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
 #include "popart/op.hpp"
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/opx.hpp"
+#include "popart/sessionoptions.hpp"
 #include "popart/tensordebuginfo.hpp"
+#include "popart/util/float8util.hpp"
 #include "popart/vendored/optional.hpp"
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
 
 namespace popart {
 namespace popx {
@@ -104,7 +96,7 @@ void MatMulOpx::addPartialsType(const MatMulPartialsType &partialsType,
   }
 }
 
-MatMulOpx::MatMulOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+MatMulOpx::MatMulOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<MatMulOp>(op,
                      {Onnx::Operators::MatMul_1, Onnx::Operators::MatMul_9});
 }
@@ -123,8 +115,8 @@ std::vector<std::size_t> MatMulOpx::getOutputShape() const {
   return MatMulOpx::onnxShapeToPoplar(matmul->outInfo(0).shape());
 }
 
-static std::pair<snap::Tensor, snap::Tensor>
-matInitReshape(MatMulBaseOp &matmul, snap::Tensor lhs, snap::Tensor rhs) {
+static std::pair<poplar::Tensor, poplar::Tensor>
+matInitReshape(MatMulBaseOp &matmul, poplar::Tensor lhs, poplar::Tensor rhs) {
   if (lhs.rank() < matmul.getExpandedLhsShape().size()) {
     lhs =
         lhs.reshape(vXtoY<int64_t, std::size_t>(matmul.getExpandedLhsShape()));
@@ -147,8 +139,8 @@ static std::vector<std::size_t> matchRank(std::vector<std::size_t> shape,
   return newShape;
 }
 
-static std::pair<snap::Tensor, snap::Tensor> matMatchRank(snap::Tensor lhs,
-                                                          snap::Tensor rhs) {
+static std::pair<poplar::Tensor, poplar::Tensor>
+matMatchRank(poplar::Tensor lhs, poplar::Tensor rhs) {
   auto rank = std::max(lhs.rank(), rhs.rank());
   return {lhs.reshape(matchRank(lhs.shape(), rank)),
           rhs.reshape(matchRank(rhs.shape(), rank))};
@@ -171,8 +163,8 @@ static std::vector<unsigned> matDimshuffle(std::vector<std::size_t> lhsShape,
   return permutation;
 }
 
-static std::pair<snap::Tensor, snap::Tensor> matDimshuffle(snap::Tensor lhs,
-                                                           snap::Tensor rhs) {
+static std::pair<poplar::Tensor, poplar::Tensor>
+matDimshuffle(poplar::Tensor lhs, poplar::Tensor rhs) {
   const auto lhsShape = lhs.shape();
   const auto rhsShape = rhs.shape();
 
@@ -207,8 +199,8 @@ rhsReshapeGroups(const std::vector<std::size_t> &lhsShape,
   return lhsReshapeGroups(rhsShape, lhsShape);
 }
 
-static std::pair<snap::Tensor, snap::Tensor>
-matReshapeGroups(snap::Tensor lhs, snap::Tensor rhs) {
+static std::pair<poplar::Tensor, poplar::Tensor>
+matReshapeGroups(poplar::Tensor lhs, poplar::Tensor rhs) {
   const auto lhsShape = lhs.shape();
   const auto rhsShape = rhs.shape();
 
@@ -221,27 +213,28 @@ matCombineBroadcastDims(std::vector<std::size_t> shape) {
   return {shape[0], shape[1] * shape[2], shape[3]};
 }
 
-static std::pair<snap::Tensor, snap::Tensor>
-matCombineBroadcastDims(snap::Tensor lhs, snap::Tensor rhs) {
+static std::pair<poplar::Tensor, poplar::Tensor>
+matCombineBroadcastDims(poplar::Tensor lhs, poplar::Tensor rhs) {
   rhs = rhs.dimShuffle({0, 1, 3, 2});
   lhs = lhs.reshape(matCombineBroadcastDims(lhs.shape()));
   rhs = rhs.reshape(matCombineBroadcastDims(rhs.shape()));
   return {lhs, rhs.dimShuffle({0, 2, 1})};
 }
 
-static snap::Tensor
-matSplitBroadcastDims(snap::Tensor result, snap::Tensor lhs, snap::Tensor rhs) {
+static poplar::Tensor matSplitBroadcastDims(poplar::Tensor result,
+                                            poplar::Tensor lhs,
+                                            poplar::Tensor rhs) {
   return result.reshape(
       {result.dim(0), lhs.dim(1), lhs.dim(2), rhs.dim(1), rhs.dim(3)});
 }
 
-static snap::Tensor matUnDimShuffle(snap::Tensor result) {
+static poplar::Tensor matUnDimShuffle(poplar::Tensor result) {
   return result.dimShuffle({0, 1, 3, 2, 4});
 }
 
-static snap::Tensor matExpandBroadcastDims(snap::Tensor result,
-                                           snap::Tensor lhs,
-                                           snap::Tensor rhs) {
+static poplar::Tensor matExpandBroadcastDims(poplar::Tensor result,
+                                             poplar::Tensor lhs,
+                                             poplar::Tensor rhs) {
   const auto lhsShape = lhs.shape();
   const auto rhsShape = rhs.shape();
   const auto outShape = result.shape();
@@ -259,8 +252,9 @@ static snap::Tensor matExpandBroadcastDims(snap::Tensor result,
   return result.reshape(newShape);
 }
 
-static snap::Tensor
-matExpandGroupDims(snap::Tensor result, snap::Tensor lhs, snap::Tensor rhs) {
+static poplar::Tensor matExpandGroupDims(poplar::Tensor result,
+                                         poplar::Tensor lhs,
+                                         poplar::Tensor rhs) {
   const auto lhsShape = lhs.shape();
   const auto rhsShape = rhs.shape();
   const auto outShape = result.shape();
@@ -280,9 +274,9 @@ matExpandGroupDims(snap::Tensor result, snap::Tensor lhs, snap::Tensor rhs) {
   return result.reshape(newShape);
 }
 
-static snap::Tensor matInterleaveBroadcastDims(snap::Tensor result,
-                                               snap::Tensor lhs,
-                                               snap::Tensor rhs) {
+static poplar::Tensor matInterleaveBroadcastDims(poplar::Tensor result,
+                                                 poplar::Tensor lhs,
+                                                 poplar::Tensor rhs) {
   const auto lhsShape = lhs.shape();
 
   const auto offset = std::distance(
@@ -303,9 +297,9 @@ static snap::Tensor matInterleaveBroadcastDims(snap::Tensor result,
   return result.dimShuffle(permutation);
 }
 
-static snap::Tensor matSqueezeBroadcastDims(snap::Tensor result,
-                                            snap::Tensor lhs,
-                                            snap::Tensor rhs) {
+static poplar::Tensor matSqueezeBroadcastDims(poplar::Tensor result,
+                                              poplar::Tensor lhs,
+                                              poplar::Tensor rhs) {
   const auto lhsShape = lhs.shape();
   const auto offset   = std::distance(
       lhsShape.begin(), boost::mismatch(lhsShape, rhs.shape()).first);
@@ -364,15 +358,16 @@ matShuffleGroupDims(std::vector<std::size_t> rShape,
   return invertPermutation(mapping);
 }
 
-static snap::Tensor
-matShuffleGroupDims(snap::Tensor result, snap::Tensor lhs, snap::Tensor rhs) {
+static poplar::Tensor matShuffleGroupDims(poplar::Tensor result,
+                                          poplar::Tensor lhs,
+                                          poplar::Tensor rhs) {
   const auto permutation =
       matShuffleGroupDims(result.shape(), lhs.shape(), rhs.shape());
 
   return result.dimShuffle(permutation);
 }
 
-poplar::Type MatMulOpx::getOutputType(const snap::Tensor &output) const {
+poplar::Type MatMulOpx::getOutputType(const poplar::Tensor &output) const {
   auto outputType = output.elementType();
   if (auto _outputType = getOp<MatMulOp>().getOutputType()) {
     outputType = popType(*_outputType);
@@ -414,7 +409,8 @@ void MatMulOpx::verifyCacheSizeUnchanged(size_t beforeCacheSize) const {
 // let `a` be a tensor with shape [2, 1, 4, 5, 1, 7, 8], and `b` be a tensor
 // with shape [2, 3, 1, 5, 6, 8, 9]. We would expect an output tensor with shape
 // [2, 3, 4, 5, 6, 7, 9].
-void MatMulOpx::grow(snap::program::Sequence &prog) const {
+void MatMulOpx::grow(poplar::program::Sequence &prog) const {
+
   auto &matmul = getOp<MatMulOp>();
 
   auto a = getInTensor(MatMulOp::getLhsInIndex());
@@ -424,29 +420,28 @@ void MatMulOpx::grow(snap::program::Sequence &prog) const {
     auto log2ScaleTensor = getInTensor(MatMulOp::getLog2ScaleInIndex());
 
     if (matmul.getIr().getSessionOptions().throwIfLog2ScaleTensorNotInRange) {
-      auto assertProg = createAssertLog2ScaleInRangeProg(
-          graph().getPoplarGraph(), log2ScaleTensor.getPoplarTensor(), -32, 32);
+      auto assertProg =
+          createAssertLog2ScaleInRangeProg(graph(), log2ScaleTensor, -32, 32);
 
-      prog.getPoplarSequence().add(assertProg);
+      prog.add(assertProg);
     }
 
     auto lhs = reinterpretCastUInt8ToQuarter(
-        graph().getPoplarGraph(),
-        a.getPoplarTensor(),
+        graph(),
+        a,
         toPoplarQuarterFormat(matmul.lhsIn()->info.dataType()),
-        log2ScaleTensor.getPoplarTensor(),
-        prog.getPoplarSequence());
+        log2ScaleTensor,
+        prog);
 
     auto rhs = reinterpretCastUInt8ToQuarter(
-        graph().getPoplarGraph(),
-        b.getPoplarTensor(),
+        graph(),
+        b,
         toPoplarQuarterFormat(matmul.rhsIn()->info.dataType()),
         0,
-        prog.getPoplarSequence());
+        prog);
 
-    // Wrap back up into snap Tensors before matmul
-    a = snap::Tensor(lhs, graph());
-    b = snap::Tensor(rhs, graph());
+    a = lhs;
+    b = rhs;
   }
 
   // Makes both input tensors at least rank 3
@@ -514,27 +509,27 @@ void MatMulOpx::grow(snap::program::Sequence &prog) const {
 
   auto cacheSize = dv_p->matmulCache.size();
   auto outTensor =
-      snap::poplin::matMulGrouped(graph(),                    // graph
-                                  combinedBroadcastTs.first,  // A
-                                  combinedBroadcastTs.second, // B
-                                  prog,                       // prog
-                                  outputType,
-                                  debugContext("matmulGrouped"), // debugContext
-                                  opts,                          // options
-                                  &dv_p->matmulCache);           // cache
+      poplin::matMulGrouped(graph(),                    // graph
+                            combinedBroadcastTs.first,  // A
+                            combinedBroadcastTs.second, // B
+                            prog,
+                            outputType,
+                            debugContext("matmulGrouped"), // debugContext
+                            opts,                          // options
+                            &dv_p->matmulCache);           // cache
 
   verifyCacheSizeUnchanged(cacheSize);
 
   // Log the report plan
   std::stringstream ss;
-  snap::poplin::matMulGroupedReportPlan(ss,
-                                        graph(),
-                                        combinedBroadcastTs.first.elementType(),
-                                        outTensor.elementType(),
-                                        combinedBroadcastTs.first.shape(),
-                                        combinedBroadcastTs.second.shape(),
-                                        opts,
-                                        &dv_p->matmulCache);
+  poplin::matMulGroupedReportPlan(ss,
+                                  graph(),
+                                  combinedBroadcastTs.first.elementType(),
+                                  outTensor.elementType(),
+                                  combinedBroadcastTs.first.shape(),
+                                  combinedBroadcastTs.second.shape(),
+                                  opts,
+                                  &dv_p->matmulCache);
   logging::opx::debug("Grouped Matmul {} plan", op_p->str());
   logging::log(logging::Module::opx, logging::Level::Debug, ss.str());
 
@@ -617,9 +612,9 @@ MatMulOp *MatMulOpx::getMatMulOp() const {
   return dynamic_cast<MatMulOp *>(op_p);
 }
 
-snap::Tensor
-MatMulOpx::createInputTensor(InIndex index,
-                             const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+MatMulOpx::createInput(InIndex index,
+                       const poplar::DebugNameAndId &dnai) const {
   auto &matmul = getOp<MatMulOp>();
 
   std::vector<std::size_t> lhsShape =
@@ -666,7 +661,7 @@ MatMulOpx::createInputTensor(InIndex index,
     return popType(type);
   };
 
-  auto reinterpretAsUInt8IfQuarter = [](snap::Tensor t) {
+  auto reinterpretAsUInt8IfQuarter = [](poplar::Tensor t) {
     if (t.elementType() == poplar::QUARTER) {
       return t.reinterpret(poplar::UNSIGNED_CHAR);
     }
@@ -679,14 +674,14 @@ MatMulOpx::createInputTensor(InIndex index,
     auto outType = inType == poplar::QUARTER
                        ? poplar::HALF
                        : popType(getMatMulOp()->lhsIn()->info.dataType());
-    auto result = snap::poplin::createMatMulGroupedInputLHS(graph(),
-                                                            inType,
-                                                            outType,
-                                                            lhsShape,
-                                                            rhsShape,
-                                                            dnai,
-                                                            opts,
-                                                            &dv_p->matmulCache);
+    auto result = poplin::createMatMulGroupedInputLHS(graph(),
+                                                      inType,
+                                                      outType,
+                                                      lhsShape,
+                                                      rhsShape,
+                                                      dnai,
+                                                      opts,
+                                                      &dv_p->matmulCache);
 
     result = result.reshape(lhsShapeP);
     result = result.dimShuffle(invertPermutation(permutation));
@@ -699,14 +694,14 @@ MatMulOpx::createInputTensor(InIndex index,
     auto outType = inType == poplar::QUARTER
                        ? poplar::HALF
                        : popType(getMatMulOp()->rhsIn()->info.dataType());
-    auto result = snap::poplin::createMatMulGroupedInputRHS(graph(),
-                                                            inType,
-                                                            outType,
-                                                            lhsShape,
-                                                            rhsShape,
-                                                            dnai,
-                                                            opts,
-                                                            &dv_p->matmulCache);
+    auto result = poplin::createMatMulGroupedInputRHS(graph(),
+                                                      inType,
+                                                      outType,
+                                                      lhsShape,
+                                                      rhsShape,
+                                                      dnai,
+                                                      opts,
+                                                      &dv_p->matmulCache);
 
     result = result.reshape(rhsShapeP);
     result = result.dimShuffle(invertPermutation(permutation));
@@ -734,10 +729,10 @@ std::set<TensorId> MatMulOpx::mustExistBeforeCreate(InIndex) const {
   return {};
 }
 
-std::pair<snap::Tensor, snap::Tensor>
+std::pair<poplar::Tensor, poplar::Tensor>
 MatMulOpx::groupedMatMulInputsFromOpxInputs(MatMulBaseOp &matmul,
-                                            snap::Tensor lhs,
-                                            snap::Tensor rhs) {
+                                            poplar::Tensor lhs,
+                                            poplar::Tensor rhs) {
   auto initReshapedTs = matInitReshape(matmul, lhs, rhs);
 
   auto matchedRankTs =

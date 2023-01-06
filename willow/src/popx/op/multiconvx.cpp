@@ -2,10 +2,6 @@
 
 #include <algorithm>
 #include <map>
-#include <memory>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <utility>
 #include <vector>
@@ -23,6 +19,12 @@
 #include "popart/op/convbase.hpp"
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/convbasex.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -61,55 +63,50 @@ poplar::OptionFlags MultiConvOpx::getGlobalOptions() const {
   return optionFlags;
 }
 
-snap::Tensor
+poplar::Tensor
 MultiConvOpx::createWeightsInput(const poplar::DebugNameAndId &dnai,
                                  int convIndex) const {
-  return snap::Tensor{
-      poplin::multiconv::createWeights(graph().getPoplarGraph(),
-                                       getCreateTensorArgs(dnai),
-                                       static_cast<unsigned>(convIndex),
-                                       getGlobalOptions(),
-                                       &dv_p->convCache),
-      graph()};
+  return poplin::multiconv::createWeights(graph(),
+                                          getCreateTensorArgs(dnai),
+                                          static_cast<unsigned>(convIndex),
+                                          getGlobalOptions(),
+                                          &dv_p->convCache);
 }
-snap::Tensor MultiConvOpx::createDataInput(const poplar::DebugNameAndId &dnai,
-                                           int convIndex) const {
-  return snap::Tensor{
-      poplin::multiconv::createInput(graph().getPoplarGraph(),
-                                     getCreateTensorArgs(dnai),
-                                     static_cast<unsigned>(convIndex),
-                                     getGlobalOptions(),
-                                     &dv_p->convCache),
-      graph()};
+poplar::Tensor MultiConvOpx::createDataInput(const poplar::DebugNameAndId &dnai,
+                                             int convIndex) const {
+  return poplin::multiconv::createInput(graph(),
+                                        getCreateTensorArgs(dnai),
+                                        static_cast<unsigned>(convIndex),
+                                        getGlobalOptions(),
+                                        &dv_p->convCache);
 }
 
-std::vector<snap::Tensor>
-MultiConvOpx::convolve(snap::program::Sequence &prog,
-                       const std::vector<snap::Tensor> &weights) const {
+std::vector<poplar::Tensor>
+MultiConvOpx::convolve(poplar::program::Sequence &prog,
+                       const std::vector<poplar::Tensor> &weights) const {
   std::vector<poplin::multiconv::ConvolutionArgs> allConvArgs;
   MultiConvBaseOp &op = getOp<MultiConvBaseOp>();
 
   for (int i = 0; i < op.numConvs(); i++) {
     poplin::multiconv::ConvolutionArgs convArgs;
-    convArgs.inputs =
-        getInTensor(MultiConvBaseOp::getDataInIndex(i)).getPoplarTensor();
-    convArgs.weights = weights[i].getPoplarTensor();
+    convArgs.inputs  = getInTensor(MultiConvBaseOp::getDataInIndex(i));
+    convArgs.weights = weights[i];
     convArgs.params  = getPoplarConvParams(op.getParameters(i));
     convArgs.options = getConvOptions(i);
 
     allConvArgs.push_back(convArgs);
   }
-  auto pOuts = poplin::multiconv::convolution(graph().getPoplarGraph(),
+  auto pOuts = poplin::multiconv::convolution(graph(),
                                               allConvArgs,
                                               false,
-                                              prog.getPoplarSequence(),
+                                              prog,
                                               debugContext("multiConvolution"),
                                               getGlobalOptions(),
                                               &dv_p->convCache);
-  std::vector<snap::Tensor> outs;
+  std::vector<poplar::Tensor> outs;
   outs.reserve(pOuts.size());
   for (auto out : pOuts) {
-    outs.push_back(snap::Tensor{out, graph()});
+    outs.push_back(out);
   }
   return outs;
 }
@@ -120,28 +117,27 @@ MultiConvWeightsGradOpx::MultiConvWeightsGradOpx(Op *op, Devicex *devicex)
       op, {Onnx::GradOperators::MultiConvWeightsGrad});
 }
 
-std::vector<snap::Tensor> MultiConvWeightsGradOpx::calculateWeightDeltas(
-    snap::program::Sequence &prog) const {
+std::vector<poplar::Tensor> MultiConvWeightsGradOpx::calculateWeightDeltas(
+    poplar::program::Sequence &prog) const {
 
   // The multiconv api for calculating weight deltas is deprecated.
   // Use the standard convolution api
   MultiConvWeightsGradOp &op = getOp<MultiConvWeightsGradOp>();
-  std::vector<snap::Tensor> outTensors;
+  std::vector<poplar::Tensor> outTensors;
 
   for (int i = 0; i < op.numConvs(); i++) {
-    const snap::Tensor &zDelta = getInTensor(op.getGradConvolvedInIndex(i));
-    const snap::Tensor &acts   = getInTensor(op.getPreConvolvedInIndex(i));
+    const poplar::Tensor &zDelta = getInTensor(op.getGradConvolvedInIndex(i));
+    const poplar::Tensor &acts   = getInTensor(op.getPreConvolvedInIndex(i));
 
-    snap::Tensor wGrad = snap::Tensor{
-        poplin::calculateWeightDeltas(graph().getPoplarGraph(),
-                                      zDelta.getPoplarTensor(),
-                                      acts.getPoplarTensor(),
+    poplar::Tensor wGrad =
+        poplin::calculateWeightDeltas(graph(),
+                                      zDelta,
+                                      acts,
                                       getPoplarConvParams(op.getParameters(i)),
-                                      prog.getPoplarSequence(),
+                                      prog,
                                       debugContext("weightDeltas"),
                                       getConvOptions(i),
-                                      &dv_p->convCache),
-        graph()};
+                                      &dv_p->convCache);
     outTensors.push_back(wGrad);
   }
   return outTensors;

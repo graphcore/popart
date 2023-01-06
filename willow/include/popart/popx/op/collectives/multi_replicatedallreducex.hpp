@@ -1,17 +1,17 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_COLLECTIVES_MULTI_REPLICATEDALLREDUCEX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_COLLECTIVES_MULTI_REPLICATEDALLREDUCEX_HPP_
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
 
 #include "popart/names.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -29,12 +29,12 @@ class MultiReplicatedAllReduceOpx : public MultiCollectiveBaseOpx {
 public:
   MultiReplicatedAllReduceOpx(popart::Op *op, Devicex *devicex);
   InputCreatorType getInputCreatorType(InIndex) const override;
-  snap::Tensor unwindTensorLayout(snap::Tensor tensor,
-                                  InIndex in,
-                                  OutIndex out) const override;
+  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
+                                    InIndex in,
+                                    OutIndex out) const override;
   view::RegMap unwindRegion(InIndex, OutIndex) const override;
   void growPart(OpxGrowPartId id) const override;
-  void grow(snap::program::Sequence &prog) const override;
+  void grow(poplar::program::Sequence &prog) const override;
 };
 
 } // namespace popx

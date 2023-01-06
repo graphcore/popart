@@ -4,12 +4,11 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <utility>
 #include <vector>
+#include <poplar/Graph.hpp>
+#include <poplar/Program.hpp>
 #include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <popops/Cast.hpp>
@@ -29,7 +28,7 @@
 #include "popart/op/dynamic/dynamicbase.hpp"
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/linearmapper.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/region.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorinfo.hpp"
@@ -37,36 +36,32 @@
 namespace popart {
 namespace popx {
 
-DynamicSliceOpx::DynamicSliceOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+DynamicSliceOpx::DynamicSliceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<DynamicSliceBaseOp>(op);
   inputCreatorPriority = -1.0;
 }
 
-void DynamicSliceOpx::grow(snap::program::Sequence &prog) const {
+void DynamicSliceOpx::grow(poplar::program::Sequence &prog) const {
   auto &op    = getOp<DynamicSliceBaseOp>();
-  auto tensor = getInTensor(DynamicSliceBaseOp::getInIndex()).getPoplarTensor();
-  auto index =
-      getInTensor(DynamicSliceBaseOp::getIndexInIndex()).getPoplarTensor();
+  auto tensor = getInTensor(DynamicSliceBaseOp::getInIndex());
+  auto index  = getInTensor(DynamicSliceBaseOp::getIndexInIndex());
 
   std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
   std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
 
-  auto s =
-      snap::Tensor{popops::dynamicSlice(
-                       graph().getPoplarGraph(),
-                       tensor,
-                       popops::cast(graph().getPoplarGraph(),
-                                    index.reshape({op.getAxes().size()}),
-                                    poplar::UNSIGNED_INT,
-                                    prog.getPoplarSequence(),
-                                    debugContext()),
-                       paxes,
-                       psizes,
-                       prog.getPoplarSequence(),
-                       debugContext("dynamic_slice_" +
-                                    op.inId(DynamicSliceBaseOp::getInIndex()))),
-                   graph()};
+  auto s = popops::dynamicSlice(
+      graph(),
+      tensor,
+      popops::cast(graph(),
+                   index.reshape({op.getAxes().size()}),
+                   poplar::UNSIGNED_INT,
+                   prog,
+                   debugContext()),
+      paxes,
+      psizes,
+      prog,
+      debugContext("dynamic_slice_" +
+                   op.inId(DynamicSliceBaseOp::getInIndex())));
 
   auto outTensor = s;
   // Output tensor mirrors layout of the input slice provided
@@ -75,7 +70,7 @@ void DynamicSliceOpx::grow(snap::program::Sequence &prog) const {
         cloneNcopy(prog,
                    getInTensor(DynamicSliceOp::getSliceInIndex()),
                    op.inId(DynamicSliceOp::getSliceInIndex()) + "_writeable");
-    prog.getPoplarSequence().add(poplar::program::Copy(s, outTensor));
+    prog.add(poplar::program::Copy(s, outTensor));
   }
 
   setOutTensor(DynamicSliceBaseOp::getOutIndex(), outTensor);
@@ -85,12 +80,12 @@ InputCreatorType DynamicSliceOpx::getInputCreatorType(InIndex index) const {
   return (index == DynamicSliceBaseOp::getInIndex() ||
           index == DynamicSliceInplaceOp::getSliceInIndex())
              ? InputCreatorType::CanCreateOrUnwind
-             : PopOpx::getInputCreatorType(index);
+             : Opx::getInputCreatorType(index);
 }
 
-snap::Tensor
-DynamicSliceOpx::createInputTensor(InIndex index,
-                                   const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+DynamicSliceOpx::createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const {
   auto &op = getOp<DynamicSliceBaseOp>();
 
   // Get the tensor info and the shapes
@@ -129,13 +124,8 @@ DynamicSliceOpx::createInputTensor(InIndex index,
     dv_p->lowering().getLinearMapper().mapTensor(graph(), sliceTensor);
 
     // Create the layout for the input tensor
-    return snap::Tensor{
-        popops::createSliceableTensorFromSlice(graph().getPoplarGraph(),
-                                               sliceTensor.getPoplarTensor(),
-                                               paxes,
-                                               numSlices,
-                                               dnai),
-        graph()};
+    return popops::createSliceableTensorFromSlice(
+        graph(), sliceTensor, paxes, numSlices, dnai);
   }
 
   if (index == DynamicSliceInplaceOp::getSliceInIndex()) {
@@ -153,13 +143,13 @@ DynamicSliceOpx::createInputTensor(InIndex index,
     ;
   }
 
-  throw internal_error(
-      "[DynamicSliceOpx::createInputTensor] Unsupported InIndex {}", index);
+  throw internal_error("[DynamicSliceOpx::createInput] Unsupported InIndex {}",
+                       index);
 }
 
-snap::Tensor DynamicSliceOpx::unwindTensorLayout(snap::Tensor tensor,
-                                                 InIndex index,
-                                                 OutIndex) const {
+poplar::Tensor DynamicSliceOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                   InIndex index,
+                                                   OutIndex) const {
   auto &op      = getOp<DynamicSliceBaseOp>();
   auto outShape = tensor.shape();
   auto inShape  = op.inShape(DynamicSliceBaseOp::getInIndex());
@@ -188,13 +178,8 @@ snap::Tensor DynamicSliceOpx::unwindTensorLayout(snap::Tensor tensor,
     }
 
     // Create the layout for the input tensor
-    return snap::Tensor{
-        popops::createSliceableTensorFromSlice(
-            graph().getPoplarGraph(),
-            tensor.reshape(outShape).slice(begin, end).getPoplarTensor(),
-            paxes,
-            numSlices),
-        graph()};
+    return popops::createSliceableTensorFromSlice(
+        graph(), tensor.reshape(outShape).slice(begin, end), paxes, numSlices);
   }
   if (index == DynamicSliceInplaceOp::getSliceInIndex()) {
     return tensor.reshape(op.inTensor(DynamicSliceInplaceOp::getSliceInIndex())
@@ -219,31 +204,28 @@ DynamicSliceInplaceOpx::DynamicSliceInplaceOpx(Op *op, Devicex *devicex)
   inputCreatorPriority = -1.0;
 }
 
-void DynamicSliceInplaceOpx::grow(snap::program::Sequence &prog) const {
+void DynamicSliceInplaceOpx::grow(poplar::program::Sequence &prog) const {
   auto &op    = getOp<DynamicSliceBaseOp>();
-  auto tensor = getInTensor(DynamicSliceBaseOp::getInIndex()).getPoplarTensor();
-  auto index =
-      getInTensor(DynamicSliceBaseOp::getIndexInIndex()).getPoplarTensor();
-  auto slice = getInTensor(DynamicSliceInplaceOp::getSliceInIndex());
+  auto tensor = getInTensor(DynamicSliceBaseOp::getInIndex());
+  auto index  = getInTensor(DynamicSliceBaseOp::getIndexInIndex());
+  auto slice  = getInTensor(DynamicSliceInplaceOp::getSliceInIndex());
 
   std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
   std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
 
-  auto s =
-      snap::Tensor{popops::dynamicSlice(
-                       graph().getPoplarGraph(),
-                       tensor,
-                       popops::cast(graph().getPoplarGraph(),
-                                    index.reshape({op.getAxes().size()}),
-                                    poplar::UNSIGNED_INT,
-                                    prog.getPoplarSequence(),
-                                    debugContext()),
-                       paxes,
-                       psizes,
-                       prog.getPoplarSequence(),
-                       debugContext("dynamic_slice_" +
-                                    op.inId(DynamicSliceBaseOp::getInIndex()))),
-                   graph()};
+  auto s = popops::dynamicSlice(
+      graph(),
+      tensor,
+      popops::cast(graph(),
+                   index.reshape({op.getAxes().size()}),
+                   poplar::UNSIGNED_INT,
+                   prog,
+                   debugContext()),
+      paxes,
+      psizes,
+      prog,
+      debugContext("dynamic_slice_" +
+                   op.inId(DynamicSliceBaseOp::getInIndex())));
 
   auto writeableSlice = slice;
   if (!writeableSlice.isParallelWriteable()) {
@@ -253,7 +235,7 @@ void DynamicSliceInplaceOpx::grow(snap::program::Sequence &prog) const {
         op.inId(DynamicSliceInplaceOp::getSliceInIndex()) + "_writeable");
   }
 
-  prog.getPoplarSequence().add(
+  prog.add(
       poplar::program::Copy(s.reshape(writeableSlice.shape()), writeableSlice));
 
   setOutTensor(DynamicSliceBaseOp::getOutIndex(), writeableSlice);

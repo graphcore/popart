@@ -1,11 +1,11 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <snap/Program.hpp>
+#include <poplar/Program.hpp>
 #include <popart/op/sync.hpp>
 #include <popart/popx/op/syncx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
 #include "popart/graphcoreoperators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
 namespace popart {
 class Op;
@@ -13,14 +13,13 @@ class Op;
 namespace popx {
 class Devicex;
 
-SyncOpx::SyncOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+SyncOpx::SyncOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<SyncOp>(op, Onnx::CustomOperators::Sync);
 }
 
-void SyncOpx::grow(snap::program::Sequence &prog) const {
+void SyncOpx::grow(poplar::program::Sequence &prog) const {
   auto &syncOp = getOp<SyncOp>();
-  prog.getPoplarSequence().add(
-      poplar::program::Sync(syncOp.getSyncType(), debugContext()));
+  prog.add(poplar::program::Sync(syncOp.getSyncType(), debugContext()));
 }
 
 namespace {

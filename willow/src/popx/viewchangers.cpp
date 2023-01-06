@@ -2,14 +2,13 @@
 
 #include <cstddef>
 #include <memory>
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <popart/popx/viewchangers.hpp>
 
 namespace popart {
 namespace popx {
 
-snap::Tensor ViewChangers::apply(snap::Tensor tensor) const {
+poplar::Tensor ViewChangers::apply(poplar::Tensor tensor) const {
   for (auto viewChanger : viewChangers) {
     tensor = viewChanger->apply(tensor);
   }

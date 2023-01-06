@@ -4,11 +4,11 @@
 
 #include <popart/popx/op/elementwisex.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -19,7 +19,7 @@ class Devicex;
 class SqrtOpx : public ElementWiseUnaryOpx {
 public:
   SqrtOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

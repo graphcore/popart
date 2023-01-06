@@ -2,10 +2,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
+#include <ext/new_allocator.h>
 #include <vector>
 #include <poplar/Tensor.hpp>
 #include <popops/ElementWise.hpp>
@@ -20,8 +17,14 @@
 
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/tensorinfo.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -31,38 +34,33 @@ class Op;
 namespace popx {
 class Devicex;
 
-ReduceL1Opx::ReduceL1Opx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+ReduceL1Opx::ReduceL1Opx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ReduceL1Op>(op);
 }
 
-void ReduceL1Opx::grow(snap::program::Sequence &prog) const {
+void ReduceL1Opx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceL1Op>();
-  const auto input = getInTensor(ReduceL1Op::getInIndex()).getPoplarTensor();
+  const auto input = getInTensor(ReduceL1Op::getInIndex());
 
-  auto abs_input = popops::abs(graph().getPoplarGraph(),
-                               input,
-                               prog.getPoplarSequence(),
-                               debugContext("abs"));
+  auto abs_input = popops::abs(graph(), input, prog, debugContext("abs"));
 
-  auto output_tensor = popops::reduce(graph().getPoplarGraph(),
+  auto output_tensor = popops::reduce(graph(),
                                       abs_input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::ADD},
-                                      prog.getPoplarSequence(),
+                                      prog,
                                       debugContext("reduce"));
 
-  setOutTensor(ReduceL1Op::getOutIndex(),
-               snap::Tensor{output_tensor.reshape(
-                                outInfo(ReduceL1Op::getOutIndex()).shape_szt()),
-                            graph()});
+  setOutTensor(
+      ReduceL1Op::getOutIndex(),
+      output_tensor.reshape(outInfo(ReduceL1Op::getOutIndex()).shape_szt()));
 }
 
-ReduceL1GradOpx::ReduceL1GradOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+ReduceL1GradOpx::ReduceL1GradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ReduceL1GradOp>(op, Onnx::GradOperators::ReduceL1Grad);
 }
 
-void ReduceL1GradOpx::grow(snap::program::Sequence &prog) const {
+void ReduceL1GradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op       = getOp<ReduceL1GradOp>();
   auto output          = getInTensor(ReduceL1GradOp::getOutIndex());
   auto fwd_input       = getInTensor(ReduceL1GradOp::getFwdInInIndex());
@@ -79,11 +77,11 @@ void ReduceL1GradOpx::grow(snap::program::Sequence &prog) const {
     }
   }
 
-  output = snap::popops::map(graph(),
-                             pe::Mul(pe::_1, pe::Signum(pe::_2)),
-                             {output, fwd_input},
-                             prog,
-                             debugContext("output"));
+  output = popops::map(graph(),
+                       pe::Mul(pe::_1, pe::Signum(pe::_2)),
+                       {output, fwd_input},
+                       prog,
+                       debugContext("output"));
 
   // output now matches the shape of output_shape
   setOutTensor(ReduceL1GradOp::getOutIndex(), output);

@@ -14878,7 +14878,7 @@ static const char *__singlelinedoc_popart_Session_checkInplacingAmbiguity =
 static const char *__doc_popart_Session_compileAndExport =
     R"doc(Compile the graph and export it to a file.
 
-This method will first create a ``snap::Graph`` and compile the ``poplar::Executable.`` Next, it will export the executable and PopART metadata
+This method will first create a ``poplar::Graph`` and compile the ``poplar::Executable.`` Next, it will export the executable and PopART metadata
 to the file. The exported file will be in the `PopEF <https://docs.graphcore.ai/projects/popef/en/latest/>`_
 format. This means that the file can be used to run inference using the `Triton
 Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`_ with the Graphcore Triton backend. See the `Poplar Triton Backend User Guide <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/>`_ for more information.
@@ -14889,12 +14889,12 @@ Args:
       metadata will be saved.)doc";
 
 static const char *__singlelinedoc_popart_Session_compileAndExport =
-    R"doc(Compile the graph and export it to a file. This method will first create a ``snap::Graph`` and compile the ``poplar::Executable.`` Next, it will export the executable and PopART metadata to the file. The exported file will be in the `PopEF <https://docs.graphcore.ai/projects/popef/en/latest/>`_ format. This means that the file can be used to run inference using the `Triton Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`_ with the Graphcore Triton backend. See the `Poplar Triton Backend User Guide <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/>`_ for more information. Args: filename: The name of the file where the compiled executable and metadata will be saved.)doc";
+    R"doc(Compile the graph and export it to a file. This method will first create a ``poplar::Graph`` and compile the ``poplar::Executable.`` Next, it will export the executable and PopART metadata to the file. The exported file will be in the `PopEF <https://docs.graphcore.ai/projects/popef/en/latest/>`_ format. This means that the file can be used to run inference using the `Triton Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`_ with the Graphcore Triton backend. See the `Poplar Triton Backend User Guide <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/>`_ for more information. Args: filename: The name of the file where the compiled executable and metadata will be saved.)doc";
 
 static const char *__doc_popart_Session_compileAndExport_2 =
     R"doc(Compile the graph and export it to a stream.
 
-This method will first create a ``snap::Graph`` and compile the ``poplar::Executable.`` Next, it will export the executable and PopART metadata
+This method will first create a ``poplar::Graph`` and compile the ``poplar::Executable.`` Next, it will export the executable and PopART metadata
 to the stream. The data will be streamed in the `PopEF <https://docs.graphcore.ai/projects/popef/en/latest/>`_
 format. This means that the file can be used to run inference using the `Triton
 Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`_ with the Graphcore Triton backend. See the `Poplar Triton Backend User Guide <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/>`_ for more information.
@@ -14908,7 +14908,7 @@ Args:
       written to.)doc";
 
 static const char *__singlelinedoc_popart_Session_compileAndExport_2 =
-    R"doc(Compile the graph and export it to a stream. This method will first create a ``snap::Graph`` and compile the ``poplar::Executable.`` Next, it will export the executable and PopART metadata to the stream. The data will be streamed in the `PopEF <https://docs.graphcore.ai/projects/popef/en/latest/>`_ format. This means that the file can be used to run inference using the `Triton Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`_ with the Graphcore Triton backend. See the `Poplar Triton Backend User Guide <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/>`_ for more information. This method automatically creates folders as needed if \p filename is located in a folder which does not exist. Args: out: The stream that the compiled executable and metadata will be written to.)doc";
+    R"doc(Compile the graph and export it to a stream. This method will first create a ``poplar::Graph`` and compile the ``poplar::Executable.`` Next, it will export the executable and PopART metadata to the stream. The data will be streamed in the `PopEF <https://docs.graphcore.ai/projects/popef/en/latest/>`_ format. This means that the file can be used to run inference using the `Triton Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`_ with the Graphcore Triton backend. See the `Poplar Triton Backend User Guide <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/>`_ for more information. This method automatically creates folders as needed if \p filename is located in a folder which does not exist. Args: out: The stream that the compiled executable and metadata will be written to.)doc";
 
 static const char *__doc_popart_Session_configureFromOnnx = R"doc()doc";
 
@@ -15246,7 +15246,7 @@ static const char *__singlelinedoc_popart_Session_name =
 static const char *__doc_popart_Session_prepareDevice =
     R"doc(Prepare the network for execution.
 
-This will create the ``snap::Graph`` and ``poplar::Engine.`:code:`
+This will create the ``poplar::Graph`` and ``poplar::Engine.`:code:`
 
 
 Args:
@@ -15254,7 +15254,7 @@ Args:
       the device is ready.)doc";
 
 static const char *__singlelinedoc_popart_Session_prepareDevice =
-    R"doc(Prepare the network for execution. This will create the ``snap::Graph`` and ``poplar::Engine.`:code:` Args: loadEngine: If `true`, load the engine and connect the streams once the device is ready.)doc";
+    R"doc(Prepare the network for execution. This will create the ``poplar::Graph`` and ``poplar::Engine.`:code:` Args: loadEngine: If `true`, load the engine and connect the streams once the device is ready.)doc";
 
 static const char *__doc_popart_Session_readWeights =
     R"doc(Read the weights from the host stream memory and write to the host.
@@ -15512,11 +15512,11 @@ static const char *__singlelinedoc_popart_Session_setRandomSeed =
 static const char *__doc_popart_Session_tryLoadExecutable =
     R"doc(Attempt to load a serialized executable.
 
-If successful then IR preparation and ``snap::Graph`` compilation are
+If successful then IR preparation and ``poplar::Graph`` compilation are
 skipped.)doc";
 
 static const char *__singlelinedoc_popart_Session_tryLoadExecutable =
-    R"doc(Attempt to load a serialized executable. If successful then IR preparation and ``snap::Graph`` compilation are skipped.)doc";
+    R"doc(Attempt to load a serialized executable. If successful then IR preparation and ``poplar::Graph`` compilation are skipped.)doc";
 
 static const char *__doc_popart_Session_updateEngineCache =
     R"doc(Update cacheEntries from engine cache directory

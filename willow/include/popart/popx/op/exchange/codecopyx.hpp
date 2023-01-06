@@ -4,11 +4,11 @@
 
 #include <popart/popx/op/exchange/exchangex.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -23,7 +23,7 @@ class Devicex;
 class RemoteCodeLoadOpx : public ExchangeBaseOpx {
 public:
   RemoteCodeLoadOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

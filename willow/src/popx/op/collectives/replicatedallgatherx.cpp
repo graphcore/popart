@@ -1,13 +1,10 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <gcl/CollectiveBalancedReorder.hpp>
 #include <gcl/Collectives.hpp>
 #include <memory>
 #include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
+#include <poplar/Graph.hpp>
 #include <poplar/Tensor.hpp>
 #include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/popx/devicex.hpp>
@@ -21,9 +18,10 @@
 #include "popart/names.hpp"
 #include "popart/op.hpp"
 #include "popart/op/collectives/collectives.hpp"
+#include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/linearmapper.hpp"
 #include "popart/popx/op/collectives/collectivesx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/popx/viewchangers.hpp"
 #include "popart/region.hpp"
 #include "popart/replicatedtensorsharding.hpp"
@@ -32,6 +30,9 @@
 
 namespace poplar {
 class OptionFlags;
+namespace program {
+class Sequence;
+} // namespace program
 } // namespace poplar
 
 namespace popart {
@@ -44,15 +45,15 @@ ReplicatedAllGatherOpx::ReplicatedAllGatherOpx(Op *op, Devicex *devicex)
   inputCreatorPriority = -1.0;
 }
 
-void ReplicatedAllGatherOpx::grow(snap::program::Sequence &prog) const {
+void ReplicatedAllGatherOpx::grow(poplar::program::Sequence &prog) const {
   auto &op = getOp<ReplicatedAllGatherOp>();
 
   const poplar::OptionFlags &allGatherOptions = dv_p->lowering().gclOptions;
 
   poplar::Tensor gathered = gcl::allGatherCrossReplica(
-      graph().getPoplarGraph(),
-      getInTensor(ReplicatedAllGatherOp::getInIndex()).getPoplarTensor(),
-      prog.getPoplarSequence(),
+      graph(),
+      getInTensor(ReplicatedAllGatherOp::getInIndex()),
+      prog,
       toGclCommGroup(op.getReplicaGrouping()),
       debugContext("replicatedAllGather"),
       allGatherOptions);
@@ -71,10 +72,8 @@ void ReplicatedAllGatherOpx::grow(snap::program::Sequence &prog) const {
 
   setOutTensor(
       ReplicatedAllGatherOp::getOutIndex(),
-      snap::Tensor{
-          gathered.reshape(
-              op.outInfo(ReplicatedAllGatherOp::getOutIndex()).shape_szt()),
-          graph()});
+      gathered.reshape(
+          op.outInfo(ReplicatedAllGatherOp::getOutIndex()).shape_szt()));
 }
 
 InputCreatorType
@@ -83,15 +82,15 @@ ReplicatedAllGatherOpx::getInputCreatorType(InIndex index) const {
                  getOp<ReplicatedAllGatherOp>()
                      .isConfigureOutputForReplicatedTensorSharding()
              ? InputCreatorType::CanCreateOrUnwind
-             : PopOpx::getInputCreatorType(index);
+             : Opx::getInputCreatorType(index);
 }
 
-snap::Tensor ReplicatedAllGatherOpx::unwindTensorLayout(snap::Tensor tensor,
-                                                        InIndex,
-                                                        OutIndex) const {
+poplar::Tensor ReplicatedAllGatherOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                          InIndex,
+                                                          OutIndex) const {
   auto cbr = createCollectiveBalancedReorder(
       tensor, CollectivesBaseOp::getDefaultTensorShardingGroupIndex());
-  return snap::Tensor{cbr->createReplicaSlice(tensor.elementType()), graph()};
+  return cbr->createReplicaSlice(tensor.elementType());
 }
 
 view::RegMap ReplicatedAllGatherOpx::unwindRegion(InIndex, OutIndex) const {
@@ -106,9 +105,9 @@ ReplicatedAllGatherOpx::mustExistBeforeCreate(InIndex) const {
   return {};
 }
 
-snap::Tensor ReplicatedAllGatherOpx::createInputTensor(
-    InIndex index,
-    const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+ReplicatedAllGatherOpx::createInput(InIndex index,
+                                    const poplar::DebugNameAndId &dnai) const {
   auto &op = getOp<ReplicatedAllGatherOp>();
 
   if (index == ReplicatedAllGatherOp::getInIndex()) {
@@ -118,7 +117,7 @@ snap::Tensor ReplicatedAllGatherOpx::createInputTensor(
     dv_p->lowering().getLinearMapper().mapTensor(graph(), outTensor);
     auto cbr = createCollectiveBalancedReorder(
         outTensor, CollectivesBaseOp::getDefaultTensorShardingGroupIndex());
-    return snap::Tensor{cbr->createReplicaSlice(popType(outInfo)), graph()};
+    return cbr->createReplicaSlice(popType(outInfo));
   }
 
   throw error("ReplicatedAllGatherOpx::createInput: Invalid index = " +

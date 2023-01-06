@@ -2,20 +2,21 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SCALEX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SCALEX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
 #include <memory>
-#include <snap/Tensor.hpp>
 #include <string>
+#include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <popart/popx/op/elementwisex.hpp>
 
-namespace snap {
+#include "popart/popx/debugcontextx.hpp"
+
+namespace poplar {
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -28,15 +29,15 @@ class ScaleComputex : public EwuComputex {
 public:
   ScaleComputex(double x) : scale_factor(x) {}
 
-  snap::Tensor outplace(snap::program::Sequence &,
-                        snap::Graph &,
-                        const snap::Tensor &tensor,
-                        const poplar::DebugNameAndId &,
-                        const std::string &) const final;
+  poplar::Tensor outplace(poplar::program::Sequence &,
+                          poplar::Graph &,
+                          const poplar::Tensor &tensor,
+                          const poplar::DebugNameAndId &,
+                          const std::string &) const final;
 
-  void inplace(snap::program::Sequence &,
-               snap::Graph &,
-               const snap::Tensor &,
+  void inplace(poplar::program::Sequence &,
+               poplar::Graph &,
+               const poplar::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
 
@@ -45,8 +46,8 @@ public:
         new ScaleComputex(static_cast<double>(x)));
   }
 
-  snap::Tensor getScaleTensor(const poplar::Type &type,
-                              snap::Graph &graph) const;
+  poplar::Tensor getScaleTensor(const poplar::Type &type,
+                                poplar::Graph &graph) const;
 
   static float getFromScaleOp(Op *op);
   static float getFromScaleInplaceOp(Op *op);

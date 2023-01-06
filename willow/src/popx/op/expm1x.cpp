@@ -1,16 +1,21 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
+#include <poplar/Tensor.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/popx/op/expm1x.hpp>
 #include <popart/popx/opxmanager.hpp>
 
 #include "popart/graphcoreoperators.hpp"
+#include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/elementwisex.hpp"
+
+namespace poplar {
+class Graph;
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Expm1InplaceOp;
@@ -30,31 +35,24 @@ Expm1Opx::Expm1Opx(Op *op, Devicex *devicex)
   verifyOp<Expm1Op>(op, Onnx::CustomOperators::Expm1_1);
 }
 
-snap::Tensor Expm1Computex::outplace(snap::program::Sequence &p,
-                                     snap::Graph &g,
-                                     const snap::Tensor &t,
-                                     const poplar::DebugNameAndId &dnai,
-                                     const std::string &dbs) const {
+poplar::Tensor Expm1Computex::outplace(poplar::program::Sequence &p,
+                                       poplar::Graph &g,
+                                       const poplar::Tensor &t,
+                                       const poplar::DebugNameAndId &dnai,
+                                       const std::string &dbs) const {
 
-  return snap::Tensor{popops::map(g.getPoplarGraph(),
-                                  popops::expr::UnaryOpType::EXPONENT_MINUS_ONE,
-                                  t.getPoplarTensor(),
-                                  p.getPoplarSequence(),
-                                  {dnai, dbs}),
-                      g};
+  return popops::map(
+      g, popops::expr::UnaryOpType::EXPONENT_MINUS_ONE, t, p, {dnai, dbs});
 }
 
-void Expm1Computex::inplace(snap::program::Sequence &p,
-                            snap::Graph &g,
-                            const snap::Tensor &t,
+void Expm1Computex::inplace(poplar::program::Sequence &p,
+                            poplar::Graph &g,
+                            const poplar::Tensor &t,
                             const poplar::DebugNameAndId &dnai,
                             const std::string &dbs) const {
 
-  popops::mapInPlace(g.getPoplarGraph(),
-                     popops::expr::UnaryOpType::EXPONENT_MINUS_ONE,
-                     t.getPoplarTensor(),
-                     p.getPoplarSequence(),
-                     {dnai, dbs});
+  popops::mapInPlace(
+      g, popops::expr::UnaryOpType::EXPONENT_MINUS_ONE, t, p, {dnai, dbs});
 }
 
 namespace {

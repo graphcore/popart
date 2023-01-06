@@ -3,25 +3,24 @@
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SORTUTILX_HPP_
 
 #include "popart/popx/debugcontextx.hpp"
-#include <snap/Tensor.hpp>
 
-namespace snap {
+namespace poplar {
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 namespace popx {
 namespace sortutilx {
 
-snap::Tensor getIotaTensor(snap::Graph &graph,
-                           const snap::Tensor &input,
-                           unsigned axis,
-                           snap::program::Sequence &prog,
-                           const poplar::DebugNameAndId &dnai);
+poplar::Tensor getIotaTensor(poplar::Graph &graph,
+                             const poplar::Tensor &input,
+                             unsigned axis,
+                             poplar::program::Sequence &prog,
+                             const poplar::DebugNameAndId &dnai);
 
 } // namespace sortutilx
 } // namespace popx

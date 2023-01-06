@@ -3,33 +3,34 @@
 #include <algorithm>
 #include <map>
 #include <memory>
-#include <snap/DataStream.hpp>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <utility>
 #include <vector>
+#include <poplar/DataStream.hpp>
+#include <poplar/FunctionBufferMappingType.hpp>
+#include <poplar/Graph.hpp>
+#include <poplar/Program.hpp>
 #include <poplar/Tensor.hpp>
 #include <poplar/TensorCloneMethod.hpp>
 #include <popops/HostSliceTensor.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/exchange/codecopy.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/exchange/exchangex.hpp>
 
+#include "popart/basicoptionals.hpp"
 #include "popart/debugcontext.hpp"
 #include "popart/error.hpp"
+#include "popart/graphid.hpp"
 #include "popart/logging.hpp"
-#include "popart/names.hpp"
 #include "popart/op/exchange/exchange.hpp"
 #include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/exchangebundle.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/popx/poptensors.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorinfo.hpp"
-#include "popart/vendored/optional.hpp"
+#include "popart/tensorlocation.hpp"
 
 namespace popart {
 class Op;
@@ -38,13 +39,13 @@ namespace popx {
 
 namespace {
 
-std::vector<snap::Tensor>
-createRemoteBufferLandingPads(snap::Graph &graph,
-                              snap::Tensor refTensor,
+std::vector<poplar::Tensor>
+createRemoteBufferLandingPads(poplar::Graph &graph,
+                              poplar::Tensor refTensor,
                               ExchangeDescriptor descriptor,
                               bool remoteBufferSeparateLoadStorePadsRequired) {
   auto numPads = remoteBufferSeparateLoadStorePadsRequired ? 2 : 1;
-  std::vector<snap::Tensor> rbTensors;
+  std::vector<poplar::Tensor> rbTensors;
   rbTensors.reserve(numPads);
   for (int i = 0; i < numPads; ++i) {
     rbTensors.push_back(
@@ -56,20 +57,21 @@ createRemoteBufferLandingPads(snap::Graph &graph,
   return rbTensors;
 }
 
-snap::Tensor selectRemoteBufferLandingPad(std::vector<snap::Tensor> rbTensors,
-                                          ExchangeDescriptor descriptor) {
+poplar::Tensor
+selectRemoteBufferLandingPad(std::vector<poplar::Tensor> rbTensors,
+                             ExchangeDescriptor descriptor) {
   return rbTensors.at(static_cast<int>(descriptor.getDirection()) %
                       rbTensors.size());
 }
 
-snap::Tensor makeWritableRemoteExchangeTensor(Devicex *dv_p,
-                                              ExchangeDescriptor descriptor,
-                                              TensorId id,
-                                              snap::Graph &graph,
-                                              snap::Tensor t) {
+poplar::Tensor makeWritableRemoteExchangeTensor(Devicex *dv_p,
+                                                ExchangeDescriptor descriptor,
+                                                TensorId id,
+                                                poplar::Graph &graph,
+                                                poplar::Tensor t) {
   auto rbid    = descriptor.getRemoteBufferId();
   bool inplace = descriptor.isInplace();
-  std::vector<snap::Tensor> rbTensors;
+  std::vector<poplar::Tensor> rbTensors;
   // Clone the input tensor if the remote buffer tensor does not exist
   if (!dv_p->lowering().getExchangeBundle().hasRemoteBuffer(rbid)) {
     rbTensors = createRemoteBufferLandingPads(
@@ -86,19 +88,19 @@ snap::Tensor makeWritableRemoteExchangeTensor(Devicex *dv_p,
   rbTensors   = buffer.second;
   // The outplacing of the tensor will be done explicitly
   if (!inplace) {
-    snap::Tensor tw =
+    poplar::Tensor tw =
         graph.clone(selectRemoteBufferLandingPad(rbTensors, descriptor),
                     {id + "_writable"},
                     poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
     return tw;
   }
   // Outplace fallback
-  if (!t.isParallelWriteable() || t.getPoplarTensor().containsConstant()) {
+  if (!t.isParallelWriteable() || t.containsConstant()) {
     logging::opx::warn("Tensor {} is not a writable remote buffer "
                        "copy target, cloning. "
                        "The aliasing properties have changed implicitly.",
                        id);
-    snap::Tensor tw =
+    poplar::Tensor tw =
         graph.clone(selectRemoteBufferLandingPad(rbTensors, descriptor),
                     {id + "_writable"},
                     poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
@@ -107,12 +109,12 @@ snap::Tensor makeWritableRemoteExchangeTensor(Devicex *dv_p,
   return t;
 }
 
-snap::Tensor getOrCreateStreamTensor(Devicex *dv_p,
-                                     TensorId streamTensorId,
-                                     snap::Graph &graph,
-                                     snap::Tensor t,
-                                     const poplar::DebugContext &context) {
-  snap::Tensor streamTensor;
+poplar::Tensor getOrCreateStreamTensor(Devicex *dv_p,
+                                       TensorId streamTensorId,
+                                       poplar::Graph &graph,
+                                       poplar::Tensor t,
+                                       const poplar::DebugContext &context) {
+  poplar::Tensor streamTensor;
 
   if (dv_p->lowering().getExchangeBundle().hasStreamTensor("ST_" +
                                                            streamTensorId)) {
@@ -129,15 +131,15 @@ snap::Tensor getOrCreateStreamTensor(Devicex *dv_p,
   return streamTensor;
 }
 
-snap::Tensor
+poplar::Tensor
 makeWritableHostExchangeTensor(Devicex *dv_p,
                                TensorId id,
                                TensorId streamTensorId,
-                               snap::Graph &graph,
-                               snap::Tensor t,
+                               poplar::Graph &graph,
+                               poplar::Tensor t,
                                bool inplace,
                                const poplar::DebugContext &context) {
-  snap::Tensor streamTensor =
+  poplar::Tensor streamTensor =
       getOrCreateStreamTensor(dv_p, id, graph, t, context);
   if (dv_p->lowering().tensors().contains(streamTensorId)) {
     streamTensor = dv_p->lowering().tensors().get(streamTensorId);
@@ -150,7 +152,7 @@ makeWritableHostExchangeTensor(Devicex *dv_p,
   }
   // The outplacing of the tensor will be done explicitly
   if (!inplace) {
-    snap::Tensor tw =
+    poplar::Tensor tw =
         graph.clone(streamTensor,
                     {id + "_writable"},
                     poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
@@ -162,7 +164,7 @@ makeWritableHostExchangeTensor(Devicex *dv_p,
                         " target, cloning. "
                         "The aliasing properties have changed implicitly.",
                         id);
-    snap::Tensor tw =
+    poplar::Tensor tw =
         graph.clone(streamTensor,
                     {id + "_writable"},
                     poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
@@ -173,33 +175,31 @@ makeWritableHostExchangeTensor(Devicex *dv_p,
 
 } // namespace
 
-ExchangeBaseOpx::ExchangeBaseOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {}
+ExchangeBaseOpx::ExchangeBaseOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 
 ExchangeDescriptorx::ExchangeDescriptorx(Devicex *dv_p_,
                                          ExchangeDescriptor descriptor_)
     : dv_p(dv_p_), descriptor(descriptor_) {}
 
-snap::Tensor ExchangeDescriptorx::unwind(snap::Graph &,
-                                         snap::Tensor tensor) const {
+poplar::Tensor ExchangeDescriptorx::unwind(poplar::Graph &,
+                                           poplar::Tensor tensor) const {
   return tensor;
 }
 
-snap::Tensor ExchangeDescriptorx::create(snap::Graph &graph,
-                                         const TensorInfo &info) const {
+poplar::Tensor ExchangeDescriptorx::create(poplar::Graph &graph,
+                                           const TensorInfo &info) const {
   std::string debugContext =
       descriptor.isHostExchange()
           ? descriptor.getHostStreamTensorId()
           : std::to_string(descriptor.getRemoteBufferId());
 
   // Note: ExchangeDirection::Store means isRead is true for the host side
-  return snap::Tensor{popops::createHostTransferableTensor(
-                          graph.getPoplarGraph(),
-                          popType(info.getDataTypeInfo()->type()),
-                          info.shape_szt(),
-                          descriptor.getDirection() == ExchangeDirection::Store,
-                          {debugContext}),
-                      graph};
+  return popops::createHostTransferableTensor(
+      graph,
+      popType(info.getDataTypeInfo()->type()),
+      info.shape_szt(),
+      descriptor.getDirection() == ExchangeDirection::Store,
+      {debugContext});
 }
 
 std::unique_ptr<ExchangeDescriptorx>
@@ -273,12 +273,12 @@ RemoteCodeLoadOpDescriptorx::RemoteCodeLoadOpDescriptorx(
     ExchangeDescriptor descriptor_)
     : ExchangeDescriptorx(dv_p_, descriptor_) {}
 
-void HostLoadDescriptorx::pre(snap::Graph &graph,
-                              snap::program::Sequence &prog,
+void HostLoadDescriptorx::pre(poplar::Graph &graph,
+                              poplar::program::Sequence &prog,
                               poplar::DebugContext context) {}
 
-void HostLoadDescriptorx::exchange(snap::Graph &graph,
-                                   snap::program::Sequence &prog,
+void HostLoadDescriptorx::exchange(poplar::Graph &graph,
+                                   poplar::program::Sequence &prog,
                                    poplar::DebugContext context) {
   auto streamTensor =
       getOrCreateStreamTensor(dv_p,
@@ -300,7 +300,7 @@ void HostLoadDescriptorx::exchange(snap::Graph &graph,
 
     poplar::program::Copy copy_prog(
         stream, streamTensor, rearrangeOnHost(), context);
-    prog.getPoplarSequence().add(copy_prog);
+    prog.add(copy_prog);
 
   } else {
     throw error("Stream for tensor {} not found",
@@ -308,8 +308,8 @@ void HostLoadDescriptorx::exchange(snap::Graph &graph,
   }
 }
 
-void HostLoadDescriptorx::post(snap::Graph &graph,
-                               snap::program::Sequence &prog,
+void HostLoadDescriptorx::post(poplar::Graph &graph,
+                               poplar::program::Sequence &prog,
                                poplar::DebugContext context) {
   outTensors.push_back(
       makeWritableHostExchangeTensor(dv_p,
@@ -320,7 +320,7 @@ void HostLoadDescriptorx::post(snap::Graph &graph,
                                      descriptor.isInplace(),
                                      context));
 
-  snap::Tensor streamTensor =
+  poplar::Tensor streamTensor =
       getOrCreateStreamTensor(dv_p,
                               descriptor.getHostStreamTensorId(),
                               graph,
@@ -328,13 +328,13 @@ void HostLoadDescriptorx::post(snap::Graph &graph,
                               context);
   poplar::program::Copy tmp_copy_prog(
       streamTensor, outTensors.at(0), false, context);
-  prog.getPoplarSequence().add(tmp_copy_prog);
+  prog.add(tmp_copy_prog);
 }
 
-snap::Tensor HostLoadDescriptorx::unwind(snap::Graph &graph,
-                                         snap::Tensor tensor) const {
+poplar::Tensor HostLoadDescriptorx::unwind(poplar::Graph &graph,
+                                           poplar::Tensor tensor) const {
   poplar::DebugContext context;
-  snap::Tensor unwound =
+  poplar::Tensor unwound =
       makeWritableHostExchangeTensor(dv_p,
                                      TensorId(),
                                      descriptor.getHostStreamTensorId(),
@@ -350,8 +350,8 @@ bool HostLoadDescriptorx::rearrangeOnHost() const {
       dv_p->ir().getTensor(descriptor.getHostStreamTensorId()));
 }
 
-void HostStoreDescriptorx::pre(snap::Graph &graph,
-                               snap::program::Sequence &prog,
+void HostStoreDescriptorx::pre(poplar::Graph &graph,
+                               poplar::program::Sequence &prog,
                                poplar::DebugContext context) {
   auto streamTensor =
       getOrCreateStreamTensor(dv_p,
@@ -362,16 +362,16 @@ void HostStoreDescriptorx::pre(snap::Graph &graph,
 
   poplar::program::Copy tmp_copy_prog(
       inTensors.at(0).second, streamTensor, false, context);
-  prog.getPoplarSequence().add(tmp_copy_prog);
+  prog.add(tmp_copy_prog);
 }
 
-void HostStoreDescriptorx::exchange(snap::Graph &graph,
-                                    snap::program::Sequence &prog,
+void HostStoreDescriptorx::exchange(poplar::Graph &graph,
+                                    poplar::program::Sequence &prog,
                                     poplar::DebugContext context) {
   auto streams = dv_p->lowering().getToHostAnchorStreams();
   auto it      = streams.find(descriptor.getHostStreamTensorId());
 
-  snap::Tensor streamTensor =
+  poplar::Tensor streamTensor =
       getOrCreateStreamTensor(dv_p,
                               descriptor.getHostStreamTensorId(),
                               graph,
@@ -400,7 +400,7 @@ void HostStoreDescriptorx::exchange(snap::Graph &graph,
 
     poplar::program::Copy copy_prog(
         streamTensor, stream, rearrangeOnHost, context);
-    prog.getPoplarSequence().add(copy_prog);
+    prog.add(copy_prog);
 
   } else {
     throw error("Stream for tensor {} not found",
@@ -408,8 +408,8 @@ void HostStoreDescriptorx::exchange(snap::Graph &graph,
   }
 }
 
-void HostStoreDescriptorx::post(snap::Graph &graph,
-                                snap::program::Sequence &prog,
+void HostStoreDescriptorx::post(poplar::Graph &graph,
+                                poplar::program::Sequence &prog,
                                 poplar::DebugContext context) {}
 
 bool HostStoreDescriptorx::rearrangeOnHost() const {
@@ -417,16 +417,16 @@ bool HostStoreDescriptorx::rearrangeOnHost() const {
       dv_p->ir().getTensor(descriptor.getHostStreamTensorId()));
 }
 
-void RemoteLoadDescriptorx::pre(snap::Graph &graph,
-                                snap::program::Sequence &prog,
+void RemoteLoadDescriptorx::pre(poplar::Graph &graph,
+                                poplar::program::Sequence &prog,
                                 poplar::DebugContext context) {}
 
-void RemoteLoadDescriptorx::exchange(snap::Graph &graph,
-                                     snap::program::Sequence &prog,
+void RemoteLoadDescriptorx::exchange(poplar::Graph &graph,
+                                     poplar::program::Sequence &prog,
                                      poplar::DebugContext context) {
-  std::vector<snap::Tensor> rbTensors;
+  std::vector<poplar::Tensor> rbTensors;
 
-  snap::Tensor offset;
+  poplar::Tensor offset;
   if (inTensors.size() > 1) {
     offset = inTensors.at(1).second;
   }
@@ -455,45 +455,45 @@ void RemoteLoadDescriptorx::exchange(snap::Graph &graph,
         selectRemoteBufferLandingPad(rbTensors, descriptor),
         offset,
         context);
-    prog.getPoplarSequence().add(copy_prog);
+    prog.add(copy_prog);
   } else {
     poplar::program::Copy copy_prog(
         buffer.first,
         selectRemoteBufferLandingPad(rbTensors, descriptor),
         context);
-    prog.getPoplarSequence().add(copy_prog);
+    prog.add(copy_prog);
   }
 }
 
-void RemoteLoadDescriptorx::post(snap::Graph &graph,
-                                 snap::program::Sequence &prog,
+void RemoteLoadDescriptorx::post(poplar::Graph &graph,
+                                 poplar::program::Sequence &prog,
                                  poplar::DebugContext context) {
   outTensors.push_back(makeWritableRemoteExchangeTensor(
       dv_p, descriptor, inTensors.at(0).first, graph, inTensors.at(0).second));
 
   auto buffer = dv_p->lowering().getExchangeBundle().getRemoteBuffer(
       descriptor.getRemoteBufferId());
-  std::vector<snap::Tensor> rbTensors = buffer.second;
+  std::vector<poplar::Tensor> rbTensors = buffer.second;
   poplar::program::Copy tmp_copy_prog(
       selectRemoteBufferLandingPad(rbTensors, descriptor),
       outTensors.at(0),
       false,
       context);
-  prog.getPoplarSequence().add(tmp_copy_prog);
+  prog.add(tmp_copy_prog);
 }
 
-snap::Tensor RemoteLoadDescriptorx::unwind(snap::Graph &graph,
-                                           snap::Tensor tensor) const {
-  auto context         = DebugContext();
-  snap::Tensor unwound = makeWritableRemoteExchangeTensor(
+poplar::Tensor RemoteLoadDescriptorx::unwind(poplar::Graph &graph,
+                                             poplar::Tensor tensor) const {
+  auto context           = DebugContext();
+  poplar::Tensor unwound = makeWritableRemoteExchangeTensor(
       dv_p, descriptor, TensorId(), graph, tensor);
   return unwound;
 }
 
-void RemoteStoreDescriptorx::pre(snap::Graph &graph,
-                                 snap::program::Sequence &prog,
+void RemoteStoreDescriptorx::pre(poplar::Graph &graph,
+                                 poplar::program::Sequence &prog,
                                  poplar::DebugContext context) {
-  std::vector<snap::Tensor> rbTensors;
+  std::vector<poplar::Tensor> rbTensors;
   if (!dv_p->lowering().getExchangeBundle().hasRemoteBuffer(
           descriptor.getRemoteBufferId())) {
     rbTensors = createRemoteBufferLandingPads(
@@ -515,50 +515,50 @@ void RemoteStoreDescriptorx::pre(snap::Graph &graph,
       selectRemoteBufferLandingPad(rbTensors, descriptor),
       false,
       context);
-  prog.getPoplarSequence().add(tmp_copy_prog);
+  prog.add(tmp_copy_prog);
 }
 
-void RemoteStoreDescriptorx::exchange(snap::Graph &graph,
-                                      snap::program::Sequence &prog,
+void RemoteStoreDescriptorx::exchange(poplar::Graph &graph,
+                                      poplar::program::Sequence &prog,
                                       poplar::DebugContext context) {
-  snap::Tensor offset;
+  poplar::Tensor offset;
   if (inTensors.size() > 1) {
     offset = inTensors.at(1).second;
   }
 
   auto buffer = dv_p->lowering().getExchangeBundle().getRemoteBuffer(
       descriptor.getRemoteBufferId());
-  std::vector<snap::Tensor> rbTensors = buffer.second;
+  std::vector<poplar::Tensor> rbTensors = buffer.second;
   if (offset.valid() && offset.numElements() > 0) {
     poplar::program::Copy copy_prog(
         selectRemoteBufferLandingPad(rbTensors, descriptor),
         buffer.first,
         offset,
         context);
-    prog.getPoplarSequence().add(copy_prog);
+    prog.add(copy_prog);
   } else {
     poplar::program::Copy copy_prog(
         selectRemoteBufferLandingPad(rbTensors, descriptor),
         buffer.first,
         context);
-    prog.getPoplarSequence().add(copy_prog);
+    prog.add(copy_prog);
   }
 }
 
-void RemoteStoreDescriptorx::post(snap::Graph &graph,
-                                  snap::program::Sequence &prog,
+void RemoteStoreDescriptorx::post(poplar::Graph &graph,
+                                  poplar::program::Sequence &prog,
                                   poplar::DebugContext context) {}
 
-void RemoteCodeLoadOpDescriptorx::pre(snap::Graph &graph,
-                                      snap::program::Sequence &prog,
+void RemoteCodeLoadOpDescriptorx::pre(poplar::Graph &graph,
+                                      poplar::program::Sequence &prog,
                                       poplar::DebugContext context) {
   auto fbmt =
       getFunctionBufferMappingType(*descriptor.getDestinationCodeMemoryType());
   dv_p->lowering().addFunctionBuffers(*descriptor.getGraphToLoadId(), fbmt);
 }
 
-void RemoteCodeLoadOpDescriptorx::exchange(snap::Graph &graph,
-                                           snap::program::Sequence &prog,
+void RemoteCodeLoadOpDescriptorx::exchange(poplar::Graph &graph,
+                                           poplar::program::Sequence &prog,
                                            poplar::DebugContext context) {
   auto gid = *descriptor.getGraphToLoadId();
   auto fbmt =
@@ -570,7 +570,7 @@ void RemoteCodeLoadOpDescriptorx::exchange(snap::Graph &graph,
       auto f      = pair.first;
       auto buffer = pair.second;
 
-      prog.getPoplarSequence().add(poplar::program::Copy(buffer, f, context));
+      prog.add(poplar::program::Copy(buffer, f, context));
     }
 
   } else {
@@ -578,8 +578,8 @@ void RemoteCodeLoadOpDescriptorx::exchange(snap::Graph &graph,
   }
 }
 
-void RemoteCodeLoadOpDescriptorx::post(snap::Graph &graph,
-                                       snap::program::Sequence &prog,
+void RemoteCodeLoadOpDescriptorx::post(poplar::Graph &graph,
+                                       poplar::program::Sequence &prog,
                                        poplar::DebugContext context) {}
 
 poplar::FunctionBufferMappingType

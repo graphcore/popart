@@ -4,13 +4,13 @@
 #include <popart/popx/opxmanager.hpp>
 
 #include "popart/graphcoreoperators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -18,11 +18,11 @@ class Op;
 namespace popx {
 class Devicex;
 
-NopOpx::NopOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+NopOpx::NopOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<NopOp>(op, Onnx::CustomOperators::Nop_1);
 }
 
-void NopOpx::grow(snap::program::Sequence &prog) const {
+void NopOpx::grow(poplar::program::Sequence &prog) const {
   auto input  = getInTensor(NopOp::getInIndex());
   auto output = cloneNcopy(prog, input);
   setOutTensor(NopOp::getOutIndex(), output);

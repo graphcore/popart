@@ -1,10 +1,8 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <cstddef>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
+#include <ext/new_allocator.h>
 #include <vector>
+#include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
@@ -21,8 +19,14 @@
 #include "popart/names.hpp"
 #include "popart/op.hpp"
 #include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/region.hpp" // IWYU pragma: keep
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -31,23 +35,21 @@ namespace popart {
 namespace popx {
 class Devicex;
 
-L1Opx::L1Opx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+L1Opx::L1Opx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<L1Op>(op, Onnx::CustomOperators::L1);
 }
 
-void L1GradOpx::grow(snap::program::Sequence &prog) const {
+void L1GradOpx::grow(poplar::program::Sequence &prog) const {
   L1GradOp &l1gradop = getOp<L1GradOp>();
 
   double lambda = static_cast<double>(l1gradop.getLambda());
 
   // Signum : +1 of positive, -1 if negative, 0 if zero.
-  auto signumTensor = snap::Tensor{
-      popops::map(graph().getPoplarGraph(),
-                  popops::expr::UnaryOpType::SIGNUM,
-                  getInTensor(L1GradOp::getFwdActInIndex()).getPoplarTensor(),
-                  prog.getPoplarSequence(),
-                  debugContext("Signum")),
-      graph()};
+  auto signumTensor = popops::map(graph(),
+                                  popops::expr::UnaryOpType::SIGNUM,
+                                  getInTensor(L1GradOp::getFwdActInIndex()),
+                                  prog,
+                                  debugContext("Signum"));
 
   double scale = lambda;
   switch (l1gradop.getReductionType()) {
@@ -72,18 +74,18 @@ void L1GradOpx::grow(snap::program::Sequence &prog) const {
   // - by loss scaling factor
   // - then by input gradient
 
-  auto gradTensor = snap::popops::map(graph(),
-                                      pe::Mul(pe::_1, pe::_2),
-                                      {signumTensor, t_scale},
-                                      prog,
-                                      debugContext("multiply"));
+  auto gradTensor = popops::map(graph(),
+                                pe::Mul(pe::_1, pe::_2),
+                                {signumTensor, t_scale},
+                                prog,
+                                debugContext("multiply"));
 
   auto gradIn = getInTensor(L1GradOp::getGradInIndex());
-  snap::popops::mapInPlace(graph(),
-                           pe::Mul(pe::_1, pe::_2),
-                           {gradTensor, gradIn},
-                           prog,
-                           debugContext("scaledGradIn"));
+  popops::mapInPlace(graph(),
+                     pe::Mul(pe::_1, pe::_2),
+                     {gradTensor, gradIn},
+                     prog,
+                     debugContext("scaledGradIn"));
 
   setOutTensor(0, gradTensor);
 }
@@ -100,20 +102,19 @@ view::RegMap L1Opx::unwindRegion(InIndex, OutIndex) const {
   return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
-snap::Tensor
-L1Opx::unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const {
+poplar::Tensor
+L1Opx::unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const {
   return tensor;
 }
 
 // lambda * sum_{0,..rank-1} |v|
-void L1Opx::grow(snap::program::Sequence &prog) const {
+void L1Opx::grow(poplar::program::Sequence &prog) const {
   const L1Op &l1op = getOp<L1Op>();
-  auto absTensor   = snap::Tensor{popops::map(graph().getPoplarGraph(),
-                                            popops::expr::UnaryOpType::ABSOLUTE,
-                                            getInTensor(0).getPoplarTensor(),
-                                            prog.getPoplarSequence(),
-                                            debugContext("abs")),
-                                graph()};
+  auto absTensor   = popops::map(graph(),
+                               popops::expr::UnaryOpType::ABSOLUTE,
+                               getInTensor(0),
+                               prog,
+                               debugContext("abs"));
 
   if (absTensor.rank() == 0) {
     throw error("invalid tensor (rank-0) in L1Opx");
@@ -124,12 +125,12 @@ void L1Opx::grow(snap::program::Sequence &prog) const {
   if (l1op.getReductionType() == ReductionType::NoReduction) {
     auto t_scale = getConst(absTensor.elementType(), {}, lambda, "scale");
 
-    auto scaled = snap::popops::map(graph(),
-                                    popops::expr::BinaryOpType::MULTIPLY,
-                                    absTensor,
-                                    t_scale,
-                                    prog,
-                                    debugContext("add"));
+    auto scaled = popops::map(graph(),
+                              popops::expr::BinaryOpType::MULTIPLY,
+                              absTensor,
+                              t_scale,
+                              prog,
+                              debugContext("add"));
     setOutTensor(0, scaled);
   } else {
     auto absTensor1D = absTensor.flatten();
@@ -155,19 +156,18 @@ void L1Opx::grow(snap::program::Sequence &prog) const {
 
     // t_scale is always expected to be FLOAT, regardless of the input type
     // to the reduction
-    auto t_scale =
-        getConst(poplar::FLOAT, {}, scale, "scale").getPoplarTensor();
-    auto reduction = popops::reduce(graph().getPoplarGraph(),
-                                    absTensor1D.getPoplarTensor(),
+    auto t_scale   = getConst(poplar::FLOAT, {}, scale, "scale");
+    auto reduction = popops::reduce(graph(),
+                                    absTensor1D,
                                     {0},
                                     {popops::Operation::ADD, false, t_scale},
-                                    prog.getPoplarSequence(),
+                                    prog,
                                     debugContext("add"));
-    setOutTensor(0, snap::Tensor{reduction, graph()});
+    setOutTensor(0, reduction);
   }
 }
 
-L1GradOpx::L1GradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+L1GradOpx::L1GradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<L1GradOp>(op, Onnx::CustomGradOperators::L1Grad);
 }
 

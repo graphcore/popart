@@ -3,15 +3,15 @@
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_NLLX_HPP_
 
 #include <cstdint>
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -19,27 +19,27 @@ class Op;
 namespace popx {
 class Devicex;
 
-class NllOpx : public PopOpx {
+class NllOpx : public Opx {
 public:
   NllOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   // Mask the loss, or loss-grad of rows (i.e. samples) of tensor t
   // whose corresponding target label is equal to ignoreIndex
 
-  static void flattenAndEncodeOneHot(const PopOpx &opx,
-                                     snap::program::Sequence &prog,
-                                     const snap::Tensor &probs,
-                                     const snap::Tensor &label,
-                                     snap::Tensor &probs2D,
-                                     snap::Tensor &label1D,
-                                     snap::Tensor &oneHot);
+  static void flattenAndEncodeOneHot(const Opx &opx,
+                                     poplar::program::Sequence &prog,
+                                     const poplar::Tensor &probs,
+                                     const poplar::Tensor &label,
+                                     poplar::Tensor &probs2D,
+                                     poplar::Tensor &label1D,
+                                     poplar::Tensor &oneHot);
 
-  static snap::Tensor
-  applyMaskInPlaceForIgnoredIndex(const PopOpx &opx,
-                                  snap::Tensor t,
-                                  snap::Tensor labels,
+  static poplar::Tensor
+  applyMaskInPlaceForIgnoredIndex(const Opx &opx,
+                                  poplar::Tensor t,
+                                  poplar::Tensor labels,
                                   int ignoreIndex,
-                                  snap::program::Sequence &prog);
+                                  poplar::program::Sequence &prog);
   // If the loss that created this op was constructed with a
   // ReductionType 'Mean', then we scale the output of the loss
   // tensor by 1/local_loss_elements and the gradient of the loss tensor
@@ -47,10 +47,10 @@ public:
   // This is a static function that is used to scale the every Nll
   // loss and loss grad at the output of the respective ops/grad ops
   static void
-  applyScalingInPlaceForMeanReduction(const PopOpx &opx,
-                                      snap::Tensor t,
-                                      snap::Tensor scale,
-                                      snap::program::Sequence &prog);
+  applyScalingInPlaceForMeanReduction(const Opx &opx,
+                                      poplar::Tensor t,
+                                      poplar::Tensor scale,
+                                      poplar::program::Sequence &prog);
 
   // Same as above, except the divisor for the scaling of the loss/
   // loss grad cannot be determined at compile time.
@@ -58,43 +58,43 @@ public:
   // samples with a label corresponding to this index should not
   // be taken into account when scaling the output.
   // The mask tensor generated in applyMaskInPlaceForIgnoredIndex
-  // is used to dynamically determine the aprropriate scale factor
+  // is used to dynamically determine the appropriate scale factor
   static void applyScalingInPlaceForMeanReductionWithIgnoreIndex(
-      const PopOpx &opx,
-      snap::Tensor t,
-      snap::Tensor scale,
-      snap::Tensor mask,
-      snap::program::Sequence &prog);
+      const Opx &opx,
+      poplar::Tensor t,
+      poplar::Tensor scale,
+      poplar::Tensor mask,
+      poplar::program::Sequence &prog);
 
-  static void handleLossGradScaling(const PopOpx &opx,
+  static void handleLossGradScaling(const Opx &opx,
                                     bool hasIgnoreIndex,
                                     int64_t ignoreIndex,
                                     bool meanReduce,
-                                    snap::Tensor &oneHot,
-                                    snap::Tensor &gradIn,
-                                    snap::Tensor &label1D,
-                                    snap::program::Sequence &prog);
+                                    poplar::Tensor &oneHot,
+                                    poplar::Tensor &gradIn,
+                                    poplar::Tensor &label1D,
+                                    poplar::program::Sequence &prog);
 
-  static void handleLossOutReducedToScalar(const PopOpx &opx,
+  static void handleLossOutReducedToScalar(const Opx &opx,
                                            bool hasIgnoreIndex,
                                            int64_t ignoreIndex,
                                            bool meanReduce,
-                                           snap::Tensor &reduction,
-                                           snap::Tensor &label1D,
-                                           snap::program::Sequence &prog,
+                                           poplar::Tensor &reduction,
+                                           poplar::Tensor &label1D,
+                                           poplar::program::Sequence &prog,
                                            const OutIndex outIdx);
 
-  static void handleLossOutNotReducedToScalar(const PopOpx &opx,
-                                              snap::Tensor &reduction,
-                                              const snap::Tensor &label,
-                                              snap::Tensor &label1D,
-                                              snap::program::Sequence &prog);
+  static void handleLossOutNotReducedToScalar(const Opx &opx,
+                                              poplar::Tensor &reduction,
+                                              const poplar::Tensor &label,
+                                              poplar::Tensor &label1D,
+                                              poplar::program::Sequence &prog);
 };
 
-class NllGradOpx : public PopOpx {
+class NllGradOpx : public Opx {
 public:
   NllGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

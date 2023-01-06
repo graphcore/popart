@@ -7,11 +7,11 @@
 #include "popart/graphcoreoperators.hpp"
 #include "popart/popx/op/elementwisex.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -24,7 +24,7 @@ DetachOpx::DetachOpx(popart::Op *op, popart::popx::Devicex *devicex)
   verifyOp<DetachOp>(op, Onnx::CustomOperators::Detach_1);
 }
 
-void DetachOpx::grow(snap::program::Sequence &prog) const {
+void DetachOpx::grow(poplar::program::Sequence &prog) const {
   auto input = getInTensor(DetachOp::getInIndex());
 
   auto output = cloneNcopy(prog, input);
@@ -36,7 +36,7 @@ DetachInplaceOpx::DetachInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<DetachInplaceOp>(op);
 }
 
-void DetachInplaceOpx::grow(snap::program::Sequence &) const {
+void DetachInplaceOpx::grow(poplar::program::Sequence &) const {
   setOutTensor(DetachOp::getOutIndex(), getInTensor(DetachOp::getInIndex()));
 }
 

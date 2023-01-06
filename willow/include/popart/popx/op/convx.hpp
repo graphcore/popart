@@ -2,17 +2,18 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_CONVX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_CONVX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
-#include <snap/Tensor.hpp>
 #include <vector>
+#include <poplar/Tensor.hpp>
 #include <popart/popx/op/convbasex.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+#include "popart/popx/debugcontextx.hpp"
+
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -23,29 +24,27 @@ class Devicex;
 class ConvOpx : public MultiConvBaseOpx {
 public:
   ConvOpx(Op *, Devicex *);
-  snap::Tensor createWeightsInput(const poplar::DebugNameAndId &dnai,
-                                  int convIndex) const final;
-  snap::Tensor createDataInput(const poplar::DebugNameAndId &dnai,
-                               int convIndex) const final;
-
+  poplar::Tensor createWeightsInput(const poplar::DebugNameAndId &dnai,
+                                    int convIndex) const final;
+  poplar::Tensor createDataInput(const poplar::DebugNameAndId &dnai,
+                                 int convIndex) const final;
   InputCreatorType getInputCreatorType(InIndex idx) const override;
-
-  std::vector<snap::Tensor>
-  convolve(snap::program::Sequence &,
-           const std::vector<snap::Tensor> &weights) const final;
+  std::vector<poplar::Tensor>
+  convolve(poplar::program::Sequence &,
+           const std::vector<poplar::Tensor> &weights) const final;
 };
 
 class ConvWeightsGradOpx : public MultiConvWeightsGradBaseOpx {
 public:
   ConvWeightsGradOpx(Op *, Devicex *);
-  std::vector<snap::Tensor>
-  calculateWeightDeltas(snap::program::Sequence &) const final;
+  std::vector<poplar::Tensor>
+  calculateWeightDeltas(poplar::program::Sequence &) const final;
 };
 
-class ConvFlipWeightsGradOpx : public PopOpx {
+class ConvFlipWeightsGradOpx : public Opx {
 public:
   ConvFlipWeightsGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

@@ -7,15 +7,15 @@
 #include <string>
 #include <popart/popx/op/elementwisex.hpp>
 
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
 class Tensor;
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -27,9 +27,9 @@ class ThresholdedReluComputex : public EwuComputex {
 public:
   ThresholdedReluComputex(float _alpha) : alpha(_alpha) {}
 
-  void inplace(snap::program::Sequence &,
-               snap::Graph &,
-               const snap::Tensor &,
+  void inplace(poplar::program::Sequence &,
+               poplar::Graph &,
+               const poplar::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
 
@@ -54,10 +54,10 @@ public:
   ThresholdedReluInplaceOpx(Op *, Devicex *);
 };
 
-class ThresholdedReluGradOpx : public PopOpx {
+class ThresholdedReluGradOpx : public Opx {
 public:
   ThresholdedReluGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <snap/popops/ElementWise.hpp>
 #include <vector>
+#include <popops/ElementWise.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/op/subtract.hpp>
 #include <popart/popx/op/subtractx.hpp>
@@ -11,11 +11,11 @@
 #include "popart/popx/op/elementwisex.hpp"
 #include "popart/popx/op/reducesumx.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -28,14 +28,14 @@ SubtractOpx::SubtractOpx(Op *op, Devicex *devicex)
   verifyOp<SubtractOp>(op, {Onnx::Operators::Sub_6, Onnx::Operators::Sub_7});
 }
 
-void SubtractOpx::grow(snap::program::Sequence &prog) const {
+void SubtractOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(SubtractOp::getOutIndex(),
-               snap::popops::map(graph(),
-                                 popops::expr::BinaryOpType::SUBTRACT,
-                                 getInTensor(SubtractOp::getArg0InIndex()),
-                                 getInTensor(SubtractOp::getArg1InIndex()),
-                                 prog,
-                                 debugContext()));
+               popops::map(graph(),
+                           popops::expr::BinaryOpType::SUBTRACT,
+                           getInTensor(SubtractOp::getArg0InIndex()),
+                           getInTensor(SubtractOp::getArg1InIndex()),
+                           prog,
+                           debugContext()));
 }
 
 SubtractArg0GradOpx::SubtractArg0GradOpx(Op *op, Devicex *devicex)

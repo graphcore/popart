@@ -2,15 +2,15 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_TRANSPOSEX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_TRANSPOSEX_HPP_
 
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -18,26 +18,26 @@ class Op;
 namespace popx {
 class Devicex;
 
-class TransposeOpx : public PopOpx {
+class TransposeOpx : public Opx {
 public:
   TransposeOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
-  snap::Tensor unwindTensorLayout(snap::Tensor tensor,
-                                  InIndex inIndex,
-                                  OutIndex outIndex) const final;
+  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
+                                    InIndex inIndex,
+                                    OutIndex outIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 
-class TransposeInplaceOpx : public PopOpx {
+class TransposeInplaceOpx : public Opx {
 public:
   TransposeInplaceOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const final;
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
-  snap::Tensor unwindTensorLayout(snap::Tensor tensor,
-                                  InIndex inIndex,
-                                  OutIndex outIndex) const final;
+  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
+                                    InIndex inIndex,
+                                    OutIndex outIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 

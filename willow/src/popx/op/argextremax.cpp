@@ -1,12 +1,10 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <cstddef>
+#include <ext/new_allocator.h>
 #include <functional>
 #include <iterator>
 #include <numeric>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
@@ -14,7 +12,13 @@
 #include <popart/op/argextrema.hpp>
 #include <popart/popx/op/argextremax.hpp>
 
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -22,12 +26,12 @@ class Op;
 namespace popx {
 class Devicex;
 
-ArgExtremaOpx::ArgExtremaOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+ArgExtremaOpx::ArgExtremaOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ArgExtremaOp>(op);
 }
 
-void ArgExtremaOpx::grow(snap::program::Sequence &prog) const {
-  auto input         = getInTensor(0).getPoplarTensor();
+void ArgExtremaOpx::grow(poplar::program::Sequence &prog) const {
+  auto input         = getInTensor(0);
   auto dims          = input.shape().size();
   auto &argExtremaOp = getOp<ArgExtremaOp>();
   auto axis          = argExtremaOp.getAxis();
@@ -48,7 +52,7 @@ void ArgExtremaOpx::grow(snap::program::Sequence &prog) const {
   input             = input.reshape({dim_0, dim_1});
 
   // Do the extrema operation
-  auto result = extremaOp(prog, snap::Tensor{input, graph()}).getPoplarTensor();
+  auto result = extremaOp(prog, input);
 
   std::vector<std::size_t> new_shape;
   std::copy(shape.begin(), shape.end() - 1, std::back_inserter(new_shape));
@@ -59,12 +63,9 @@ void ArgExtremaOpx::grow(snap::program::Sequence &prog) const {
 
   result = result.reshape(new_shape);
 
-  result = popops::cast(graph().getPoplarGraph(),
-                        result,
-                        poplar::INT,
-                        prog.getPoplarSequence(),
-                        debugContext("cast"));
-  setOutTensor(0, snap::Tensor{result, graph()});
+  result =
+      popops::cast(graph(), result, poplar::INT, prog, debugContext("cast"));
+  setOutTensor(0, result);
 }
 
 } // namespace popx

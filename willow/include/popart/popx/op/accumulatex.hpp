@@ -2,21 +2,21 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_ACCUMULATEX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_ACCUMULATEX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
 #include <set>
-#include <snap/Tensor.hpp>
 #include <poplar/OptionFlags.hpp>
+#include <poplar/Tensor.hpp>
 #include <popops/DynamicSlice.hpp>
 #include <popart/names.hpp>
 #include <popart/popx/op/varupdatex.hpp>
 
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -29,12 +29,12 @@ class AccumulateBaseOpx : public VarUpdateOpx {
 public:
   AccumulateBaseOpx(Op *, Devicex *);
 
-  void grow(snap::program::Sequence &) const override = 0;
+  void grow(poplar::program::Sequence &) const override = 0;
 
   // can create the accumulator input Tensor (@Var index)
   // from the weight gradient tensor (@Updater index)
-  snap::Tensor
-  createInputTensor(InIndex, const poplar::DebugNameAndId &dnai) const override;
+  poplar::Tensor createInput(InIndex,
+                             const poplar::DebugNameAndId &dnai) const override;
 
   std::set<TensorId> mustExistBeforeCreate(InIndex) const override;
 
@@ -47,23 +47,23 @@ public:
 class AccumulateOpx final : public AccumulateBaseOpx {
 public:
   AccumulateOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class RescaleAccumulateOpx final : public AccumulateBaseOpx {
 public:
   RescaleAccumulateOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class SparseAccumulateOpx final : public AccumulateBaseOpx {
 public:
   SparseAccumulateOpx(Op *, Devicex *);
 
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
-  snap::Tensor
-  createInputTensor(InIndex, const poplar::DebugNameAndId &dnai) const final;
+  poplar::Tensor createInput(InIndex,
+                             const poplar::DebugNameAndId &dnai) const final;
 
   std::set<TensorId> mustExistBeforeCreate(InIndex) const final;
 

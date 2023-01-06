@@ -1,13 +1,12 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <cstddef>
 #include <cstdint>
+#include <ext/new_allocator.h>
 #include <limits>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <poplar/OptionFlags.hpp>
+#include <poplar/Program.hpp>
+#include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <popops/DynamicSlice.hpp>
 #include <popops/Fill.hpp>
@@ -22,26 +21,32 @@
 #include "popart/names.hpp"
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/tensorinfo.hpp"
+
+namespace poplar {
+class Graph;
+} // namespace poplar
 
 namespace popart {
 class Op;
+
 namespace popx {
 class Devicex;
 } // namespace popx
 } // namespace popart
 
 namespace {
-snap::Tensor scatter(const popart::popx::PopOpx &opx,
-                     snap::program::Sequence &prog,
-                     snap::Graph &graph,
-                     const snap::Tensor &data,
-                     const snap::Tensor &updates,
-                     const snap::Tensor &indices,
-                     const popart::TensorInfo &dataInfo,
-                     const popops::SlicePlan &plan,
-                     int64_t axis) {
+poplar::Tensor scatter(const popart::popx::Opx &opx,
+                       poplar::program::Sequence &prog,
+                       poplar::Graph &graph,
+                       const poplar::Tensor &data,
+                       const poplar::Tensor &updates,
+                       const poplar::Tensor &indices,
+                       const popart::TensorInfo &dataInfo,
+                       const popops::SlicePlan &plan,
+                       int64_t axis) {
   auto uaxis = static_cast<unsigned>(axis);
   auto out   = popart::popx::createDataTensor(graph,
                                             dataInfo,
@@ -51,7 +56,7 @@ snap::Tensor scatter(const popart::popx::PopOpx &opx,
                                             /* broadcasted= */ true,
                                             opx.getDebugNameAndId(""));
 
-  prog.getPoplarSequence().add(poplar::program::Copy(
+  prog.add(poplar::program::Copy(
       data, out, false, opx.debugContext("copyToScatter")));
 
   auto data2d    = out.dimRoll(uaxis);
@@ -78,13 +83,13 @@ snap::Tensor scatter(const popart::popx::PopOpx &opx,
   // Assume indices are non-negative
   indices2d = indices2d.reinterpret(poplar::UNSIGNED_INT);
 
-  popops::multiUpdate(graph.getPoplarGraph(),
-                      data2d.getPoplarTensor(),
-                      updates2d.getPoplarTensor(),
-                      indices2d.getPoplarTensor(),
+  popops::multiUpdate(graph,
+                      data2d,
+                      updates2d,
+                      indices2d,
                       {0},
                       {1},
-                      prog.getPoplarSequence(),
+                      prog,
                       plan,
                       poplar::OptionFlags(),
                       opx.debugContext("scatter"));
@@ -97,7 +102,7 @@ namespace popart {
 namespace popx {
 
 ScatterOpx::ScatterOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex), plan(), axis() {
+    : Opx(op, devicex), plan(), axis() {
   verifyOp<ScatterOp>(
       op, {Onnx::Operators::Scatter_9, Onnx::Operators::Scatter_11});
   auto &sop    = getOp<ScatterOp>();
@@ -112,7 +117,7 @@ ScatterOpx::ScatterOpx(Op *op, Devicex *devicex)
   inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
-void ScatterOpx::grow(snap::program::Sequence &prog) const {
+void ScatterOpx::grow(poplar::program::Sequence &prog) const {
   auto scatterOut = scatter(*this,
                             prog,
                             graph(),
@@ -126,9 +131,9 @@ void ScatterOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(ScatterOp::outIndex(), scatterOut);
 }
 
-snap::Tensor
-ScatterOpx::createInputTensor(InIndex index,
-                              const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+ScatterOpx::createInput(InIndex index,
+                        const poplar::DebugNameAndId &dnai) const {
   if (index != ScatterOp::indicesInIndex() &&
       index != ScatterOp::updatesInIndex()) {
     throw error("ScatterOpx::createInput : Invalid index = {}", index);
@@ -158,11 +163,11 @@ InputCreatorType ScatterOpx::getInputCreatorType(InIndex index) const {
     return InputCreatorType::CanCreate;
   }
 
-  return PopOpx::getInputCreatorType(index);
+  return Opx::getInputCreatorType(index);
 }
 
 ScatterDataGradOpx::ScatterDataGradOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<ScatterDataGradOp>(op, Onnx::GradOperators::ScatterDataGrad);
   auto grad_op = getOp<ScatterDataGradOp>();
   axis         = grad_op.getAxis();
@@ -177,7 +182,7 @@ ScatterDataGradOpx::ScatterDataGradOpx(Op *op, Devicex *devicex)
   inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
-void ScatterDataGradOpx::grow(snap::program::Sequence &prog) const {
+void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
   auto gradIn      = getInTensor(ScatterDataGradOp::gradInIndex());
   auto indices     = getInTensor(ScatterDataGradOp::indicesInIndex());
   auto gradInInfo  = inInfo(ScatterDataGradOp::gradInIndex());
@@ -192,11 +197,8 @@ void ScatterDataGradOpx::grow(snap::program::Sequence &prog) const {
                                         1U,
                                         /*broadcasted=*/true,
                                         getDebugNameAndId("zerosUpdate"));
-  popops::fill(graph().getPoplarGraph(),
-               zerosUpdate.getPoplarTensor(),
-               prog.getPoplarSequence(),
-               0.0f,
-               debugContext("zerosUpdateFill"));
+  popops::fill(
+      graph(), zerosUpdate, prog, 0.0f, debugContext("zerosUpdateFill"));
 
   auto gradOut = scatter(*this,
                          prog,
@@ -211,9 +213,9 @@ void ScatterDataGradOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(ScatterDataGradOp::gradOutIndex(), gradOut);
 }
 
-snap::Tensor ScatterDataGradOpx::createInputTensor(
-    InIndex index,
-    const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+ScatterDataGradOpx::createInput(InIndex index,
+                                const poplar::DebugNameAndId &dnai) const {
   if (index != ScatterDataGradOp::indicesInIndex()) {
     throw error("ScatterDataGradOpx::createInput : Invalid index = {}", index);
   }
@@ -227,11 +229,11 @@ InputCreatorType ScatterDataGradOpx::getInputCreatorType(InIndex index) const {
     return InputCreatorType::CanCreate;
   }
 
-  return PopOpx::getInputCreatorType(index);
+  return Opx::getInputCreatorType(index);
 }
 
 ScatterUpdateGradOpx::ScatterUpdateGradOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<ScatterUpdateGradOp>(op, Onnx::GradOperators::ScatterUpdateGrad);
 
   const auto &grad_op = getOp<ScatterUpdateGradOp>();
@@ -247,7 +249,7 @@ ScatterUpdateGradOpx::ScatterUpdateGradOpx(Op *op, Devicex *devicex)
   inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
-void ScatterUpdateGradOpx::grow(snap::program::Sequence &prog) const {
+void ScatterUpdateGradOpx::grow(poplar::program::Sequence &prog) const {
   auto gradOut = scatterutilx::growScatterUpdateGrad(
       *this,
       prog,
@@ -262,9 +264,9 @@ void ScatterUpdateGradOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(ScatterUpdateGradOp::gradOutIndex(), gradOut);
 }
 
-snap::Tensor ScatterUpdateGradOpx::createInputTensor(
-    InIndex index,
-    const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+ScatterUpdateGradOpx::createInput(InIndex index,
+                                  const poplar::DebugNameAndId &dnai) const {
 
   if (index != ScatterUpdateGradOp::gradInIndex() &&
       index != ScatterUpdateGradOp::indicesInIndex()) {
@@ -287,7 +289,7 @@ ScatterUpdateGradOpx::getInputCreatorType(InIndex index) const {
       index == ScatterUpdateGradOp::indicesInIndex()) {
     return InputCreatorType::CanCreate;
   }
-  return PopOpx::getInputCreatorType(index);
+  return Opx::getInputCreatorType(index);
 }
 
 namespace {

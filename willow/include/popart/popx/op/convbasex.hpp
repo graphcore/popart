@@ -2,28 +2,28 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_CONVBASEX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_CONVBASEX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
 #include <cstddef>
 #include <set>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <vector>
 #include <poplar/OptionFlags.hpp>
+#include <poplar/Tensor.hpp>
 #include <poplin/ConvParams.hpp>
 #include <popart/op/convbase.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
 #include "popart/error.hpp"
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
 #include "popart/op.hpp"
 #include "popart/operatoridentifier.hpp"
+#include "popart/popx/debugcontextx.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 
@@ -32,30 +32,29 @@ namespace popart {
 namespace popx {
 class Devicex;
 
-class MultiConvBaseOpx : public PopOpx {
+class MultiConvBaseOpx : public Opx {
 public:
-  MultiConvBaseOpx(Op *op, Devicex *dv) : PopOpx(op, dv) {}
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const final;
+  MultiConvBaseOpx(Op *op, Devicex *dv) : Opx(op, dv) {}
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex index0) const final;
-  InputCreatorType getInputCreatorType(InIndex) const;
-  void grow(snap::program::Sequence &) const final;
+  InputCreatorType getInputCreatorType(InIndex) const override;
+  void grow(poplar::program::Sequence &) const final;
 
   poplar::OptionFlags getConvOptions(int, std::string pass = "") const;
   std::string getFwdPassFlagString() const;
 
-  virtual std::vector<snap::Tensor>
-  convolve(snap::program::Sequence &prog,
-           const std::vector<snap::Tensor> &weights) const {
+  virtual std::vector<poplar::Tensor>
+  convolve(poplar::program::Sequence &prog,
+           const std::vector<poplar::Tensor> &weights) const {
     throw error("No 'convolve' implementation for {}", op_p->opid);
   }
-  virtual snap::Tensor createDataInput(const poplar::DebugNameAndId &dnai,
-                                       int convIndex) const {
+  virtual poplar::Tensor createDataInput(const poplar::DebugNameAndId &dnai,
+                                         int convIndex) const {
     throw error("No 'createDataInput' implementation for {}", op_p->opid);
   }
-  virtual snap::Tensor createWeightsInput(const poplar::DebugNameAndId &dnai,
-                                          int convIndex) const {
+  virtual poplar::Tensor createWeightsInput(const poplar::DebugNameAndId &dnai,
+                                            int convIndex) const {
     throw error("No 'createWeightsInput' implementation for {}", op_p->opid);
   }
   bool isWeightsInIndex(InIndex) const;
@@ -78,17 +77,17 @@ ConvParameters getConvWeightUpdateParameters(const ConvParameters &fwdParams);
 poplin::ConvParams getPoplarConvParams(const ConvParameters &param);
 ConvParameters convertPoplarConvParameters(const poplin::ConvParams &popParams);
 
-snap::Tensor reshapeOnnxWeightsForPoplar(const snap::Tensor &weights,
-                                         std::size_t chansOut,
-                                         std::size_t chansIn,
-                                         const ConvParameters &params);
+poplar::Tensor reshapeOnnxWeightsForPoplar(const poplar::Tensor &weights,
+                                           std::size_t chansOut,
+                                           std::size_t chansIn,
+                                           const ConvParameters &params);
 
-class MultiConvWeightsGradBaseOpx : public PopOpx {
+class MultiConvWeightsGradBaseOpx : public Opx {
 public:
-  MultiConvWeightsGradBaseOpx(Op *op, Devicex *dv) : PopOpx(op, dv) {}
-  void grow(snap::program::Sequence &) const final;
-  virtual std::vector<snap::Tensor>
-  calculateWeightDeltas(snap::program::Sequence &) const {
+  MultiConvWeightsGradBaseOpx(Op *op, Devicex *dv) : Opx(op, dv) {}
+  void grow(poplar::program::Sequence &) const final;
+  virtual std::vector<poplar::Tensor>
+  calculateWeightDeltas(poplar::program::Sequence &) const {
     throw error("No 'calculateWeightDeltas' implementation for {}", op_p->opid);
   }
 

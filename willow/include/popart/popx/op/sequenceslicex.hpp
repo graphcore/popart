@@ -2,13 +2,13 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SEQUENCESLICEX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SEQUENCESLICEX_HPP_
 
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -16,16 +16,16 @@ class Op;
 namespace popx {
 class Devicex;
 
-class SequenceSliceOpx : public PopOpx {
+class SequenceSliceOpx : public Opx {
 public:
   SequenceSliceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
-class SequenceSliceInplaceOpx : public PopOpx {
+class SequenceSliceInplaceOpx : public Opx {
 public:
   SequenceSliceInplaceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

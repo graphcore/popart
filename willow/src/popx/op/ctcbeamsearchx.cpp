@@ -1,8 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <tuple>
 #include <popnn/CTCInference.hpp>
 #include <popnn/CTCPlan.hpp>
@@ -12,17 +9,23 @@
 #include <popart/popx/opxmanager.hpp>
 
 #include "popart/graphcoreoperators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/tensor.hpp"
 #include "popart/tensorindex.hpp"
 #include "popart/tensorinfo.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Op;
 
 namespace popx {
 CtcBeamSearchDecoderOpx::CtcBeamSearchDecoderOpx(Op *op_, Devicex *devicex)
-    : PopOpx(op_, devicex), plan(std::make_unique<popnn::ctc::Plan>()) {
+    : Opx(op_, devicex), plan(std::make_unique<popnn::ctc::Plan>()) {
   verifyOp<CtcBeamSearchDecoderOp>(op_,
                                    Onnx::CustomOperators::CtcBeamSearchDecoder);
 
@@ -31,7 +34,7 @@ CtcBeamSearchDecoderOpx::CtcBeamSearchDecoderOpx(Op *op_, Devicex *devicex)
       op.input->tensor(CtcBeamSearchDecoderOp::getLogProbsInIndex());
   auto inType = popType(logProbsTensor->info.getDataTypeInfo()->type());
 
-  *plan = popnn::ctc_infer::plan(graph().getPoplarGraph(),
+  *plan = popnn::ctc_infer::plan(graph(),
                                  inType,
                                  op.getBatchSize(),
                                  op.getMaxTime(),
@@ -41,20 +44,18 @@ CtcBeamSearchDecoderOpx::CtcBeamSearchDecoderOpx(Op *op_, Devicex *devicex)
 
 CtcBeamSearchDecoderOpx::~CtcBeamSearchDecoderOpx() = default;
 
-void CtcBeamSearchDecoderOpx::grow(snap::program::Sequence &prog) const {
+void CtcBeamSearchDecoderOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op = getOp<CtcBeamSearchDecoderOp>();
   const auto &logProbs =
-      getInTensor(CtcBeamSearchDecoderOp::getLogProbsInIndex())
-          .getPoplarTensor();
+      getInTensor(CtcBeamSearchDecoderOp::getLogProbsInIndex());
   const auto &dataLengths =
-      getInTensor(CtcBeamSearchDecoderOp::getDataLengthsInIndex())
-          .getPoplarTensor();
+      getInTensor(CtcBeamSearchDecoderOp::getDataLengthsInIndex());
 
   auto result = popnn::ctc_infer::beamSearchDecoderLogProbabilities(
-      graph().getPoplarGraph(),
+      graph(),
       logProbs,
       dataLengths,
-      prog.getPoplarSequence(),
+      prog,
       op.getBlankClass(),
       op.getBeamWidth(),
       op.getTopPaths(),
@@ -62,11 +63,11 @@ void CtcBeamSearchDecoderOpx::grow(snap::program::Sequence &prog) const {
       debugContext("ctcBeamSearchDecoder"));
 
   setOutTensor(CtcBeamSearchDecoderOp::getLabelProbsOutIndex(),
-               snap::Tensor{std::get<0>(result), graph()});
+               std::get<0>(result));
   setOutTensor(CtcBeamSearchDecoderOp::getLabelLengthsOutIndex(),
-               snap::Tensor{std::get<1>(result), graph()});
+               std::get<1>(result));
   setOutTensor(CtcBeamSearchDecoderOp::getDecodedLabelsOutIndex(),
-               snap::Tensor{std::get<2>(result), graph()});
+               std::get<2>(result));
 }
 
 // Opx creator.

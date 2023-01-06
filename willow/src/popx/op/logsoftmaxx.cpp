@@ -4,16 +4,16 @@
 #include <cstdint>
 #include <memory>
 #include <numeric>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <string>
 #include <vector>
+#include <poplar/Graph.hpp>
+#include <poplar/Program.hpp>
 #include <poplar/Target.hpp>
+#include <poplar/Tensor.hpp>
 #include <popnn/LogSoftmax.hpp>
 #include <popnn/NonLinearity.hpp>
 #include <popnn/NonLinearityDef.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popops/OperationDef.hpp>
@@ -43,15 +43,14 @@ namespace popx {
 
 namespace {
 template <typename ClonerT>
-snap::Tensor cloneAndGroupImpl(ClonerT &default_cloner,
-                               snap::program::Sequence &p,
-                               snap::Graph &g,
-                               const snap::Tensor &t,
-                               const poplar::DebugContext &d = {}) {
-  auto groupings =
-      poputil::detectDimGroupings(g.getPoplarGraph(), t.getPoplarTensor());
+poplar::Tensor cloneAndGroupImpl(ClonerT &default_cloner,
+                                 poplar::program::Sequence &p,
+                                 poplar::Graph &g,
+                                 const poplar::Tensor &t,
+                                 const poplar::DebugContext &d = {}) {
+  auto groupings = poputil::detectDimGroupings(g, t);
 
-  snap::Tensor outTensor;
+  poplar::Tensor outTensor;
   // If there's no dimension grouping, clone into a tensor that is mapped with
   // the softmax reduction axis in tile-contiguous blocks.
   if (groupings.empty()) {
@@ -62,14 +61,13 @@ snap::Tensor cloneAndGroupImpl(ClonerT &default_cloner,
 
     // Create the tensor.
     outTensor = g.addVariable(t.elementType(), t.shape(), d);
-    poputil::mapTensorLinearly(
-        g.getPoplarGraph(), outTensor.getPoplarTensor(), 0, grain_size);
+    poputil::mapTensorLinearly(g, outTensor, 0, grain_size);
 
     // Copy the values to it.
-    p.getPoplarSequence().add(poplar::program::Copy(t,
-                                                    outTensor,
-                                                    /* dontOutline = */ false,
-                                                    d));
+    p.add(poplar::program::Copy(t,
+                                outTensor,
+                                /* dontOutline = */ false,
+                                d));
   } else {
     outTensor = default_cloner(p, t);
   }
@@ -101,33 +99,31 @@ LogSoftmaxInplaceOpx::LogSoftmaxInplaceOpx(Op *op, Devicex *devicex)
           devicex,
           createLogSoftmaxComputex<LogSoftmaxInplaceOp>(op)) {}
 
-snap::Tensor LogSoftmaxComputex::outplace(snap::program::Sequence &p,
-                                          snap::Graph &g,
-                                          const snap::Tensor &t,
-                                          const poplar::DebugNameAndId &dnai,
-                                          const std::string &s) const {
-  const auto cloner = [this, &g, &dnai](snap::program::Sequence &p,
-                                        const snap::Tensor &t) -> snap::Tensor {
+poplar::Tensor LogSoftmaxComputex::outplace(poplar::program::Sequence &p,
+                                            poplar::Graph &g,
+                                            const poplar::Tensor &t,
+                                            const poplar::DebugNameAndId &dnai,
+                                            const std::string &s) const {
+  const auto cloner =
+      [this, &g, &dnai](poplar::program::Sequence &p,
+                        const poplar::Tensor &t) -> poplar::Tensor {
     return cloneNcopy(p, g, t, dnai);
   };
 
-  snap::Tensor outTensor = cloneAndGroupImpl(cloner, p, g, t, dnai);
+  poplar::Tensor outTensor = cloneAndGroupImpl(cloner, p, g, t, dnai);
   inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
 
-void LogSoftmaxComputex::inplace(snap::program::Sequence &p,
-                                 snap::Graph &g,
-                                 const snap::Tensor &t,
+void LogSoftmaxComputex::inplace(poplar::program::Sequence &p,
+                                 poplar::Graph &g,
+                                 const poplar::Tensor &t,
                                  const poplar::DebugNameAndId &dnai,
                                  const std::string &s) const {
-  popnn::logSoftmaxInPlace(g.getPoplarGraph(),
-                           coerceTo2D(t, axis).getPoplarTensor(),
-                           p.getPoplarSequence(),
-                           {dnai, s});
+  popnn::logSoftmaxInPlace(g, coerceTo2D(t, axis), p, {dnai, s});
 }
 
-snap::Tensor LogSoftmaxComputex::reshape(const snap::Tensor &t) const {
+poplar::Tensor LogSoftmaxComputex::reshape(const poplar::Tensor &t) const {
   return t.reshape(outShape);
 }
 
@@ -152,7 +148,7 @@ LogSoftmaxGradOpx::LogSoftmaxGradOpx(Op *op, Devicex *devicex)
 //
 // we want dL/dx_i = sum_j dL/dy_j * dy_j/dx_i
 //                 = g_i - softmax(x_i) * sum_j g_j
-void LogSoftmaxGradOpx::grow(snap::program::Sequence &prog) const {
+void LogSoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto axis = getOp<LogSoftmaxGradOp>().getAxis();
 
   // The gradient of the loss w.r.t. the probabilities (g in above description)
@@ -171,11 +167,8 @@ void LogSoftmaxGradOpx::grow(snap::program::Sequence &prog) const {
     nlType = popnn::NonLinearityType::SOFTMAX_STABLE;
   }
   auto probs = cloneNcopyGrouped(prog, pre_probs);
-  popnn::nonLinearityInPlace(graph().getPoplarGraph(),
-                             nlType,
-                             probs.getPoplarTensor(),
-                             prog.getPoplarSequence(),
-                             debugContext("nonLinearity"));
+  popnn::nonLinearityInPlace(
+      graph(), nlType, probs, prog, debugContext("nonLinearity"));
 
   // sum_j (g_j)
   // reduce along all dimensions except 0 (0 is the sample index)
@@ -184,30 +177,30 @@ void LogSoftmaxGradOpx::grow(snap::program::Sequence &prog) const {
 
   std::vector<size_t> upRanked(probs.rank(), 1);
   upRanked[0] = probs.dim(0);
-  auto sum_g  = snap::Tensor{popops::reduce(graph().getPoplarGraph(),
-                                           d_probs.getPoplarTensor(),
-                                           redDims,
-                                           {popops::Operation::ADD},
-                                           prog.getPoplarSequence(),
-                                           debugContext("reduce")),
-                            graph()}
+  auto sum_g  = popops::reduce(graph(),
+                              d_probs,
+                              redDims,
+                              {popops::Operation::ADD},
+                              prog,
+                              debugContext("reduce"))
                    .reshape(upRanked);
 
   // g_i - softmax(x_i) * sum_j (g_j)
-  auto dv = snap::popops::map(graph(),
-                              pe::Sub(pe::_1, pe::Mul(pe::_2, pe::_3)),
-                              {d_probs, probs, sum_g},
-                              prog,
-                              debugContext("SubMul"));
+  auto dv = popops::map(graph(),
+                        pe::Sub(pe::_1, pe::Mul(pe::_2, pe::_3)),
+                        {d_probs, probs, sum_g},
+                        prog,
+                        debugContext("SubMul"));
 
   dv = dv.reshape(inInfo(LogSoftmaxGradOp::getActsInIndex()).shape_szt());
   setOutTensor(0, dv);
 }
 
-snap::Tensor LogSoftmaxGradOpx::cloneNcopyGrouped(snap::program::Sequence &s,
-                                                  const snap::Tensor &t) const {
-  const auto cloner = [this](snap::program::Sequence &p,
-                             const snap::Tensor &t) -> snap::Tensor {
+poplar::Tensor
+LogSoftmaxGradOpx::cloneNcopyGrouped(poplar::program::Sequence &s,
+                                     const poplar::Tensor &t) const {
+  const auto cloner = [this](poplar::program::Sequence &p,
+                             const poplar::Tensor &t) -> poplar::Tensor {
     return cloneNcopy(p, t);
   };
 

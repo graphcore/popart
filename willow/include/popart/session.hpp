@@ -122,7 +122,7 @@ public:
   /**
    * Compile the graph and export it to a file.
    *
-   * This method will first create a \c snap::Graph and compile the \c
+   * This method will first create a \c poplar::Graph and compile the \c
    * poplar::Executable. Next, it will export the executable and PopART metadata
    * to the file. The exported file will be in the <a
    * href="https://docs.graphcore.ai/projects/popef/en/latest/"> PopEF</a>
@@ -140,7 +140,7 @@ public:
   /**
    * Compile the graph and export it to a stream.
    *
-   * This method will first create a \c snap::Graph and compile the \c
+   * This method will first create a \c poplar::Graph and compile the \c
    * poplar::Executable. Next, it will export the executable and PopART metadata
    * to the stream. The data will be streamed in the <a
    * href="https://docs.graphcore.ai/projects/popef/en/latest/"> PopEF</a>
@@ -302,7 +302,7 @@ public:
   /**
    * Prepare the network for execution.
    *
-   * This will create the \c snap::Graph and \c poplar::Engine.
+   * This will create the \c poplar::Graph and \c poplar::Engine.
    *
    * \param loadEngine If `true`, load the engine and connect the streams once
    *      the device is ready.
@@ -606,7 +606,7 @@ protected:
   /**
    * Attempt to load a serialized executable.
    *
-   * If successful then IR preparation and \c snap::Graph compilation are
+   * If successful then IR preparation and \c poplar::Graph compilation are
    * skipped.
    */
   bool tryLoadExecutable();

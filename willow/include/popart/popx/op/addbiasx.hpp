@@ -2,18 +2,19 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_ADDBIASX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_ADDBIASX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
 #include <set>
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/names.hpp>
 #include <popart/popx/op/reducesumx.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+#include "popart/popx/debugcontextx.hpp"
+
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -21,28 +22,27 @@ class Op;
 namespace popx {
 class Devicex;
 
-class AddBiasOpx : public PopOpx {
+class AddBiasOpx : public Opx {
 public:
   AddBiasOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override;
+  void grow(poplar::program::Sequence &) const override;
 
   std::set<TensorId> mustExistBeforeCreate(int index0) const override;
   InputCreatorType getInputCreatorType(InIndex) const final;
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const final;
 };
 
 class AddBiasInplaceOpx : public AddBiasOpx {
 public:
   AddBiasInplaceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
-class AddBiasDataGradOpx : public PopOpx {
+class AddBiasDataGradOpx : public Opx {
 public:
   AddBiasDataGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class AddBiasBiasGradOpx : public ReduceSumOpx {

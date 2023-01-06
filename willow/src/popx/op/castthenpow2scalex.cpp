@@ -1,7 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #include "popart/ir.hpp"
 #include <set>
-#include <snap/Program.hpp>
 #include <poplar/Graph.hpp>
 #include <poplar/MetadataCreation.hpp>
 #include <poplar/Program.hpp>
@@ -39,7 +38,7 @@ CastThenPow2ScaleOpx::CastThenPow2ScaleOpx(Op *op, Devicex *devicex)
   verifyOp<CastThenPow2ScaleOp>(op);
 }
 
-void CastThenPow2ScaleOpx::grow(snap::program::Sequence &prog) const {
+void CastThenPow2ScaleOpx::grow(poplar::program::Sequence &prog) const {
   CastThenPow2ScaleOp op = getOp<CastThenPow2ScaleOp>();
   auto popartScaleTensor =
       getInTensor(CastThenPow2ScaleOp::getlog2ScaleInIndex());
@@ -48,36 +47,29 @@ void CastThenPow2ScaleOpx::grow(snap::program::Sequence &prog) const {
     auto assertProg =
         createAssertLog2ScaleInRangeProg(graph(), popartScaleTensor, -32, 32);
 
-    prog.getPoplarSequence().add(assertProg);
+    prog.add(assertProg);
   }
 
   // Note this input tensor is expected to be in poplar::UINT8 format. At the
   // popart level it is FLOAT8_152 or FLOAT8_143 data type.
 
-  auto in = getInTensor(CastThenPow2ScaleOp::getInIndex());
-  auto metadataTensor =
-      poplar::createVariableMetadataTensor(graph(),
-                                           getSourceFormat(),
-                                           popartScaleTensor,
-                                           prog.getPoplarSequence(),
-                                           debugContext());
+  auto in             = getInTensor(CastThenPow2ScaleOp::getInIndex());
+  auto metadataTensor = poplar::createVariableMetadataTensor(
+      graph(), getSourceFormat(), popartScaleTensor, prog, debugContext());
   // We can't reinterpret to neither QUARTER_METADATA nor QUARTER type.
   // Instead, clone them and copy raw unsigned char data over.
   // This copy will be elided by poplar. We don't need to do this for the
   // metadata as we create it on the fly.
   auto q_data = graph().clone(poplar::QUARTER, metadataTensor.reshape({1}), in);
 
-  prog.getPoplarSequence().add(poplar::program::Copy(
+  prog.add(poplar::program::Copy(
       in, q_data.reinterpret(poplar::UNSIGNED_CHAR), false, debugContext()));
 
   // Finally cast to our output type.
   auto popartType = static_cast<CastThenPow2ScaleOp *>(op_p)->toDataType();
 
-  auto out = popops::cast(graph(),
-                          q_data,
-                          popType(popartType),
-                          prog.getPoplarSequence(),
-                          debugContext());
+  auto out =
+      popops::cast(graph(), q_data, popType(popartType), prog, debugContext());
 
   if (hasInViewChangers(CastThenPow2ScaleOp::getInIndex())) {
     setOutViewChangers(CastThenPow2ScaleOp::getOutIndex(),

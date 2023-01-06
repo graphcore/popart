@@ -1,23 +1,22 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <cstddef>
+#include <ext/new_allocator.h>
 #include <memory>
 #include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <string>
 #include <utility>
 #include <vector>
+#include <poplar/OptionFlags.hpp>
+#include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <popnn/CTCLoss.hpp>
 #include <popnn/CTCPlan.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popops/OperationDef.hpp>
 #include <popops/Reduce.hpp>
 #include <popart/error.hpp>
-#include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op/ctc.hpp>
 #include <popart/popx/devicex.hpp>
@@ -28,11 +27,17 @@
 #include "popart/logging.hpp"
 #include "popart/op.hpp"
 #include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/tensor.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorindex.hpp"
 #include "popart/tensorinfo.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -40,7 +45,7 @@ namespace popart {
 namespace popx {
 
 CtcOpx::CtcOpx(Op *op_, Devicex *devicex)
-    : PopOpx(op_, devicex), plan(std::make_unique<popnn::ctc::Plan>()) {
+    : Opx(op_, devicex), plan(std::make_unique<popnn::ctc::Plan>()) {
   verifyOp<CtcOp>(op_, Onnx::CustomOperators::Ctc);
 
   const auto &op            = getOp<CtcOp>();
@@ -54,7 +59,7 @@ CtcOpx::CtcOpx(Op *op_, Devicex *devicex)
   if (op.getEnableReducedClassesInLabel() == true) {
     options.set("enableReducedClassesInLabel", "true");
   }
-  *plan = popnn::ctc::plan(graph().getPoplarGraph(),
+  *plan = popnn::ctc::plan(graph(),
                            inDtype,
                            outDtype,
                            op.getBatchSize(),
@@ -66,7 +71,7 @@ CtcOpx::CtcOpx(Op *op_, Devicex *devicex)
 
 CtcOpx::~CtcOpx() = default;
 
-void CtcOpx::grow(snap::program::Sequence &prog) const {
+void CtcOpx::grow(poplar::program::Sequence &prog) const {
 
   const auto &op = getOp<CtcOp>();
 
@@ -87,40 +92,39 @@ void CtcOpx::grow(snap::program::Sequence &prog) const {
   // purposes of validation, it only return loss.
   if (op.output->hasIndex(CtcOp::getLogProbsGradientWrtCtcLossOutIndex())) {
     auto result = popnn::ctc::calcLossAndGradientLogProbabilities(
-        graph().getPoplarGraph(),
+        graph(),
         outDtype,
-        logProbs.getPoplarTensor(),
-        targets.getPoplarTensor().reinterpret(poplar::UNSIGNED_INT),
-        inputLengths.getPoplarTensor().reinterpret(poplar::UNSIGNED_INT),
-        targetLengths.getPoplarTensor().reinterpret(poplar::UNSIGNED_INT),
-        prog.getPoplarSequence(),
+        logProbs,
+        targets.reinterpret(poplar::UNSIGNED_INT),
+        inputLengths.reinterpret(poplar::UNSIGNED_INT),
+        targetLengths.reinterpret(poplar::UNSIGNED_INT),
+        prog,
         op.getBlank(),
         *plan,
         debugContext("lossAndGrad"),
         options);
 
-    snap::Tensor ctcLoss = snap::Tensor{result.first, graph()};
+    auto ctcLoss = result.first;
 
     ctcLoss = applyReduction(prog, ctcLoss, targetLengths);
 
     setOutTensor(CtcOp::getCtcLossOutIndex(), ctcLoss);
-    setOutTensor(CtcOp::getLogProbsGradientWrtCtcLossOutIndex(),
-                 snap::Tensor{result.second, graph()});
+    setOutTensor(CtcOp::getLogProbsGradientWrtCtcLossOutIndex(), result.second);
   } else {
     auto result = popnn::ctc::calcCTCLossLogProbabilities(
-        graph().getPoplarGraph(),
+        graph(),
         outDtype,
-        logProbs.getPoplarTensor(),
-        targets.getPoplarTensor().reinterpret(poplar::UNSIGNED_INT),
-        inputLengths.getPoplarTensor().reinterpret(poplar::UNSIGNED_INT),
-        targetLengths.getPoplarTensor().reinterpret(poplar::UNSIGNED_INT),
-        prog.getPoplarSequence(),
+        logProbs,
+        targets.reinterpret(poplar::UNSIGNED_INT),
+        inputLengths.reinterpret(poplar::UNSIGNED_INT),
+        targetLengths.reinterpret(poplar::UNSIGNED_INT),
+        prog,
         op.getBlank(),
         *plan,
         debugContext("loss"),
         options);
 
-    snap::Tensor ctcLoss = snap::Tensor{result, graph()};
+    auto ctcLoss = result;
 
     ctcLoss = applyReduction(prog, ctcLoss, targetLengths);
 
@@ -128,9 +132,8 @@ void CtcOpx::grow(snap::program::Sequence &prog) const {
   }
 }
 
-snap::Tensor
-CtcOpx::createInputTensor(InIndex index,
-                          const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor CtcOpx::createInput(InIndex index,
+                                   const poplar::DebugNameAndId &dnai) const {
   const auto &op       = getOp<CtcOp>();
   auto logProbsTensor  = op.input->tensor(CtcOp::getLogProbsInIndex());
   auto targetsInTensor = op.input->tensor(CtcOp::getTargetsInIndex());
@@ -143,24 +146,18 @@ CtcOpx::createInputTensor(InIndex index,
 
   if (index == CtcOp::getLogProbsInIndex()) {
 
-    return snap::Tensor{popnn::ctc::createDataInput(graph().getPoplarGraph(),
-                                                    logProbsDtype,
-                                                    batchSize,
-                                                    maxInputLen,
-                                                    numClasses,
-                                                    *plan,
-                                                    dnai),
-                        graph()};
+    return popnn::ctc::createDataInput(graph(),
+                                       logProbsDtype,
+                                       batchSize,
+                                       maxInputLen,
+                                       numClasses,
+                                       *plan,
+                                       dnai);
 
   } else if (index == CtcOp::getTargetsInIndex()) {
 
-    return snap::Tensor{popnn::ctc::createLabelsInput(graph().getPoplarGraph(),
-                                                      targetsDtype,
-                                                      batchSize,
-                                                      maxTargetLen,
-                                                      *plan,
-                                                      dnai),
-                        graph()};
+    return popnn::ctc::createLabelsInput(
+        graph(), targetsDtype, batchSize, maxTargetLen, *plan, dnai);
 
   } else {
     throw error("CtcOpx::createInput : Invalid index = " +
@@ -189,9 +186,9 @@ std::set<TensorId> CtcOpx::mustExistBeforeCreate(InIndex index) const {
   }
 }
 
-snap::Tensor CtcOpx::applyReduction(snap::program::Sequence &prog,
-                                    snap::Tensor ctcLoss,
-                                    snap::Tensor targetLengths) const {
+poplar::Tensor CtcOpx::applyReduction(poplar::program::Sequence &prog,
+                                      poplar::Tensor ctcLoss,
+                                      poplar::Tensor targetLengths) const {
 
   const auto &op = getOp<CtcOp>();
 
@@ -201,7 +198,7 @@ snap::Tensor CtcOpx::applyReduction(snap::program::Sequence &prog,
 
   } else {
     // Reduction is required.
-    auto inTensor1D = ctcLoss.flatten().getPoplarTensor();
+    auto inTensor1D = ctcLoss.flatten();
 
     double scale = 0.;
     switch (op.getReductionType()) {
@@ -212,8 +209,7 @@ snap::Tensor CtcOpx::applyReduction(snap::program::Sequence &prog,
     }
     case ReductionType::Mean: {
       // Divide by target max(length, 1).
-      ctcLoss =
-          snap::popops::map(graph(),
+      ctcLoss = popops::map(graph(),
                             pe::Divide(pe::_1,
                                        pe::Cast(pe::Max(pe::_2, pe::Const(1)),
                                                 ctcLoss.elementType())),
@@ -237,25 +233,22 @@ snap::Tensor CtcOpx::applyReduction(snap::program::Sequence &prog,
     auto t_scale = getConst(poplar::FLOAT, {}, scale, "scale");
 
     // Do the reduction.
-    ctcLoss = snap::Tensor{
-        popops::reduce(
-            graph().getPoplarGraph(),
-            ctcLoss.getPoplarTensor(),
-            {0},
-            {popops::Operation::ADD, false, t_scale.getPoplarTensor()},
-            prog.getPoplarSequence(),
-            debugContext("reduce")),
-        graph()};
+    ctcLoss = popops::reduce(graph(),
+                             ctcLoss,
+                             {0},
+                             {popops::Operation::ADD, false, t_scale},
+                             prog,
+                             debugContext("reduce"));
   }
 
   return ctcLoss;
 }
 
-CtcGradOpx::CtcGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+CtcGradOpx::CtcGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<CtcGradOp>(op, Onnx::CustomGradOperators::CtcGrad);
 }
 
-void CtcGradOpx::grow(snap::program::Sequence &prog) const {
+void CtcGradOpx::grow(poplar::program::Sequence &prog) const {
 
   const CtcGradOp &gradOp = getOp<CtcGradOp>();
 
@@ -267,15 +260,15 @@ void CtcGradOpx::grow(snap::program::Sequence &prog) const {
   const unsigned C     = outShape[2];
 
   // Should be shape [N].
-  const snap::Tensor &targetLengths =
+  const poplar::Tensor &targetLengths =
       getInTensor(CtcGradOp::getTargetLengthsInIndex());
 
   // Should be shape [T, N, C].
-  const snap::Tensor &logProbsGradientWrtCtcLoss =
+  const poplar::Tensor &logProbsGradientWrtCtcLoss =
       getInTensor(CtcGradOp::getLogProbsGradientWrtCtcLossInIndex());
 
   // Shape [] if reduction else shape [N].
-  const snap::Tensor &ctcLossGrad =
+  const poplar::Tensor &ctcLossGrad =
       getInTensor(CtcGradOp::getCtcLossGradientInIndex());
 
   // Apply chain rule for reduction. The result gradient tensor is shape [N].
@@ -296,19 +289,19 @@ void CtcGradOpx::grow(snap::program::Sequence &prog) const {
                                             pe::Cast(pe::_2, outType));
 
   auto logProbsGradient =
-      snap::popops::map(graph(),
-                        expr,
-                        {logProbsGradientWrtCtcLoss, adjustedCtcLossGrad},
-                        prog,
-                        debugContext("chainRule"));
+      popops::map(graph(),
+                  expr,
+                  {logProbsGradientWrtCtcLoss, adjustedCtcLossGrad},
+                  prog,
+                  debugContext("chainRule"));
 
   setOutTensor(CtcGradOp::getLogProbsGradientOutIndex(), logProbsGradient);
 }
 
-snap::Tensor
-CtcGradOpx::applyReductionGrad(snap::program::Sequence &prog,
-                               const snap::Tensor &ctcLossGrad,
-                               const snap::Tensor &targetLengths) const {
+poplar::Tensor
+CtcGradOpx::applyReductionGrad(poplar::program::Sequence &prog,
+                               const poplar::Tensor &ctcLossGrad,
+                               const poplar::Tensor &targetLengths) const {
 
   // In the forward pass we the loss output of the CTC loss function outputs
   // loss tensor of size [N]. Depending on reduction settings, we applied either
@@ -341,24 +334,24 @@ CtcGradOpx::applyReductionGrad(snap::program::Sequence &prog,
 
     // Take into account gradient for mean reduction.
     auto newCtcLossGrad =
-        snap::popops::map(graph(),
-                          pe::Mul(pe::_1, pe::Const(1.0f / totalSamples)),
-                          {ctcLossGrad},
-                          prog,
-                          debugContext("divBySamples"));
+        popops::map(graph(),
+                    pe::Mul(pe::_1, pe::Const(1.0f / totalSamples)),
+                    {ctcLossGrad},
+                    prog,
+                    debugContext("divBySamples"));
 
     // Expand tensor to [N].
     newCtcLossGrad = newCtcLossGrad.expand({0}).broadcast(N, 0);
 
     // Take into account gradient for division by length.
     newCtcLossGrad =
-        snap::popops::map(graph(),
-                          pe::Divide(pe::_1,
-                                     pe::Cast(pe::Max(pe::_2, pe::Const(1)),
-                                              newCtcLossGrad.elementType())),
-                          {newCtcLossGrad, targetLengths},
-                          prog,
-                          debugContext("divByTargetLen"));
+        popops::map(graph(),
+                    pe::Divide(pe::_1,
+                               pe::Cast(pe::Max(pe::_2, pe::Const(1)),
+                                        newCtcLossGrad.elementType())),
+                    {newCtcLossGrad, targetLengths},
+                    prog,
+                    debugContext("divByTargetLen"));
     return newCtcLossGrad;
 
   } else if (op.getReductionType() == ReductionType::Sum) {

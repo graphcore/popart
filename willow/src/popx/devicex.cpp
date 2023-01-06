@@ -4,12 +4,14 @@
 #include <boost/filesystem.hpp>
 #include <cstdint>
 #include <cstring>
+#include <engineoptionscreator.hpp>
 #include <fstream>
 #include <functional>
 #include <gcl/CollectiveBalancedReorder.hpp>
 #include <iterator>
 #include <map>
 #include <memory>
+#include <profilecacher.hpp>
 #include <pva/pva.hpp>
 #include <set>
 #include <stepiosplitter.hpp>
@@ -44,20 +46,19 @@
 #include <popart/variablesettings.hpp>
 #include <poparttracepoint.hpp>
 
-#include "popart/commgroup.hpp"
 #include "popart/dataflow.hpp"
 #include "popart/datatype.hpp"
 #include "popart/istepio.hpp"
+#include "popart/popx/exchangebundle.hpp"
 #include "popart/popx/popprograms.hpp"
+#include "popart/replicagrouping.hpp"
 #include "popart/replicatedstreammode.hpp"
 #include "popart/sessionoptions.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorinfo.hpp"
 #include "popart/util.hpp"
+#include "popart/util/expressionchecking.hpp"
 #include "popart/voiddata.hpp"
-
-#include <engineoptionscreator.hpp>
-#include <profilecacher.hpp>
 
 namespace popart {
 namespace popx {
@@ -1062,10 +1063,10 @@ void Devicex::connectRandomSeedStream() {
 
 void Devicex::connectRngStateStream() {
   // popart::DeviceInfo object is used to calculate rng state tensor size
-  // (instead of snap::Graph) because snap::Graph might not exist when
+  // (instead of poplar::Graph) because poplar::Graph might not exist when
   // we are using deserialized executable. Note that poplar::Target in
   // DeviceInfo contains info about all replicas and poplar::Target in
-  // snap::Graph about one replica.
+  // poplar::Graph about one replica.
   const unsigned repFactor = getReplicationFactor();
   const size_t rngSize     = RngStateLowering::getCombinedRngStateTensorSize(
       *lowering().getDeviceInfo(), repFactor);
@@ -1124,10 +1125,10 @@ std::vector<uint32_t> Devicex::getRngStateToHost() {
   logging::devicex::debug("Cleaning the rng buffer before receiving data");
 
   // popart::DeviceInfo object is used to calculate rng state tensor size
-  // (instead of snap::Graph) because snap::Graph might not exist when
+  // (instead of poplar::Graph) because poplar::Graph might not exist when
   // we are using deserialized executable. Note that poplar::Target in
   // DeviceInfo contains info about all replicas and poplar::Target in
-  // snap::Graph about one replica.
+  // poplar::Graph about one replica.
   const unsigned repFactor = getReplicationFactor();
   const size_t rngSize     = RngStateLowering::getCombinedRngStateTensorSize(
       *lowering().getDeviceInfo(), repFactor);
@@ -1149,10 +1150,10 @@ std::vector<uint32_t> Devicex::getRngStateToHost() {
 
 void Devicex::setRngStateValue(const std::vector<uint32_t> rngState) {
   // popart::DeviceInfo object is used to calculate rng state tensor size
-  // (instead of snap::Graph) because snap::Graph might not exist when
+  // (instead of poplar::Graph) because poplar::Graph might not exist when
   // we are using deserialized executable. Note that poplar::Target in
   // DeviceInfo contains info about all replicas and poplar::Target in
-  // snap::Graph about one replica.
+  // poplar::Graph about one replica.
   const unsigned repFactor = getReplicationFactor();
   const size_t rngSize     = RngStateLowering::getCombinedRngStateTensorSize(
       *lowering().getDeviceInfo(), repFactor);

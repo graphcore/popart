@@ -2,12 +2,10 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
+#include <ext/new_allocator.h>
 #include <vector>
 #include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popops/OperationDef.hpp>
@@ -19,8 +17,14 @@
 
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/tensorinfo.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -31,35 +35,32 @@ namespace popx {
 class Devicex;
 
 ReduceSumSquareOpx::ReduceSumSquareOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<ReduceSumSquareOp>(op);
 }
 
-void ReduceSumSquareOpx::grow(snap::program::Sequence &prog) const {
-  const auto &op = getOp<ReduceSumSquareOp>();
-  const auto input =
-      getInTensor(ReduceSumSquareOp::getInIndex()).getPoplarTensor();
+void ReduceSumSquareOpx::grow(poplar::program::Sequence &prog) const {
+  const auto &op   = getOp<ReduceSumSquareOp>();
+  const auto input = getInTensor(ReduceSumSquareOp::getInIndex());
 
-  auto output_tensor = popops::reduce(graph().getPoplarGraph(),
+  auto output_tensor = popops::reduce(graph(),
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::SQUARE_ADD},
-                                      prog.getPoplarSequence(),
+                                      prog,
                                       debugContext("squareAdd"));
 
-  setOutTensor(
-      ReduceSumSquareOp::getOutIndex(),
-      snap::Tensor{output_tensor.reshape(
-                       outInfo(ReduceSumSquareOp::getOutIndex()).shape_szt()),
-                   graph()});
+  setOutTensor(ReduceSumSquareOp::getOutIndex(),
+               output_tensor.reshape(
+                   outInfo(ReduceSumSquareOp::getOutIndex()).shape_szt()));
 }
 
 ReduceSumSquareGradOpx::ReduceSumSquareGradOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<ReduceSumSquareGradOp>(op, Onnx::GradOperators::ReduceSumSquareGrad);
 }
 
-void ReduceSumSquareGradOpx::grow(snap::program::Sequence &prog) const {
+void ReduceSumSquareGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op = getOp<ReduceSumSquareGradOp>();
   auto output =
       cloneNcopy(prog, getInTensor(ReduceSumSquareGradOp::getOutIndex()));
@@ -77,7 +78,7 @@ void ReduceSumSquareGradOpx::grow(snap::program::Sequence &prog) const {
   }
 
   // TODO: should this be a mapInPlace?
-  output = snap::popops::map(
+  output = popops::map(
       graph(),
       pe::Mul(pe::Mul(pe::_1, pe::_2), pe::Const(2)),
       {output, getInTensor(ReduceSumSquareGradOp::getFwdInInIndex())},

@@ -1,10 +1,10 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
 #include <algorithm>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <vector>
+#include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/error.hpp>
@@ -16,13 +16,13 @@
 #include "popart/graphcoreoperators.hpp"
 #include "popart/logging.hpp"
 #include "popart/optimizervalue.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -32,18 +32,18 @@ class Op;
 namespace popx {
 class Devicex;
 
-AdamUpdaterOpx::AdamUpdaterOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+AdamUpdaterOpx::AdamUpdaterOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<AdamUpdaterOp>(op, Onnx::CustomOperators::AdamUpdater);
 }
 
-void AdamUpdaterOpx::grow(snap::program::Sequence &prog) const {
+void AdamUpdaterOpx::grow(poplar::program::Sequence &prog) const {
   auto &adamUpdaterOp = getOp<AdamUpdaterOp>();
 
-  snap::Tensor var;
+  poplar::Tensor var;
   auto accl1            = getInTensor(AdamUpdaterOp::getAccl1InIndex());
   auto accl2            = getInTensor(AdamUpdaterOp::getAccl2InIndex());
   poplar::Type elemType = accl1.elementType();
-  std::vector<snap::Tensor> tensors{accl1, accl2};
+  std::vector<poplar::Tensor> tensors{accl1, accl2};
 
   int varIndex  = -1;
   int stepIndex = -1;
@@ -65,11 +65,11 @@ void AdamUpdaterOpx::grow(snap::program::Sequence &prog) const {
     auto step = getInTensor(AdamUpdaterOp::getStepInIndex());
 
     // Update step
-    snap::popops::mapInPlace(graph(),
-                             pe::Add(pe::_1, pe::Const(1)),
-                             {step},
-                             prog,
-                             debugContext("updateStep"));
+    popops::mapInPlace(graph(),
+                       pe::Add(pe::_1, pe::Const(1)),
+                       {step},
+                       prog,
+                       debugContext("updateStep"));
 
     tensors.push_back(step);
     stepIndex = tensors.size();
@@ -167,7 +167,7 @@ void AdamUpdaterOpx::grow(snap::program::Sequence &prog) const {
                            pe::PlaceHolder(varIndex)));
   }
 
-  auto updater = snap::popops::map(
+  auto updater = popops::map(
       graph(), pe::Cast(expr, elemType), tensors, prog, debugContext(""));
 
   if (hasInput(AdamUpdaterOp::getVarInIndex())) {

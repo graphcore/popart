@@ -2,13 +2,14 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_POW2SCALETHENCASTX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_POW2SCALETHENCASTX_HPP_
 
+#include <poplar/Quarter.hpp>
 #include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -23,7 +24,7 @@ class Devicex;
 class Pow2ScaleThenCastOpx : public Opx {
 public:
   Pow2ScaleThenCastOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   /**
    * Get the Destination Format for the output tensor (index 0).

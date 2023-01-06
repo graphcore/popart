@@ -1,5 +1,4 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <poplar/Tensor.hpp>
 #include <popart/op/reverse.hpp>
@@ -8,14 +7,14 @@
 
 #include "popart/graphcoreoperators.hpp"
 #include "popart/names.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/region.hpp" // IWYU pragma: keep
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -23,7 +22,7 @@ class Op;
 namespace popx {
 class Devicex;
 
-ReverseBaseOpx::ReverseBaseOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+ReverseBaseOpx::ReverseBaseOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ReverseBaseOp>(op);
 }
 
@@ -31,25 +30,24 @@ ReverseOpx::ReverseOpx(Op *op, Devicex *devicex) : ReverseBaseOpx(op, devicex) {
   verifyOp<ReverseOp>(op);
 }
 
-void ReverseOpx::grow(snap::program::Sequence &prog) const {
-  auto t = getInTensor(ReverseOp::getInIndex()).getPoplarTensor();
+void ReverseOpx::grow(poplar::program::Sequence &prog) const {
+  auto t = getInTensor(ReverseOp::getInIndex());
   for (auto dim : getOp<ReverseOp>().getDimensions()) {
     t = t.reverse(static_cast<unsigned>(dim));
   }
 
-  setOutTensor(ReverseOp::getOutIndex(),
-               cloneNcopy(prog, snap::Tensor{t, graph()}));
+  setOutTensor(ReverseOp::getOutIndex(), cloneNcopy(prog, t));
 }
 
-snap::Tensor ReverseBaseOpx::unwindTensorLayout(snap::Tensor tensor,
-                                                InIndex,
-                                                OutIndex) const {
-  poplar::Tensor t = tensor.getPoplarTensor();
+poplar::Tensor ReverseBaseOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                  InIndex,
+                                                  OutIndex) const {
+  auto t = tensor;
   for (auto dim : getOp<ReverseBaseOp>().getDimensions()) {
     t = t.reverse(static_cast<unsigned>(dim));
   }
 
-  return snap::Tensor{t, graph()};
+  return t;
 }
 
 view::RegMap ReverseBaseOpx::unwindRegion(InIndex inIndex,
@@ -63,13 +61,13 @@ ReverseInplaceOpx::ReverseInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<ReverseInplaceOp>(op);
 }
 
-void ReverseInplaceOpx::grow(snap::program::Sequence &) const {
-  auto t = getInTensor(ReverseOp::getInIndex()).getPoplarTensor();
+void ReverseInplaceOpx::grow(poplar::program::Sequence &) const {
+  auto t = getInTensor(ReverseOp::getInIndex());
   for (auto dim : getOp<ReverseInplaceOp>().getDimensions()) {
     t = t.reverse(static_cast<unsigned>(dim));
   }
 
-  setOutTensor(ReverseOp::getOutIndex(), snap::Tensor{t, graph()});
+  setOutTensor(ReverseOp::getOutIndex(), t);
 }
 
 ReverseGradOpx::ReverseGradOpx(Op *op, Devicex *devicex)

@@ -1,23 +1,26 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_MULTIREPLICATEDREDUCESCATTERX_HPP
 #define GUARD_NEURALNET_MULTIREPLICATEDREDUCESCATTERX_HPP
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
 
 #include "popart/names.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/opx.hpp"
+#include "popart/popx/viewchangers.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
 
 namespace popx {
 class Devicex;
+
 /**
  * Lowers the MultiReplicatedReduceScatterOp to Poplar by growing each
  * individual output tensor, and performing a to-destination reduce-scatter
@@ -29,15 +32,14 @@ public:
   MultiReplicatedReduceScatterOpx(popart::Op *op, Devicex *devicex);
   InputCreatorType getInputCreatorType(InIndex) const override;
   void growPart(OpxGrowPartId id) const override;
-  void grow(snap::program::Sequence &prog) const override;
+  void grow(poplar::program::Sequence &prog) const override;
   ViewChangers getCreatorViewChangers(InIndex index) const override;
   DnfTensorIds mustExistBeforeCreateDNF(InIndex in) const override;
-  snap::Tensor prepareInputForGCL(snap::Tensor inputTensor,
-                                  InIndex inputIndex,
-                                  snap::program::Sequence &prog) const;
-  snap::Tensor
-  createInputTensor(InIndex idx,
-                    const poplar::DebugNameAndId &dnai) const override;
+  poplar::Tensor prepareInputForGCL(poplar::Tensor inputTensor,
+                                    InIndex inputIndex,
+                                    poplar::program::Sequence &prog) const;
+  poplar::Tensor createInput(InIndex idx,
+                             const poplar::DebugNameAndId &dnai) const override;
 };
 
 } // namespace popx

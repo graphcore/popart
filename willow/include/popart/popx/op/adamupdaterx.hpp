@@ -2,13 +2,13 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_ADAMUPDATERX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_ADAMUPDATERX_HPP_
 
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -16,10 +16,10 @@ class Op;
 namespace popx {
 class Devicex;
 
-class AdamUpdaterOpx : public PopOpx {
+class AdamUpdaterOpx : public Opx {
 public:
   AdamUpdaterOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   // does not create inputs
 };

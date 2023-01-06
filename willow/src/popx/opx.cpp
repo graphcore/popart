@@ -1,12 +1,14 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
+#include <ext/new_allocator.h>
+#include <map>
+#include <memory>
+#include <ostream>
+#include <set>
 #include <string>
+#include <utility>
 #include <vector>
 #include <poplar/Graph.hpp>
 #include <poplar/Program.hpp>
@@ -14,19 +16,27 @@
 #include <poplar/Type.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
 
+#include "popart/debugcontext.hpp"
 #include "popart/error.hpp"
 #include "popart/graph.hpp"
+#include "popart/graphid.hpp"
 #include "popart/ir.hpp"
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
 #include "popart/op.hpp"
+#include "popart/opdebuginfo.hpp"
 #include "popart/operatoridentifier.hpp"
+#include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/devicex.hpp"
 #include "popart/popx/irlowering.hpp"
 #include "popart/popx/opx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/poptensors.hpp"
+#include "popart/popx/preparedtensor.hpp"
+#include "popart/popx/viewchangers.hpp"
 #include "popart/region.hpp"
+#include "popart/sessionoptions.hpp"
 #include "popart/subgraphpartitioner.hpp"
+#include "popart/tensor.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorindex.hpp"
 #include "popart/tensorinfo.hpp"
@@ -34,7 +44,8 @@
 namespace popart {
 namespace popx {
 
-Opx::Opx(Op *op_p_, Devicex *dv_p_) : op_p(op_p_), dv_p(dv_p_) {}
+Opx::Opx(Op *op_p_, Devicex *dv_p_) : op_p{op_p_}, dv_p{dv_p_} {}
+
 Opx::~Opx() = default;
 
 poplar::Tensor Opx::createInput(InIndex index,
@@ -45,9 +56,10 @@ poplar::Tensor Opx::createInput(InIndex index,
               dnai.getPathName());
 }
 
-snap::Tensor Opx::createInputTensor(InIndex index,
-                                    const poplar::DebugNameAndId &dnai) const {
-  return snap::Tensor{createInput(index, dnai), snapGraph()};
+poplar::Tensor
+Opx::createInputTensor(InIndex index,
+                       const poplar::DebugNameAndId &dnai) const {
+  return createInput(index, dnai);
 }
 
 std::set<TensorId> Opx::mustExistBeforeCreate(int index0) const {
@@ -76,12 +88,6 @@ Opx::unwindTensorLayout(poplar::Tensor tensor, InIndex in, OutIndex out) const {
   throw error("Opx for {} cannot unwind the tensor layout change between input "
               "and output for {}",
               op_p->opid);
-}
-
-snap::Tensor
-Opx::unwindTensorLayout(snap::Tensor tensor, InIndex in, OutIndex out) const {
-  return snap::Tensor{unwindTensorLayout(tensor.getPoplarTensor(), in, out),
-                      snapGraph()};
 }
 
 bool Opx::createsEquiv(int, const Opx *, int) const {
@@ -165,29 +171,73 @@ int64_t Opx::getVirtualGraphId() const {
 
 poplar::Graph &Opx::graph() const {
   if (op_p->getIr().virtualGraphsEnabled()) {
-    return dv_p->lowering()
-        .getVirtualGraph(getVirtualGraphId(), op_p->settings.tileSet)
-        .getPoplarGraph();
+    return dv_p->lowering().getVirtualGraph(getVirtualGraphId(),
+                                            op_p->settings.tileSet);
   } else {
-    return dv_p->lowering().graph().getPoplarGraph();
+    return dv_p->lowering().graph();
   }
 }
 
+poplar::Graph &Opx::topLevelGraph() const { return dv_p->lowering().graph(); }
+
+poplar::Graph &Opx::srcGraph(InIndex index) const {
+  auto &op  = getOp<Op>();
+  auto vgid = op.getIntrospectionInVirtualGraphId(index);
+  if (vgid.first == unusedVGraphId) {
+    return graph();
+  } else {
+    return dv_p->lowering().getVirtualGraph(vgid.first, vgid.second);
+  }
+}
+
+poplar::Graph &Opx::dstGraph(OutIndex index) const {
+  auto &op  = getOp<Op>();
+  auto vgid = op.getIntrospectionOutVirtualGraphId(index);
+  if (vgid.first == unusedVGraphId) {
+    return graph();
+  } else {
+    return dv_p->lowering().getVirtualGraph(vgid.first, vgid.second);
+  }
+}
+
+poplar::Graph &Opx::inGraph(InIndex in) const {
+  if (op_p->hasVirtualGraphId()) {
+    std::set<OpId> visited;
+    auto vgid = op_p->getIntrospectionInVirtualGraphId(in, visited);
+    return dv_p->lowering().getVirtualGraph(vgid.first, vgid.second);
+  }
+  return dv_p->lowering().graph();
+}
+
+poplar::Graph &Opx::outGraph(OutIndex out) const {
+  if (op_p->hasVirtualGraphId()) {
+    std::set<OpId> visited;
+    auto vgid = op_p->getIntrospectionOutVirtualGraphId(out, visited);
+    return dv_p->lowering().getVirtualGraph(vgid.first, vgid.second);
+  }
+  return dv_p->lowering().graph();
+}
+
 const poplar::Tensor &Opx::get(TensorId id) const {
-  return dv_p->lowering().tensors().get(id).getPoplarTensor();
+  return dv_p->lowering().tensors().get(id);
 }
 
 const poplar::Tensor &Opx::getView(TensorId id) const {
-  return dv_p->lowering().tensors().getView(id).getPoplarTensor();
+  return dv_p->lowering().tensors().getView(id);
 }
 
 void Opx::insert(TensorId id, const poplar::Tensor &tensor) const {
-  dv_p->lowering().tensors().insert(
-      id, snap::Tensor{tensor, dv_p->lowering().graph()});
+  dv_p->lowering().tensors().insert(id, tensor);
 }
 
 TensorId Opx::inId(InIndex index) const { return op_p->input->id(index); }
 TensorId Opx::outId(OutIndex index) const { return op_p->output->id(index); }
+
+bool Opx::hasInput(InIndex index) const { return op_p->input->hasIndex(index); }
+
+bool Opx::hasOutput(OutIndex index) const {
+  return op_p->output->hasIndex(index);
+}
 
 const poplar::Tensor &Opx::getInTensor(InIndex index) const {
 
@@ -265,12 +315,6 @@ void Opx::setOutTensor(OutIndex index, const poplar::Tensor &tensor) const {
   insert(op_p->output->id(index), tensor);
 }
 
-bool Opx::hasInput(InIndex index) const { return op_p->input->hasIndex(index); }
-
-bool Opx::hasOutput(OutIndex index) const {
-  return op_p->output->hasIndex(index);
-}
-
 const Devicex *Opx::getDevicex() const { return dv_p; }
 
 Tensor *Opx::inTensor(InIndex index) const {
@@ -298,103 +342,6 @@ const Shape &Opx::outShape(OutIndex index) const {
   return outInfo(index).shape();
 }
 
-poplar::Tensor Opx::getConst(const poplar::Type &type,
-                             const std::vector<size_t> &shape,
-                             double val,
-                             const std::string &name) const {
-  return dv_p->lowering()
-      .getConst(snapGraph(), type, shape, val, debugContext(name))
-      .getPoplarTensor();
-}
-
-poplar::Tensor Opx::getScalarVariable(const poplar::Type &type,
-                                      const std::string &name) const {
-  return dv_p->lowering()
-      .getScalarVariable(snapGraph(), type, debugContext(name))
-      .getPoplarTensor();
-}
-
-PreparedTensorInfos Opx::getOutputsToPrepare() const { return {}; }
-
-PreparedTensorInfos Opx::getInputsToPrepare() const { return {}; }
-
-std::set<OpxGrowPartId> Opx::getInGrowPartIds(Tensor *inTensor) const {
-  // By default, growing in parts is disabled
-  return {};
-}
-
-OpxGrowPartId Opx::getOutGrowPartId(Tensor *outTensor) const {
-  // By default, growing in parts is disabled
-  return unusedGrowPartId;
-}
-
-void Opx::grow(snap::program::Sequence &prog) const {
-  grow(prog.getPoplarSequence());
-}
-
-void Opx::grow(poplar::program::Sequence &) const {
-  throw error("adding poplar::Tensors not implemented for {}", op_p->opid);
-}
-
-void Opx::grow(std::vector<snap::program::Sequence> &sequences) const {
-  if (sequences.empty()) {
-    auto partitioner  = dv_p->lowering().getSubgraphPartitioner();
-    auto subgraphPart = partitioner->getOpSubgraphPartBegin(op_p);
-
-    std::stringstream ss;
-    ss << op_p->getGraph().id.str() << "/" << subgraphPart;
-    sequences.resize(1,
-                     snap::program::Sequence(
-                         debugContext(ss.str()),
-                         // Using `graph()` here was causing an error due
-                         // to ipucopy not having a virtual graph id set.
-                         // snap::program::Sequence does not require a specific
-                         // graph though, just any snap::Graph, so use the main
-                         // graph provided by `dv_p->lowering().graph()`.
-                         dv_p->lowering().graph()));
-  }
-
-  // By default, use the Opx::grow(snap::program::Sequence &) function.
-  // Currently, only CallOpx overloads this Opx::grow method to grow over
-  // multiple fragments.
-  grow(*sequences.begin());
-}
-
-void Opx::grow(std::vector<poplar::program::Sequence> &sequences) const {
-  if (sequences.empty()) {
-    auto partitioner  = dv_p->lowering().getSubgraphPartitioner();
-    auto subgraphPart = partitioner->getOpSubgraphPartBegin(op_p);
-
-    std::stringstream ss;
-    ss << op_p->getGraph().id.str() << "/" << subgraphPart;
-    sequences.resize(1,
-                     snap::program::Sequence(
-                         debugContext(ss.str()),
-                         // Using `graph()` here was causing an error due
-                         // to ipucopy not having a virtual graph id set.
-                         // snap::program::Sequence does not require a specific
-                         // graph though, just any snap::Graph, so use the main
-                         // graph provided by `dv_p->lowering().graph()`.
-                         dv_p->lowering().graph()));
-  }
-
-  // By default, use the Opx::grow(poplar::program::Sequence &) function.
-  // Currently, only CallOpx overloads this Opx::grow method to grow over
-  // multiple fragments.
-  grow(*sequences.begin());
-}
-
-void Opx::growPart(OpxGrowPartId id) const {
-  // By default, growing in parts is disabled
-  throw error("part growing not implemented for {}", op_p->opid);
-}
-
-bool Opx::hasCreatorViewChangers(InIndex) const { return false; }
-
-ViewChangers Opx::getCreatorViewChangers(InIndex) const {
-  return ViewChangers{};
-}
-
 const popart::DebugInfo &Opx::getDebugInfo() const {
   return op_p->getDebugInfo();
 }
@@ -411,37 +358,77 @@ poplar::DebugContext Opx::debugContext(const std::string name,
   return {getDebugNameAndId(), name, loc};
 }
 
-const snap::Tensor &Opx::snapGet(TensorId id) const {
-  return dv_p->lowering().tensors().get(id);
+poplar::Tensor Opx::getConst(const poplar::Type &type,
+                             const std::vector<size_t> &shape,
+                             double val,
+                             const std::string &name) const {
+  return dv_p->lowering().getConst(
+      graph(), type, shape, val, debugContext(name));
 }
 
-snap::Graph &Opx::snapGraph() const {
-  if (op_p->getIr().virtualGraphsEnabled()) {
-    return dv_p->lowering().getVirtualGraph(getVirtualGraphId(),
-                                            op_p->settings.tileSet);
-  } else {
-    return dv_p->lowering().graph();
+poplar::Tensor Opx::getScalarVariable(const poplar::Type &type,
+                                      const std::string &name) const {
+  return dv_p->lowering().getScalarVariable(graph(), type, debugContext(name));
+}
+
+PreparedTensorInfos Opx::getOutputsToPrepare() const { return {}; }
+
+PreparedTensorInfos Opx::getInputsToPrepare() const { return {}; }
+
+poplar::Tensor Opx::getZerosTensor(std::vector<std::size_t> shape,
+                                   poplar::Type elem_type,
+                                   std::string name = "") const {
+  // create scalar variable with provided elem_type and name
+  auto zero = getScalarVariable(elem_type, name);
+  // set the variable's value to 0
+  graph().setInitialValue(zero, 0);
+  // broadcast variable to required shape
+  for (int i = shape.size() - 1; i >= 0; i--) {
+    zero = zero.expand({0});
+    zero = zero.broadcast(shape[i], 0);
   }
+  return zero;
 }
 
-snap::Graph &Opx::snapSrcVirtualGraph(InIndex index) const {
-  auto &op  = getOp<Op>();
-  auto vgid = op.getIntrospectionInVirtualGraphId(index);
-  if (vgid.first == unusedVGraphId) {
-    return snapGraph();
-  } else {
-    return dv_p->lowering().getVirtualGraph(vgid.first, vgid.second);
+std::set<OpxGrowPartId> Opx::getInGrowPartIds(Tensor *inTensor) const {
+  // By default, growing in parts is disabled
+  return {};
+}
+
+OpxGrowPartId Opx::getOutGrowPartId(Tensor *outTensor) const {
+  // By default, growing in parts is disabled
+  return unusedGrowPartId;
+}
+
+void Opx::growPart(OpxGrowPartId id) const {
+  // By default, growing in parts is disabled
+  throw error("part growing not implemented for {}", op_p->opid);
+}
+
+bool Opx::hasCreatorViewChangers(InIndex) const { return false; }
+
+ViewChangers Opx::getCreatorViewChangers(InIndex) const {
+  return ViewChangers{};
+}
+
+void Opx::grow(std::vector<poplar::program::Sequence> &sequences) const {
+  if (sequences.empty()) {
+    auto partitioner  = dv_p->lowering().getSubgraphPartitioner();
+    auto subgraphPart = partitioner->getOpSubgraphPartBegin(op_p);
+
+    std::stringstream ss;
+    ss << op_p->getGraph().id.str() << "/" << subgraphPart;
+    sequences.resize(1, poplar::program::Sequence(debugContext(ss.str())));
   }
+
+  // By default, use the Opx::grow(poplar::program::Sequence &) function.
+  // Currently, only CallOpx overloads this Opx::grow method to grow over
+  // multiple fragments.
+  grow(*sequences.begin());
 }
 
-const snap::Tensor &Opx::snapGetInTensor(InIndex index) const {
-
-  return dv_p->lowering().tensors().get(op_p->input->id(index));
-}
-
-const snap::Tensor &Opx::snapGetOutTensor(OutIndex index) const {
-
-  return dv_p->lowering().tensors().get(op_p->output->id(index));
+void Opx::grow(poplar::program::Sequence &) const {
+  throw error("adding poplar::Tensors not implemented for {}", op_p->opid);
 }
 
 } // namespace popx

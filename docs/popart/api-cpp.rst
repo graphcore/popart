@@ -380,20 +380,6 @@ Device manager
 
 .. code-block:: cpp
 
-  #include <popart/popx/popopx.hpp>
-
-.. doxygenclass:: popart::popx::PopOpx
-   :members:
-
-.. doxygentypedef:: popart::popx::ICreatorCandidatePtr
-
-.. doxygenstruct:: popart::POpCmp
-
-.. doxygenenum:: popart::popx::InputCreatorType
-
-
-.. code-block:: cpp
-
   #include <popart/popx/inittensor.hpp>
 
 .. doxygenclass:: popart::popx::ICreatorCandidate

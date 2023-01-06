@@ -5,9 +5,6 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <utility>
 #include <vector>
@@ -30,28 +27,32 @@
 #include "popart/op.hpp"
 #include "popart/op/dynamic/dynamicbase.hpp"
 #include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/popx/poptensors.hpp"
 #include "popart/region.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/util.hpp"
 
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
+
 namespace popart {
 namespace popx {
 
 DynamicUpdateOpx::DynamicUpdateOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<DynamicBinaryBaseOp>(op);
   inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
-void DynamicUpdateOpx::grow(snap::program::Sequence &prog) const {
+void DynamicUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto &op    = getOp<DynamicTernaryBaseOp>();
   auto tensor = getInTensor(DynamicTernaryBaseOp::getUpdateInIndex());
-  auto index =
-      getInTensor(DynamicTernaryBaseOp::getIndexInIndex()).getPoplarTensor();
-  auto slice =
-      getInTensor(DynamicTernaryBaseOp::getInIndex()).getPoplarTensor();
+  auto index  = getInTensor(DynamicTernaryBaseOp::getIndexInIndex());
+  auto slice  = getInTensor(DynamicTernaryBaseOp::getInIndex());
 
   std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
   std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
@@ -64,17 +65,17 @@ void DynamicUpdateOpx::grow(snap::program::Sequence &prog) const {
   }
 
   popops::dynamicUpdate(
-      graph().getPoplarGraph(),
-      outTensor.getPoplarTensor(),
+      graph(),
+      outTensor,
       slice.reshape(sliceShape),
-      popops::cast(graph().getPoplarGraph(),
+      popops::cast(graph(),
                    index.reshape({op.getAxes().size()}),
                    poplar::UNSIGNED_INT,
-                   prog.getPoplarSequence(),
+                   prog,
                    debugContext()),
       paxes,
       psizes,
-      prog.getPoplarSequence(),
+      prog,
       debugContext("dynamic_update_" +
                    op.inId(DynamicTernaryBaseOp::getUpdateInIndex())));
 
@@ -115,12 +116,12 @@ InputCreatorType DynamicUpdateOpx::getInputCreatorType(InIndex index) const {
     }
   }
 
-  return PopOpx::getInputCreatorType(index);
+  return Opx::getInputCreatorType(index);
 }
 
-snap::Tensor
-DynamicUpdateOpx::createInputTensor(InIndex index,
-                                    const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+DynamicUpdateOpx::createInput(InIndex index,
+                              const poplar::DebugNameAndId &dnai) const {
   auto &op = getOp<DynamicTernaryBaseOp>();
 
   // Create the slice we want to update for
@@ -129,18 +130,15 @@ DynamicUpdateOpx::createInputTensor(InIndex index,
   if (index == DynamicTernaryBaseOp::getInIndex()) {
     if (dv_p->lowering().tensors().contains(
             op_p->input->id(DynamicTernaryBaseOp::getUpdateInIndex()))) {
-      auto updateTensor = getInTensor(DynamicTernaryBaseOp::getUpdateInIndex())
-                              .getPoplarTensor();
-      auto updateShape = inShape(DynamicTernaryBaseOp::getUpdateInIndex());
+      auto updateTensor = getInTensor(DynamicTernaryBaseOp::getUpdateInIndex());
+      auto updateShape  = inShape(DynamicTernaryBaseOp::getUpdateInIndex());
 
       std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
       std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
 
-      return snap::Tensor{
-          popops::createSliceTensor(
-              graph().getPoplarGraph(), updateTensor, paxes, psizes, 1, dnai)
-              .squeeze({0}),
-          graph()}
+      return popops::createSliceTensor(
+                 graph(), updateTensor, paxes, psizes, 1, dnai)
+          .squeeze({0})
           .reshape(inShapeSzt(index));
     }
   }
@@ -175,14 +173,12 @@ DynamicUpdateOpx::createInputTensor(InIndex index,
         numSlices[i]  = updateShape[paxes[i]];
         end[paxes[i]] = 1;
       }
-      return snap::Tensor{
-          popops::createSliceableTensorFromSlice(
-              graph().getPoplarGraph(),
-              inTensor.reshape(inShape).slice(begin, end).getPoplarTensor(),
-              paxes,
-              numSlices,
-              dnai),
-          graph()};
+      return popops::createSliceableTensorFromSlice(
+          graph(),
+          inTensor.reshape(inShape).slice(begin, end),
+          paxes,
+          numSlices,
+          dnai);
     }
   }
 
@@ -190,26 +186,21 @@ DynamicUpdateOpx::createInputTensor(InIndex index,
               std::to_string(index));
 }
 
-snap::Tensor DynamicUpdateOpx::unwindTensorLayout(snap::Tensor tensor,
-                                                  InIndex in,
-                                                  OutIndex) const {
+poplar::Tensor DynamicUpdateOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                    InIndex in,
+                                                    OutIndex) const {
   if (in == DynamicUpdateOp::getInIndex()) {
     auto &op = getOp<DynamicUpdateOp>();
     std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
     std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
 
-    return snap::Tensor{popops::createSliceTensor(graph().getPoplarGraph(),
-                                                  tensor.getPoplarTensor(),
-                                                  paxes,
-                                                  psizes,
-                                                  1)
-                            .squeeze({0}),
-                        graph()}
+    return popops::createSliceTensor(graph(), tensor, paxes, psizes, 1)
+        .squeeze({0})
         .reshape(inShapeSzt(in));
   } else if (in == DynamicUpdateOp::getUpdateInIndex()) {
     return tensor;
   } else {
-    return PopOpx::unwindTensorLayout(tensor, in, 0);
+    return Opx::unwindTensorLayout(tensor, in, 0);
   }
 }
 
@@ -240,8 +231,8 @@ DynamicUpdateOpx::mustExistBeforeCreate(InIndex index) const {
   return mustExist;
 }
 
-snap::Tensor DynamicUpdateOpx::cloneNcopyOpt(snap::program::Sequence &s,
-                                             const snap::Tensor &t) const {
+poplar::Tensor DynamicUpdateOpx::cloneNcopyOpt(poplar::program::Sequence &s,
+                                               const poplar::Tensor &t) const {
   return cloneNcopy(s, t);
 }
 
@@ -250,9 +241,9 @@ DynamicUpdateInplaceOpx::DynamicUpdateInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<DynamicUpdateInplaceOp>(op);
 }
 
-snap::Tensor
-DynamicUpdateInplaceOpx::cloneNcopyOpt(snap::program::Sequence &s,
-                                       const snap::Tensor &t) const {
+poplar::Tensor
+DynamicUpdateInplaceOpx::cloneNcopyOpt(poplar::program::Sequence &s,
+                                       const poplar::Tensor &t) const {
   if (t.isParallelWriteable()) {
     return t;
   } else {

@@ -1,7 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <cstddef>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
@@ -10,18 +10,18 @@
 
 #include "popart/graphcoreoperators.hpp"
 #include "popart/op.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 namespace popx {
 
-void GetRandomSeedOpx::grow(snap::program::Sequence &prog) const {
+void GetRandomSeedOpx::grow(poplar::program::Sequence &prog) const {
   auto seed = getInTensor(op_p->getSeedInIndex());
 
   // Increment the seed
@@ -33,17 +33,17 @@ void GetRandomSeedOpx::grow(snap::program::Sequence &prog) const {
                       {1},
                       dv_p->lowering().getGlobalReplicationFactor(),
                       "globalReplicationFactor");
-  snap::popops::addInPlace(graph(),
-                           seed,
-                           snap::concat({grf, one}),
-                           prog,
-                           debugContext("RandomSeedIncrement"));
+  popops::addInPlace(graph(),
+                     seed,
+                     poplar::concat({grf, one}),
+                     prog,
+                     debugContext("RandomSeedIncrement"));
 
   setOutTensor(GetRandomSeedOp::getUpdatedSeedOutIndex(), seed);
 }
 
 GetRandomSeedOpx::GetRandomSeedOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<GetRandomSeedOp>(op);
 }
 

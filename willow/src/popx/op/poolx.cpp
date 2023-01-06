@@ -2,10 +2,9 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <ext/new_allocator.h>
 #include <iterator>
 #include <memory>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <popnn/Pooling.hpp>
 #include <popnn/PoolingDef.hpp>
@@ -21,16 +20,22 @@
 #include "popart/logging.hpp"
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/tensorinfo.hpp"
 #include "popart/util.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 namespace popx {
 
-class PoolOpx : public PopOpx {
+class PoolOpx : public Opx {
 public:
-  PoolOpx(Op *op_, Devicex *device_) : PopOpx(op_, device_) {}
+  PoolOpx(Op *op_, Devicex *device_) : Opx(op_, device_) {}
 
   popnn::pooling::PoolParams
   GetPoolingParameters(const popnn::PoolingType &pooling_type,
@@ -82,7 +87,7 @@ public:
   TPoolOpx(Op *op_, Devicex *devicex_, const popnn::PoolingType pooling_type_)
       : PoolOpx(op_, devicex_), pooling_type(pooling_type_) {}
 
-  void grow(snap::program::Sequence &prog) const {
+  void grow(poplar::program::Sequence &prog) const {
 
     OP &aOp = getOp<OP>();
 
@@ -103,15 +108,13 @@ public:
         pool_params.numChannels,
         pool_params.batchSize);
 
-    setOutTensor(
-        0,
-        snap::Tensor{popnn::pooling::pool(graph().getPoplarGraph(),
-                                          pool_params,
-                                          getInTensor(0).getPoplarTensor(),
-                                          prog.getPoplarSequence(),
-                                          debugContext("pool"),
-                                          dv_p->lowering().pooling_options),
-                     graph()});
+    setOutTensor(0,
+                 popnn::pooling::pool(graph(),
+                                      pool_params,
+                                      getInTensor(0),
+                                      prog,
+                                      debugContext("pool"),
+                                      dv_p->lowering().pooling_options));
   }
 
   popnn::PoolingType pooling_type;
@@ -124,7 +127,7 @@ public:
                const popnn::PoolingType pooling_type_)
       : PoolOpx(op_, devicex_), pooling_type(pooling_type_) {}
 
-  void grow(snap::program::Sequence &prog) const {
+  void grow(poplar::program::Sequence &prog) const {
     GRADOP &agOp = getOp<GRADOP>();
 
     auto pool_params = GetPoolingParameters(pooling_type,
@@ -144,20 +147,17 @@ public:
                         pool_params.numChannels,
                         pool_params.batchSize);
 
-    setOutTensor(
-        0,
-        snap::Tensor{
-            popnn::pooling::poolInputGradient(
-                graph().getPoplarGraph(),
-                pool_params,
-                getInTensor(GRADOP::getPrePooledInIndex()).getPoplarTensor(),
-                getInTensor(GRADOP::getPooledInIndex()).getPoplarTensor(),
-                getInTensor(GRADOP::getGradPooledInIndex()).getPoplarTensor(),
-                false,
-                prog.getPoplarSequence(),
-                debugContext("poolInputGradient"),
-                dv_p->lowering().pooling_options),
-            graph()});
+    setOutTensor(0,
+                 popnn::pooling::poolInputGradient(
+                     graph(),
+                     pool_params,
+                     getInTensor(GRADOP::getPrePooledInIndex()),
+                     getInTensor(GRADOP::getPooledInIndex()),
+                     getInTensor(GRADOP::getGradPooledInIndex()),
+                     false,
+                     prog,
+                     debugContext("poolInputGradient"),
+                     dv_p->lowering().pooling_options));
   }
 
   popnn::PoolingType pooling_type;
@@ -165,65 +165,65 @@ public:
 
 namespace {
 
-OpxCreator<PopOpx>
+OpxCreator<Opx>
     maxpoolOpxCreator({Onnx::Operators::MaxPool_1,
                        Onnx::Operators::MaxPool_8,
                        Onnx::Operators::MaxPool_10,
                        Onnx::Operators::MaxPool_11},
-                      [](Op *op, Devicex *devicex) -> std::unique_ptr<PopOpx> {
+                      [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
                         return std::make_unique<TPoolOpx<MaxPoolOp>>(
                             op, devicex, popnn::PoolingType::MAX);
                       });
 
-OpxCreator<PopOpx> maxpoolGradOpxCreator(
+OpxCreator<Opx> maxpoolGradOpxCreator(
     {Onnx::GradOperators::MaxPoolGrad},
-    [](Op *op, Devicex *devicex) -> std::unique_ptr<PopOpx> {
+    [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
       return std::make_unique<TPoolGradOpx<MaxPoolGradOp, MaxPoolOp>>(
           op, devicex, popnn::PoolingType::MAX);
     });
 
-OpxCreator<PopOpx> globalMaxpoolOpxCreator(
+OpxCreator<Opx> globalMaxpoolOpxCreator(
     {Onnx::Operators::GlobalMaxPool_1},
-    [](Op *op, Devicex *devicex) -> std::unique_ptr<PopOpx> {
+    [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
       return std::make_unique<TPoolOpx<GlobalMaxPoolOp>>(
           op, devicex, popnn::PoolingType::MAX);
     });
 
-OpxCreator<PopOpx> globalMaxpoolGradOpxCreator(
+OpxCreator<Opx> globalMaxpoolGradOpxCreator(
     {Onnx::GradOperators::GlobalMaxPoolGrad},
-    [](Op *op, Devicex *devicex) -> std::unique_ptr<PopOpx> {
+    [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
       return std::make_unique<
           TPoolGradOpx<GlobalMaxPoolGradOp, GlobalMaxPoolOp>>(
           op, devicex, popnn::PoolingType::MAX);
     });
 
-OpxCreator<PopOpx>
+OpxCreator<Opx>
     averageOpxCreator({Onnx::Operators::AveragePool_1,
                        Onnx::Operators::AveragePool_7,
                        Onnx::Operators::AveragePool_10,
                        Onnx::Operators::AveragePool_11},
-                      [](Op *op, Devicex *devicex) -> std::unique_ptr<PopOpx> {
+                      [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
                         return std::make_unique<TPoolOpx<AveragePoolOp>>(
                             op, devicex, popnn::PoolingType::AVG);
                       });
 
-OpxCreator<PopOpx> averageGradOpxCreator(
+OpxCreator<Opx> averageGradOpxCreator(
     {Onnx::GradOperators::AveragePoolGrad},
-    [](Op *op, Devicex *devicex) -> std::unique_ptr<PopOpx> {
+    [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
       return std::make_unique<TPoolGradOpx<AveragePoolGradOp, AveragePoolOp>>(
           op, devicex, popnn::PoolingType::AVG);
     });
 
-OpxCreator<PopOpx> globalAverageOpxCreator(
+OpxCreator<Opx> globalAverageOpxCreator(
     {Onnx::Operators::GlobalAveragePool_1},
-    [](Op *op, Devicex *devicex) -> std::unique_ptr<PopOpx> {
+    [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
       return std::make_unique<TPoolOpx<GlobalAveragePoolOp>>(
           op, devicex, popnn::PoolingType::AVG);
     });
 
-OpxCreator<PopOpx> globalAverageGradOpxCreator(
+OpxCreator<Opx> globalAverageGradOpxCreator(
     {Onnx::GradOperators::GlobalAveragePoolGrad},
-    [](Op *op, Devicex *devicex) -> std::unique_ptr<PopOpx> {
+    [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
       return std::make_unique<
           TPoolGradOpx<GlobalAveragePoolGradOp, GlobalAveragePoolOp>>(
           op, devicex, popnn::PoolingType::AVG);

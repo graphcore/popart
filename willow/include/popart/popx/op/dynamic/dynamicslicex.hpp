@@ -2,17 +2,18 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_DYNAMIC_DYNAMICSLICEX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_DYNAMIC_DYNAMICSLICEX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
 #include <set>
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+#include "popart/popx/debugcontextx.hpp"
+
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -20,23 +21,23 @@ class Op;
 namespace popx {
 class Devicex;
 
-class DynamicSliceOpx : public PopOpx {
+class DynamicSliceOpx : public Opx {
 public:
   DynamicSliceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override;
+  void grow(poplar::program::Sequence &) const override;
   InputCreatorType getInputCreatorType(InIndex index) const final;
-  snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
+  poplar::Tensor
+      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex) const final;
 };
 
 class DynamicSliceInplaceOpx : public DynamicSliceOpx {
 public:
   DynamicSliceInplaceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

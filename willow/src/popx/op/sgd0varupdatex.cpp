@@ -1,8 +1,4 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <poplar/Tensor.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
@@ -17,6 +13,12 @@
 #include "popart/optimizervalue.hpp"
 #include "popart/popx/op/varupdatex.hpp"
 
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
+
 namespace pe = popops::expr;
 
 namespace popart {
@@ -30,7 +32,7 @@ SGD0VarUpdateOpx::SGD0VarUpdateOpx(Op *op, Devicex *devicex)
   verifyOp<SGD0VarUpdateOp>(op, Onnx::CustomOperators::SGD0VarUpdate);
 }
 
-void SGD0VarUpdateOpx::grow(snap::program::Sequence &prog) const {
+void SGD0VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   // Weight update (matching pytorch implementation)
   //  w <- w * (1 - lr * wd) - (lr/ls) * weight_gradient
@@ -52,20 +54,19 @@ void SGD0VarUpdateOpx::grow(snap::program::Sequence &prog) const {
   // non-const weight decay scale factor
   if (!vu_op.initWdsf0.isConst()) {
 
-    snap::popops::mapInPlace(
-        graph(),
-        pe::Mul(pe::_1, pe::_2),
-        {getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex()),
-         getInTensor(SGD0VarUpdateOp::getWdsf0InIndex())},
-        prog,
-        debugContext("nonConstWeightDecay"));
+    popops::mapInPlace(graph(),
+                       pe::Mul(pe::_1, pe::_2),
+                       {getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex()),
+                        getInTensor(SGD0VarUpdateOp::getWdsf0InIndex())},
+                       prog,
+                       debugContext("nonConstWeightDecay"));
   }
 
   // const weight decay scale factor
   else {
     float scaleFactor = vu_op.initWdsf0.val();
     if (scaleFactor != 1.0f) {
-      snap::popops::mapInPlace(
+      popops::mapInPlace(
           graph(),
           pe::Mul(pe::_1, pe::Const(scaleFactor)),
           {getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex())},
@@ -76,34 +77,30 @@ void SGD0VarUpdateOpx::grow(snap::program::Sequence &prog) const {
 
   // (2) subtract scaled gradients
   poplar::Tensor weightDeltas =
-      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
-          .getPoplarTensor();
+      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
 
   // non-const scaled learning rate case
   if (!vu_op.initSlr0.isConst()) {
     popops::scaledAddTo(
-        graph().getPoplarGraph(),
-        getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex())
-            .getPoplarTensor(), // weights
-        weightDeltas,           // weightDeltas
-        popops::neg(
-            graph().getPoplarGraph(),
-            getInTensor(SGD0VarUpdateOp::getSlr0InIndex()).getPoplarTensor(),
-            prog.getPoplarSequence(),
-            debugContext("neg")),
-        prog.getPoplarSequence(),
+        graph(),
+        getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex()), // weights
+        weightDeltas,                                          // weightDeltas
+        popops::neg(graph(),
+                    getInTensor(SGD0VarUpdateOp::getSlr0InIndex()),
+                    prog,
+                    debugContext("neg")),
+        prog,
         debugContext("nonConstScaledSubtract"));
   }
 
   // const scaled learning rate case
   else {
-    popops::scaledAddTo(
-        graph().getPoplarGraph(),
-        getInTensor(vu_op.getVarToUpdateInIndex()).getPoplarTensor(), // weights
-        weightDeltas, // weightDeltas
-        -vu_op.initSlr0.val(),
-        prog.getPoplarSequence(),
-        debugContext("scaledSubtract"));
+    popops::scaledAddTo(graph(),
+                        getInTensor(vu_op.getVarToUpdateInIndex()), // weights
+                        weightDeltas, // weightDeltas
+                        -vu_op.initSlr0.val(),
+                        prog,
+                        debugContext("scaledSubtract"));
   }
 
   if (hasInViewChangers(SGD0VarUpdateOp::getVarToUpdateInIndex())) {

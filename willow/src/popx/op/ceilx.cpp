@@ -1,10 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <vector>
+#include <poplar/Tensor.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/popx/op/ceilx.hpp>
@@ -12,7 +9,15 @@
 
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
+#include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/elementwisex.hpp"
+
+namespace poplar {
+class Graph;
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class CeilInplaceOp;
@@ -22,31 +27,24 @@ class Op;
 namespace popx {
 class Devicex;
 
-snap::Tensor CeilComputex::outplace(snap::program::Sequence &prog,
-                                    snap::Graph &graph,
-                                    const snap::Tensor &tensor,
-                                    const poplar::DebugNameAndId &dnai,
-                                    const std::string &s) const {
+poplar::Tensor CeilComputex::outplace(poplar::program::Sequence &prog,
+                                      poplar::Graph &graph,
+                                      const poplar::Tensor &tensor,
+                                      const poplar::DebugNameAndId &dnai,
+                                      const std::string &s) const {
 
-  return snap::Tensor{popops::map(graph.getPoplarGraph(),
-                                  popops::expr::UnaryOpType::CEIL,
-                                  tensor.getPoplarTensor(),
-                                  prog.getPoplarSequence(),
-                                  {dnai, s}),
-                      graph};
+  return popops::map(
+      graph, popops::expr::UnaryOpType::CEIL, tensor, prog, {dnai, s});
 }
 
-void CeilComputex::inplace(snap::program::Sequence &prog,
-                           snap::Graph &graph,
-                           const snap::Tensor &tensor,
+void CeilComputex::inplace(poplar::program::Sequence &prog,
+                           poplar::Graph &graph,
+                           const poplar::Tensor &tensor,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
-  popops::mapInPlace(graph.getPoplarGraph(),
-                     popops::expr::UnaryOpType::CEIL,
-                     tensor.getPoplarTensor(),
-                     prog.getPoplarSequence(),
-                     {dnai, s});
+  popops::mapInPlace(
+      graph, popops::expr::UnaryOpType::CEIL, tensor, prog, {dnai, s});
 }
 
 CeilOpx::CeilOpx(Op *op, Devicex *devicex)

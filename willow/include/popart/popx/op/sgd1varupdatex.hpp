@@ -4,11 +4,11 @@
 
 #include <popart/popx/op/varupdatex.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -19,7 +19,7 @@ class Devicex;
 class SGD1VarUpdateOpx : public VarUpdateOpx {
 public:
   SGD1VarUpdateOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   // does not create inputs
 };

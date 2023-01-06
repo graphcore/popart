@@ -2,11 +2,10 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
+#include <ext/new_allocator.h>
 #include <tuple>
 #include <vector>
+#include <poplar/Graph.hpp>
 #include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <poplin/MatMul.hpp>
@@ -23,9 +22,15 @@
 #include "popart/names.hpp"
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/gatherx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/tensorinfo.hpp"
 #include "popart/util.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -54,12 +59,12 @@ TiedGatherOpx::TiedGatherOpx(Op *op, Devicex *device)
 InputCreatorType TiedGatherOpx::getInputCreatorType(int index0) const {
   return index0 == TiedGatherOp::dataInIndex()
              ? InputCreatorType::CanCreate
-             : PopOpx::getInputCreatorType(index0);
+             : Opx::getInputCreatorType(index0);
 }
 
-snap::Tensor
-TiedGatherOpx::createInputTensor(const InIndex index,
-                                 const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+TiedGatherOpx::createInput(const InIndex index,
+                           const poplar::DebugNameAndId &dnai) const {
   logging::devicex::debug(
       "TiedGather asked to create index {}: name {}", index, dnai);
 
@@ -77,25 +82,24 @@ TiedGatherOpx::createInputTensor(const InIndex index,
   std::vector<std::size_t> lhsShape = {inputSize, inChannels};
   std::vector<std::size_t> rhsShape = {inChannels, outChannels};
 
-  return snap::Tensor{poplin::createMatMulInputRHS(graph().getPoplarGraph(),
-                                                   popType(weightInfo),
-                                                   lhsShape,
-                                                   rhsShape,
-                                                   dnai,
-                                                   {},
-                                                   &dv_p->matmulCache),
-                      graph()};
+  return poplin::createMatMulInputRHS(graph(),
+                                      popType(weightInfo),
+                                      lhsShape,
+                                      rhsShape,
+                                      dnai,
+                                      {},
+                                      &dv_p->matmulCache);
 }
 
-void TiedGatherOpx::grow(snap::program::Sequence &prog) const {
+void TiedGatherOpx::grow(poplar::program::Sequence &prog) const {
   const auto indicesShape = inShape(TiedGatherOp::indicesInIndex());
   const auto outputShape =
       vXtoY<int64_t, std::size_t>(outShape(TiedGatherOp::outIndex()));
 
   auto op       = getOp<TiedGatherOp>();
   unsigned axis = op.getAxis();
-  auto indices  = getInTensor(TiedGatherOp::indicesInIndex()).getPoplarTensor();
-  auto data     = getInTensor(TiedGatherOp::dataInIndex()).getPoplarTensor();
+  auto indices  = getInTensor(TiedGatherOp::indicesInIndex());
+  auto data     = getInTensor(TiedGatherOp::dataInIndex());
 
   // If there are no indices, return an empty tensor of the appropriate
   // shape
@@ -123,11 +127,11 @@ void TiedGatherOpx::grow(snap::program::Sequence &prog) const {
 
     offsets = offsets.reinterpret(poplar::UNSIGNED_INT);
 
-    auto result = popops::gather(graph().getPoplarGraph(),
+    auto result = popops::gather(graph(),
                                  data,
                                  offsets,
                                  0,
-                                 prog.getPoplarSequence(),
+                                 prog,
                                  popops::GatherParams(),
                                  debugContext());
 
@@ -144,7 +148,7 @@ void TiedGatherOpx::grow(snap::program::Sequence &prog) const {
     // Reshape into the expected ONNX shape.
     result = result.reshape(outputShape);
 
-    setOutTensor(TiedGatherOp::outIndex(), snap::Tensor{result, graph()});
+    setOutTensor(TiedGatherOp::outIndex(), result);
   }
 }
 

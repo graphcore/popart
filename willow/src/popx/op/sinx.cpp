@@ -1,7 +1,4 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <popops/ElementWise.hpp>
 #include <popops/ExprOp.hpp>
@@ -11,7 +8,13 @@
 
 #include "popart/operators.hpp"
 #include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -23,21 +26,18 @@ SinOpx::SinOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<SinOp>(op, Onnx::Operators::Sin_7);
 }
 
-void SinOpx::grow(snap::program::Sequence &prog) const {
-  setOutTensor(
-      SinOp::getOutIndex(),
-      snap::Tensor{
-          popops::map(graph().getPoplarGraph(),
-                      popops::expr::UnaryOpType::SIN,
-                      getInTensor(SinOp::getInIndex()).getPoplarTensor(),
-                      prog.getPoplarSequence(),
-                      debugContext()),
-          graph()});
+void SinOpx::grow(poplar::program::Sequence &prog) const {
+  setOutTensor(SinOp::getOutIndex(),
+               popops::map(graph(),
+                           popops::expr::UnaryOpType::SIN,
+                           getInTensor(SinOp::getInIndex()),
+                           prog,
+                           debugContext()));
 }
 
 namespace {
 OpxCreator<SinOpx> sinOpxCreator(Onnx::Operators::Sin_7);
-OpxCreator<PopOpx> sinGradOpxCreator(
+OpxCreator<Opx> sinGradOpxCreator(
     Onnx::GradOperators::SinGrad,
     "SinGradOp should be optimised out, \"SinGradOp\" pattern is required");
 } // namespace

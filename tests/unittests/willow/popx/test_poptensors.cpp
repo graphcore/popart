@@ -13,17 +13,16 @@
 
 #include <popart/popx/poptensors.hpp>
 
-#include <snap/Graph.hpp>
-#include <snap/Tensor.hpp>
+#include <poplar/Graph.hpp>
 
 using namespace popart;
 
 BOOST_AUTO_TEST_CASE(
     TestInsertingTensorsWithSameShapeExceptLeadingOnesIsValid) {
 
-  TensorId tId                       = "t";
-  Shape irShape                      = {1, 1, 2, 3};
-  std::vector<std::size_t> snapShape = {1, 2, 3};
+  TensorId tId                         = "t";
+  Shape irShape                        = {1, 1, 2, 3};
+  std::vector<std::size_t> poplarShape = {1, 2, 3};
 
   // Create Ir tensor
   Ir ir;
@@ -37,22 +36,22 @@ BOOST_AUTO_TEST_CASE(
       InitType::Zero,
       Op::Settings{ir.getMainGraph(), "Init"});
 
-  // Create snap tensors
-  auto snapGraph  = snap::Graph(poplar::Target::createCPUTarget());
-  auto snapTensor = snapGraph.addVariable(poplar::FLOAT, snapShape);
+  // Create poplar tensors
+  auto poplarGraph  = poplar::Graph(poplar::Target::createCPUTarget());
+  auto poplarTensor = poplarGraph.addVariable(poplar::FLOAT, poplarShape);
 
   // Test can insert into PopTensors without shape verification throwing.
 
   popx::PopTensors popTensors{ir};
 
-  BOOST_REQUIRE_NO_THROW(popTensors.insert(tId, snapTensor));
+  BOOST_REQUIRE_NO_THROW(popTensors.insert(tId, poplarTensor));
 }
 
 BOOST_AUTO_TEST_CASE(TestInsertingTensorsWithDifferentShapesThrows) {
 
-  TensorId tId                            = "t";
-  Shape irShape                           = {1, 1, 2, 3};
-  poplar::ArrayRef<std::size_t> snapShape = {1, 2, 2, 3};
+  TensorId tId                              = "t";
+  Shape irShape                             = {1, 1, 2, 3};
+  poplar::ArrayRef<std::size_t> poplarShape = {1, 2, 2, 3};
 
   // Create Ir tensor
   Ir ir;
@@ -66,13 +65,13 @@ BOOST_AUTO_TEST_CASE(TestInsertingTensorsWithDifferentShapesThrows) {
       InitType::Zero,
       Op::Settings{ir.getMainGraph(), "Init"});
 
-  // Create snap tensors
-  auto snapGraph  = snap::Graph(poplar::Target::createCPUTarget());
-  auto snapTensor = snapGraph.addVariable(poplar::FLOAT, snapShape);
+  // Create poplar tensors
+  auto poplarGraph  = poplar::Graph(poplar::Target::createCPUTarget());
+  auto poplarTensor = poplarGraph.addVariable(poplar::FLOAT, poplarShape);
 
   // Test can insert into PopTensors without shape verification throwing.
 
   popx::PopTensors popTensors{ir};
 
-  BOOST_REQUIRE_THROW(popTensors.insert(tId, snapTensor), popart::error);
+  BOOST_REQUIRE_THROW(popTensors.insert(tId, poplarTensor), popart::error);
 }

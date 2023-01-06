@@ -2,11 +2,10 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
+#include <ext/new_allocator.h>
 #include <vector>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popops/OperationDef.hpp>
@@ -18,8 +17,14 @@
 
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/tensorinfo.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -29,25 +34,23 @@ class Op;
 namespace popx {
 class Devicex;
 
-ReduceMeanOpx::ReduceMeanOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+ReduceMeanOpx::ReduceMeanOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ReduceMeanOp>(op);
 }
 
-void ReduceMeanOpx::grow(snap::program::Sequence &prog) const {
+void ReduceMeanOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceMeanOp>();
-  const auto input = getInTensor(ReduceMeanOp::getInIndex()).getPoplarTensor();
+  const auto input = getInTensor(ReduceMeanOp::getInIndex());
 
-  auto output_tensor =
-      snap::Tensor{popops::reduce(graph().getPoplarGraph(),
-                                  input,
-                                  vector_cast<std::size_t>(op.getAxes()),
-                                  {popops::Operation::ADD},
-                                  prog.getPoplarSequence(),
-                                  debugContext("add")),
-                   graph()};
+  auto output_tensor = popops::reduce(graph(),
+                                      input,
+                                      vector_cast<std::size_t>(op.getAxes()),
+                                      {popops::Operation::ADD},
+                                      prog,
+                                      debugContext("add"));
 
   // TODO: Should this be mapInPlace
-  output_tensor = snap::popops::map(
+  output_tensor = popops::map(
       graph(),
       pe::Divide(pe::_1,
                  pe::Const(inInfo(ReduceMeanOp::getInIndex()).nelms() /
@@ -62,11 +65,11 @@ void ReduceMeanOpx::grow(snap::program::Sequence &prog) const {
 }
 
 ReduceMeanGradOpx::ReduceMeanGradOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<ReduceMeanGradOp>(op, Onnx::GradOperators::ReduceMeanGrad);
 }
 
-void ReduceMeanGradOpx::grow(snap::program::Sequence &prog) const {
+void ReduceMeanGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op = getOp<ReduceMeanGradOp>();
   auto output = cloneNcopy(prog, getInTensor(ReduceMeanGradOp::getInIndex()));
   auto input_shape     = inShape(ReduceMeanGradOp::getInIndex());
@@ -82,7 +85,7 @@ void ReduceMeanGradOpx::grow(snap::program::Sequence &prog) const {
     }
   }
 
-  output = snap::popops::map(
+  output = popops::map(
       graph(),
       pe::Divide(pe::_1,
                  pe::Const(outInfo(ReduceMeanGradOp::getOutIndex()).nelms() /

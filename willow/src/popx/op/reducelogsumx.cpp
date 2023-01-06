@@ -2,9 +2,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
+#include <ext/new_allocator.h>
 #include <vector>
 #include <poplar/Tensor.hpp>
 #include <popops/ElementWise.hpp>
@@ -18,8 +16,14 @@
 
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/tensorinfo.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -29,52 +33,43 @@ class Op;
 namespace popx {
 class Devicex;
 
-ReduceLogSumOpx::ReduceLogSumOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+ReduceLogSumOpx::ReduceLogSumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ReduceLogSumOp>(op);
 }
 
-void ReduceLogSumOpx::grow(snap::program::Sequence &prog) const {
-  const auto &op = getOp<ReduceLogSumOp>();
-  const auto input =
-      getInTensor(ReduceLogSumOp::getInIndex()).getPoplarTensor();
+void ReduceLogSumOpx::grow(poplar::program::Sequence &prog) const {
+  const auto &op   = getOp<ReduceLogSumOp>();
+  const auto input = getInTensor(ReduceLogSumOp::getInIndex());
 
-  auto output_tensor = popops::reduce(graph().getPoplarGraph(),
+  auto output_tensor = popops::reduce(graph(),
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::ADD},
-                                      prog.getPoplarSequence(),
+                                      prog,
                                       debugContext("output"));
-  popops::logInPlace(graph().getPoplarGraph(),
-                     output_tensor,
-                     prog.getPoplarSequence(),
-                     debugContext("log"));
+  popops::logInPlace(graph(), output_tensor, prog, debugContext("log"));
 
-  setOutTensor(
-      ReduceLogSumOp::getOutIndex(),
-      snap::Tensor{output_tensor.reshape(
-                       outInfo(ReduceLogSumOp::getOutIndex()).shape_szt()),
-                   graph()});
+  setOutTensor(ReduceLogSumOp::getOutIndex(),
+               output_tensor.reshape(
+                   outInfo(ReduceLogSumOp::getOutIndex()).shape_szt()));
 }
 
 ReduceLogSumGradOpx::ReduceLogSumGradOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<ReduceLogSumGradOp>(op, Onnx::GradOperators::ReduceLogSumGrad);
 }
 
-void ReduceLogSumGradOpx::grow(snap::program::Sequence &prog) const {
-  const auto &op = getOp<ReduceLogSumGradOp>();
-  auto output = getInTensor(ReduceLogSumGradOp::getInIndex()).getPoplarTensor();
-  auto scale =
-      getInTensor(ReduceLogSumGradOp::getFwdOutInIndex()).getPoplarTensor();
+void ReduceLogSumGradOpx::grow(poplar::program::Sequence &prog) const {
+  const auto &op       = getOp<ReduceLogSumGradOp>();
+  auto output          = getInTensor(ReduceLogSumGradOp::getInIndex());
+  auto scale           = getInTensor(ReduceLogSumGradOp::getFwdOutInIndex());
   auto input_shape     = inShape(ReduceLogSumGradOp::getInIndex());
   auto output_shape    = outShape(ReduceLogSumGradOp::getOutIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());
 
   output = output.reshape(new_shape);
   scale  = scale.reshape(new_shape);
-  scale =
-      popops::exp(graph().getPoplarGraph(), scale, prog.getPoplarSequence());
+  scale  = popops::exp(graph(), scale, prog);
 
   // Broadcasting across each dimension
   for (int dim = 0; dim < new_shape.size(); ++dim) {
@@ -84,15 +79,10 @@ void ReduceLogSumGradOpx::grow(snap::program::Sequence &prog) const {
     }
   }
 
-  output = popops::div(graph().getPoplarGraph(),
-                       output,
-                       scale,
-                       prog.getPoplarSequence(),
-                       debugContext("div"));
+  output = popops::div(graph(), output, scale, prog, debugContext("div"));
 
   // output now matches the shape of output_shape
-  setOutTensor(ReduceLogSumGradOp::getOutIndex(),
-               snap::Tensor{output, graph()});
+  setOutTensor(ReduceLogSumGradOp::getOutIndex(), output);
 }
 
 namespace {

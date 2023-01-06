@@ -2,9 +2,6 @@
 #include <algorithm>
 #include <gcl/Collectives.hpp>
 #include <memory>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <poplar/Graph.hpp>
 #include <poplar/Program.hpp>
@@ -21,7 +18,7 @@
 #include "popart/op.hpp"
 #include "popart/op/collectives/multi_replicatedallreduce.hpp"
 #include "popart/popx/op/collectives/collectivesx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/region.hpp" // IWYU pragma: keep
 #include "popart/tensorindex.hpp"
 
@@ -41,8 +38,8 @@ MultiReplicatedAllReduceOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-snap::Tensor
-MultiReplicatedAllReduceOpx::unwindTensorLayout(snap::Tensor tensor,
+poplar::Tensor
+MultiReplicatedAllReduceOpx::unwindTensorLayout(poplar::Tensor tensor,
                                                 InIndex in,
                                                 OutIndex out) const {
   if (in == out) {
@@ -65,7 +62,7 @@ void MultiReplicatedAllReduceOpx::growPart(OpxGrowPartId id) const {
   logging::opx::debug("[MultiReplicatedAllReduceOpx::growPart] part {}/{}",
                       id,
                       op_p->output->n());
-  snap::Tensor inputTensor = getInTensor(id);
+  poplar::Tensor inputTensor = getInTensor(id);
   // The input tensor can be a mix of inplace and outplace tensors
   // 1. for inplace tensors, the input tensor is also the output tensor
   // 2. for outplace tensors we constuct a copy of the input tensor
@@ -73,23 +70,22 @@ void MultiReplicatedAllReduceOpx::growPart(OpxGrowPartId id) const {
   poplar::Tensor outputTensor;
   if (op_p->modifiesIndex(id)) {
     if (inputTensor.isParallelWriteable()) {
-      outputTensor = inputTensor.getPoplarTensor();
+      outputTensor = inputTensor;
     } else {
       throw error("[MultiReplicatedAllReduceOpx::growPart] Tensor {} was marked"
                   " for inplacing but is not writeable.",
-                  inputTensor.getPoplarTensor().getDebugStr());
+                  inputTensor.getDebugStr());
     }
   } else {
-    outputTensor =
-        inGraph(id).getPoplarGraph().clone(inputTensor.getPoplarTensor());
+    outputTensor = inGraph(id).clone(inputTensor);
   }
   if (hasInViewChangers(id)) {
     setOutViewChangers(id, getInViewChangers(id));
   }
-  setOutTensor(id, snap::Tensor(outputTensor, outGraph(id)));
+  setOutTensor(id, outputTensor);
 }
 
-void MultiReplicatedAllReduceOpx::grow(snap::program::Sequence &prog) const {
+void MultiReplicatedAllReduceOpx::grow(poplar::program::Sequence &prog) const {
   logging::opx::debug("[MultiReplicatedAllReduceOpx::grow] Growing  "
                       "MultiReplicatedAllReduceOpx");
   MultiReplicatedAllReduceOp &op = getOp<MultiReplicatedAllReduceOp>();
@@ -100,18 +96,18 @@ void MultiReplicatedAllReduceOpx::grow(snap::program::Sequence &prog) const {
   std::vector<poplar::Tensor> src;
   std::vector<poplar::Tensor> dst;
   for (InIndex i = 0; i < op.input->n(); ++i) {
-    auto t = getOutTensor(i).flatten().getPoplarTensor();
-    inputs.emplace_back(getOutTensor(i).flatten().getPoplarTensor());
+    auto t = getOutTensor(i).flatten();
+    inputs.emplace_back(getOutTensor(i).flatten());
 
     if (!op_p->modifiesIndex(i)) {
-      src.emplace_back(getInTensor(i).flatten().getPoplarTensor());
-      dst.emplace_back(getOutTensor(i).flatten().getPoplarTensor());
+      src.emplace_back(getInTensor(i).flatten());
+      dst.emplace_back(getOutTensor(i).flatten());
     }
   }
 
   if (src.size() > 0) {
     // Copy all outplace tensors in one program
-    prog.getPoplarSequence().add(
+    prog.add(
         poplar::program::Copy(poplar::concat(src), poplar::concat(dst), false));
   }
 
@@ -122,10 +118,10 @@ void MultiReplicatedAllReduceOpx::grow(snap::program::Sequence &prog) const {
                 " in place allreduce collective is not writeable");
   }
   gcl::allReduceInPlaceCrossReplica(
-      dv_p->lowering().graph().getPoplarGraph(),
+      dv_p->lowering().graph(),
       data,
       getPoplarCollectiveOperator(op.getCollectiveOp()),
-      prog.getPoplarSequence(),
+      prog,
       toGclCommGroup(op.getReplicaGrouping()),
       "MultiAllReduce",
       dv_p->lowering().gclOptions);

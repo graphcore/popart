@@ -1,7 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/Program.hpp>
 #include <string>
 #include <poplar/PrintTensor.hpp>
+#include <poplar/Program.hpp>
 #include <poplar/StringRef.hpp>
 #include <popart/op/printtensor.hpp>
 #include <popart/popx/op/printtensorx.hpp>
@@ -9,10 +9,9 @@
 #include <popart/tensor.hpp>
 
 #include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
 #include "popart/op.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/vertex.hpp"
+#include "popart/popx/opx.hpp"
+#include "popart/printtensorfmt.hpp"
 
 namespace popart {
 namespace popx {
@@ -31,18 +30,18 @@ const poplar::PrintTensorFmt toPoplarPrintTensorFmt(const PrintTensorFmt &fmt) {
       fmt.closeBracket);
 }
 
-PrintTensorOpx::PrintTensorOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+PrintTensorOpx::PrintTensorOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<PrintTensorOp>(op, Onnx::CustomOperators::PrintTensor_1);
 }
 
-void PrintTensorOpx::grow(snap::program::Sequence &prog) const {
+void PrintTensorOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op = getOp<PrintTensorOp>();
   auto input     = getInTensor(PrintTensorOp::getInIndex());
 
   if (op.shouldPrint()) {
     auto printProg = poplar::program::PrintTensor(
         getTitle(), input, toPoplarPrintTensorFmt(op.getFmt()));
-    prog.getPoplarSequence().add(printProg);
+    prog.add(printProg);
   }
 
   auto output = cloneNcopy(prog, input);

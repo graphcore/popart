@@ -4,10 +4,11 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <snap/Tensor.hpp>
+#include <ext/new_allocator.h>
 #include <vector>
+#include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
 namespace popart {
 class Op;
@@ -16,11 +17,11 @@ namespace popx {
 class Devicex;
 } // namespace popx
 } // namespace popart
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 // Base class for the norm options such as group, instance, batch
 
@@ -31,20 +32,20 @@ using Shape = std::vector<std::size_t>;
 namespace popart {
 namespace popx {
 
-class NormOpx : public PopOpx {
+class NormOpx : public Opx {
 public:
   NormOpx(Op *, Devicex *);
 
 protected:
-  snap::Tensor convertInvSdToVar(snap::program::Sequence &prog,
-                                 const snap::Tensor &invSd,
-                                 float epsilon,
-                                 const poplar::Type dstType) const;
+  poplar::Tensor convertInvSdToVar(poplar::program::Sequence &prog,
+                                   const poplar::Tensor &invSd,
+                                   float epsilon,
+                                   const poplar::Type dstType) const;
 
-  snap::Tensor convertVarToInvSd(snap::program::Sequence &prog,
-                                 const snap::Tensor &var,
-                                 float epsilon,
-                                 const poplar::Type dstType) const;
+  poplar::Tensor convertVarToInvSd(poplar::program::Sequence &prog,
+                                   const poplar::Tensor &var,
+                                   float epsilon,
+                                   const poplar::Type dstType) const;
 
 private:
 };

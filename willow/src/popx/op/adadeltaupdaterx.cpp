@@ -3,11 +3,11 @@
 #include <algorithm>
 #include <limits>
 #include <set>
-#include <snap/Graph.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <string>
 #include <vector>
+#include <poplar/Graph.hpp>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/error.hpp>
@@ -22,15 +22,15 @@
 #include "popart/names.hpp"
 #include "popart/optimizervalue.hpp"
 #include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/popx/viewchangers.hpp"
 #include "popart/tensordebuginfo.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -40,12 +40,12 @@ class Op;
 namespace popx {
 
 AdaDeltaUpdaterOpx::AdaDeltaUpdaterOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<AdaDeltaUpdaterOp>(op, Onnx::CustomOperators::AdaDeltaUpdater);
   inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
-void AdaDeltaUpdaterOpx::grow(snap::program::Sequence &prog) const {
+void AdaDeltaUpdaterOpx::grow(poplar::program::Sequence &prog) const {
 
   // see adaptive.hpp for the equations implemented here
 
@@ -55,7 +55,7 @@ void AdaDeltaUpdaterOpx::grow(snap::program::Sequence &prog) const {
   auto accl1 = getInTensor(AdaDeltaUpdaterOp::getAccl1InIndex());
   auto accl2 = getInTensor(AdaDeltaUpdaterOp::getAccl2InIndex());
 
-  std::vector<snap::Tensor> tensors = {grad, accl1, accl2};
+  std::vector<poplar::Tensor> tensors = {grad, accl1, accl2};
 
   pe::Any epsexpr(pe::Const(0.0f));
   if (rmspropUpdaterOp.initEps.isConst()) {
@@ -66,7 +66,7 @@ void AdaDeltaUpdaterOpx::grow(snap::program::Sequence &prog) const {
   }
 
   // sqrt(Accl2 + eps) / sqrt(Accl1 + eps) * grad
-  auto updater = snap::popops::map(
+  auto updater = popops::map(
       graph(),
       pe::Cast(pe::Mul(pe::Divide(
                            pe::Sqrt(pe::Add(
@@ -86,9 +86,9 @@ void AdaDeltaUpdaterOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(AdaDeltaUpdaterOp::getUpdaterOutIndex(), updater);
 }
 
-snap::Tensor AdaDeltaUpdaterOpx::createInputTensor(
-    int inIndex,
-    const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+AdaDeltaUpdaterOpx::createInput(int inIndex,
+                                const poplar::DebugNameAndId &dnai) const {
 
   if (inIndex != AdaDeltaUpdaterOp::getAccl2InIndex()) {
     throw error("AccumulateOpx::createInput, cannot create input at {}, it can "
@@ -104,7 +104,7 @@ snap::Tensor AdaDeltaUpdaterOpx::createInputTensor(
 InputCreatorType AdaDeltaUpdaterOpx::getInputCreatorType(int inIndex) const {
   return inIndex == AdaDeltaUpdaterOp::getAccl2InIndex()
              ? InputCreatorType::CanCreate
-             : PopOpx::getInputCreatorType(inIndex);
+             : Opx::getInputCreatorType(inIndex);
 }
 
 std::set<TensorId>

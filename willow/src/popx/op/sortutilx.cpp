@@ -1,27 +1,26 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <numeric>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <utility>
 #include <vector>
 #include <poplar/ArrayRef.hpp>
 #include <poplar/Graph.hpp>
 #include <poplar/Program.hpp>
+#include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <poputil/TileMapping.hpp>
 #include <popart/popx/op/sortutilx.hpp>
+
+#include "popart/popx/debugcontextx.hpp"
 
 namespace popart {
 namespace popx {
 namespace sortutilx {
 
-snap::Tensor getIotaTensor(snap::Graph &graph,
-                           const snap::Tensor &input,
-                           unsigned axis,
-                           snap::program::Sequence &prog,
-                           const poplar::DebugNameAndId &dnai) {
+poplar::Tensor getIotaTensor(poplar::Graph &graph,
+                             const poplar::Tensor &input,
+                             unsigned axis,
+                             poplar::program::Sequence &prog,
+                             const poplar::DebugNameAndId &dnai) {
   // The number of elements to be sorted per 1-D vector
   const auto sortSize = input.dim(axis);
 
@@ -35,25 +34,23 @@ snap::Tensor getIotaTensor(snap::Graph &graph,
                                          {sortSize},
                                          poplar::ArrayRef<int>(iotaVals),
                                          {dnai, "constant"});
-  poputil::mapTensorLinearly(graph.getPoplarGraph(),
-                             singleRowIota.getPoplarTensor());
+  poputil::mapTensorLinearly(graph, singleRowIota);
 
   // Fill a tensor with [0, 1, 2, ... nToSort-1] along "axis"
   auto indices = graph.clone(poplar::INT, input, {dnai, "clone"});
-  prog.getPoplarSequence().add(poplar::program::WriteUndef(
-      indices.getPoplarTensor(), {dnai, "writeUndef"}));
+  prog.add(poplar::program::WriteUndef(indices, {dnai, "writeUndef"}));
 
   // new view of indices, dim-shuffling the given axis
   // to the back, and making 2-D
   std::vector<unsigned> permutation(indices.rank());
   std::iota(permutation.begin(), permutation.end(), 0);
   std::swap(permutation[axis], permutation.back());
-  snap::Tensor shuffledView =
+  poplar::Tensor shuffledView =
       indices.dimShuffle(permutation).reshape({nToSort, sortSize});
 
   // Loop over the front dimension and copy in the constant.
   for (int i = 0; i < nToSort; ++i) {
-    prog.getPoplarSequence().add(poplar::program::Copy(
+    prog.add(poplar::program::Copy(
         singleRowIota, shuffledView[i], false, {dnai, "copy"}));
   }
 

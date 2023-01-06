@@ -2,10 +2,9 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
+#include <ext/new_allocator.h>
 #include <vector>
+#include <poplar/Graph.hpp>
 #include <poplar/VariableMappingMethod.hpp>
 #include <poprand/RandomGen.hpp>
 #include <popart/op/randomnormal.hpp>
@@ -13,22 +12,27 @@
 
 #include "popart/operators.hpp"
 #include "popart/popx/devicex.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/popx/opxmanager.hpp"
-#include "popart/popx/popopx.hpp"
 #include "popart/tensorinfo.hpp"
 #include "popart/util.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Op;
 
 namespace popx {
 
-RandomNormalOpx::RandomNormalOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+RandomNormalOpx::RandomNormalOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<RandomNormalOp>(op, Onnx::Operators::RandomNormal_1);
 }
 
-void RandomNormalOpx::grow(snap::program::Sequence &prog) const {
+void RandomNormalOpx::grow(poplar::program::Sequence &prog) const {
   auto &op        = getOp<RandomNormalOp>();
   auto outputInfo = op.outInfo(op.getOutIndex());
   auto shape      = vXtoY<int64_t, std::size_t>(outputInfo.shape());
@@ -39,17 +43,16 @@ void RandomNormalOpx::grow(snap::program::Sequence &prog) const {
                                        poplar::VariableMappingMethod::LINEAR,
                                        debugContext("refTensor"));
 
-  auto output =
-      poprand::normal(graph().getPoplarGraph(),
-                      &getInTensor(op.getSeedInIndex()).getPoplarTensor(),
-                      0u,
-                      refTensor.getPoplarTensor(),
-                      poplarType,
-                      op.getMean(),
-                      op.getScale(),
-                      prog.getPoplarSequence());
+  auto output = poprand::normal(graph(),
+                                &getInTensor(op.getSeedInIndex()),
+                                0u,
+                                refTensor,
+                                poplarType,
+                                op.getMean(),
+                                op.getScale(),
+                                prog);
 
-  setOutTensor(op.getOutIndex(), snap::Tensor{output, graph()});
+  setOutTensor(op.getOutIndex(), output);
 }
 
 namespace {

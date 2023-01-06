@@ -1,10 +1,8 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <string>
+#include <poplar/Graph.hpp>
+#include <poplar/Program.hpp>
+#include <poplar/Tensor.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/error.hpp>
 #include <popart/op/varupdate.hpp>
@@ -13,8 +11,9 @@
 
 #include "popart/graphcoreoperators.hpp"
 #include "popart/logging.hpp"
+#include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/varupdatex.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/tensordebuginfo.hpp"
 
 namespace pe = popops::expr;
@@ -27,16 +26,17 @@ namespace popx {
 class Devicex;
 
 namespace {
-bool twoTensorsParallelWritable(const snap::Tensor &a, const snap::Tensor &b) {
+bool twoTensorsParallelWritable(const poplar::Tensor &a,
+                                const poplar::Tensor &b) {
   if (a.rank() != b.rank()) {
     throw error("CopyVarUpdateOpx needs the tensors to be the same rank.");
   }
 
   if (a.rank() == 0) {
-    return snap::concat(a.flatten(), b.flatten()).isParallelWriteable();
+    return poplar::concat(a.flatten(), b.flatten()).isParallelWriteable();
   }
 
-  return snap::concat(a, b).isParallelWriteable();
+  return poplar::concat(a, b).isParallelWriteable();
 }
 } // namespace
 
@@ -45,26 +45,26 @@ CopyVarUpdateOpx::CopyVarUpdateOpx(Op *op, Devicex *devicex)
   verifyOp<CopyVarUpdateOp>(op, Onnx::CustomOperators::CopyVarUpdate);
 }
 
-void CopyVarUpdateOpx::grow(snap::program::Sequence &prog) const {
+void CopyVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto &updater  = getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
   auto &toUpdate = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
 
   if (twoTensorsParallelWritable(updater, toUpdate)) {
     poplar::program::Copy copy(updater, toUpdate, false, debugContext());
-    prog.getPoplarSequence().add(copy);
+    prog.add(copy);
   } else {
     auto newUpdater = cloneNcopy(prog, updater);
     poplar::program::Copy copy(newUpdater, toUpdate, false, debugContext());
-    prog.getPoplarSequence().add(copy);
+    prog.add(copy);
   }
   // output is a reference to destination of the copy
   setOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
                getInTensor(VarUpdateOp::getVarToUpdateInIndex()));
 }
 
-snap::Tensor
-CopyVarUpdateOpx::createInputTensor(int inIndex,
-                                    const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+CopyVarUpdateOpx::createInput(int inIndex,
+                              const poplar::DebugNameAndId &dnai) const {
 
   if (inIndex != VarUpdateWithUpdaterOp::getUpdaterInIndex()) {
     throw error(
@@ -78,7 +78,7 @@ CopyVarUpdateOpx::createInputTensor(int inIndex,
 InputCreatorType CopyVarUpdateOpx::getInputCreatorType(int inIndex) const {
   return inIndex == VarUpdateWithUpdaterOp::getUpdaterInIndex()
              ? InputCreatorType::CanCreate
-             : PopOpx::getInputCreatorType(inIndex);
+             : Opx::getInputCreatorType(inIndex);
 }
 
 std::set<TensorId> CopyVarUpdateOpx::mustExistBeforeCreate(int index1) const {

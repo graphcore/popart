@@ -1,16 +1,13 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <gcl/CollectiveBalancedReorder.hpp>
 #include <gcl/Collectives.hpp>
 #include <map>
 #include <memory>
 #include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <utility>
 #include <vector>
+#include <poplar/Program.hpp>
 #include <poplar/Tensor.hpp>
 #include <popops/Zero.hpp>
 #include <popart/error.hpp>
@@ -28,7 +25,8 @@
 #include "popart/names.hpp"
 #include "popart/op.hpp"
 #include "popart/op/collectives/collectives.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/popx/viewchangers.hpp"
 #include "popart/replicatedtensorsharding.hpp"
 #include "popart/tensor.hpp"
@@ -49,7 +47,7 @@ ReplicatedReduceScatterOpx::ReplicatedReduceScatterOpx(Op *op, Devicex *devicex)
       op, Onnx::CustomOperators::ReplicatedReduceScatter);
 }
 
-void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
+void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
   const auto &rrsOp = getOp<ReplicatedReduceScatterOp>();
 
   const auto inIndex   = ReplicatedReduceScatterOp::getInIndex();
@@ -76,29 +74,25 @@ void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
       auto cbr = createCollectiveBalancedReorder(
           toReduceScatter,
           CollectivesBaseOp::getDefaultTensorShardingGroupIndex());
-      auto c = snap::Tensor{cbr->createCollectivesTensor(
-                                toReduceScatter.elementType(),
-                                inId(ReplicatedReduceScatterOp::getInIndex())),
-                            graph()};
+      auto c = cbr->createCollectivesTensor(
+          toReduceScatter.elementType(),
+          inId(ReplicatedReduceScatterOp::getInIndex()));
       // Zero the pad regions
-      popops::zero(graph().getPoplarGraph(),
-                   c.getPoplarTensor(),
-                   prog.getPoplarSequence(),
-                   debugContext());
-      auto ref = snap::Tensor{
-          cbr->undoRearrangeForCollective(c.getPoplarTensor()), graph()};
+      popops::zero(graph(), c, prog, debugContext());
+      auto ref = cbr->undoRearrangeForCollective(c);
       if (hasInViewChangers(ReplicatedReduceScatterOp::getInIndex())) {
         // Copy data to non-pad regions
-        prog.getPoplarSequence().add(poplar::program::Copy(
+        prog.add(poplar::program::Copy(
             getInViewChangers(ReplicatedReduceScatterOp::getInIndex())
                 .apply(toReduceScatter)
+
                 .flatten(),
             ref.flatten(),
             false,
             debugContext()));
       } else {
         // Copy data to non-pad regions
-        prog.getPoplarSequence().add(poplar::program::Copy(
+        prog.add(poplar::program::Copy(
             toReduceScatter.flatten(), ref.flatten(), false, debugContext()));
       }
       toReduceScatter = c;
@@ -108,16 +102,15 @@ void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
   const poplar::OptionFlags &reduceScatterOptions = dv_p->lowering().gclOptions;
 
   poplar::Tensor reducedScattered = gcl::reduceScatterCrossReplica(
-      graph().getPoplarGraph(),
-      toReduceScatter.flatten().getPoplarTensor(),
+      graph(),
+      toReduceScatter.flatten(),
       getPoplarCollectiveOperator(rrsOp.getCollectiveOp()),
-      prog.getPoplarSequence(),
+      prog,
       toGclCommGroup(rrsOp.getReplicaGrouping()),
       debugContext("replicatedReduceScatter"),
       reduceScatterOptions);
 
-  setOutTensor(ReplicatedReduceScatterOp::getOutIndex(),
-               snap::Tensor{reducedScattered, graph()});
+  setOutTensor(ReplicatedReduceScatterOp::getOutIndex(), reducedScattered);
 }
 
 InputCreatorType
@@ -152,10 +145,10 @@ ReplicatedReduceScatterOpx::getInputCreatorType(InIndex index) const {
 
   return index == ReplicatedReduceScatterOp::getInIndex() && canCreate
              ? InputCreatorType::CanCreate
-             : PopOpx::getInputCreatorType(index);
+             : Opx::getInputCreatorType(index);
 }
 
-snap::Tensor ReplicatedReduceScatterOpx::createInputTensor(
+poplar::Tensor ReplicatedReduceScatterOpx::createInput(
     int inIndex,
     const poplar::DebugNameAndId &dnai) const {
   if (inIndex != ReplicatedReduceScatterOp::getInIndex()) {
@@ -175,7 +168,7 @@ snap::Tensor ReplicatedReduceScatterOpx::createInputTensor(
   const auto &rrsOp = getOp<ReplicatedReduceScatterOp>();
   const auto &type  = popType(rrsOp.inTensor(inIndex)->info);
   auto input        = cbr->createCollectivesTensor(type, dnai.getPathName());
-  return snap::Tensor{input, graph()};
+  return input;
 }
 
 DnfTensorIds

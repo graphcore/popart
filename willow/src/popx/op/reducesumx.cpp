@@ -2,9 +2,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
+#include <ext/new_allocator.h>
 #include <vector>
 #include <poplar/Tensor.hpp>
 #include <popops/OperationDef.hpp>
@@ -16,8 +14,14 @@
 
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/tensorinfo.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -25,37 +29,34 @@ class Op;
 namespace popx {
 class Devicex;
 
-ReduceSumOpx::ReduceSumOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+ReduceSumOpx::ReduceSumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ReduceSumOp>(op);
 }
 
-void ReduceSumOpx::grow(snap::program::Sequence &prog) const {
+void ReduceSumOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceSumOp>();
-  const auto input = getInTensor(ReduceSumOp::getInIndex()).getPoplarTensor();
+  const auto input = getInTensor(ReduceSumOp::getInIndex());
 
-  auto output_tensor = popops::reduce(graph().getPoplarGraph(),
+  auto output_tensor = popops::reduce(graph(),
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::ADD},
-                                      prog.getPoplarSequence(),
+                                      prog,
                                       debugContext("add"));
 
   setOutTensor(
       ReduceSumOp::getOutIndex(),
-      snap::Tensor{output_tensor.reshape(
-                       outInfo(ReduceSumOp::getOutIndex()).shape_szt()),
-                   graph()});
+      output_tensor.reshape(outInfo(ReduceSumOp::getOutIndex()).shape_szt()));
 }
 
 ReduceSumGradOpx::ReduceSumGradOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<ReduceSumGradOp>(op, Onnx::GradOperators::ReduceSumGrad);
 }
 
-void ReduceSumGradOpx::grow(snap::program::Sequence &prog) const {
+void ReduceSumGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op = getOp<ReduceSumGradOp>();
-  auto output    = cloneNcopy(prog, getInTensor(ReduceSumGradOp::getInIndex()))
-                    .getPoplarTensor();
+  auto output    = cloneNcopy(prog, getInTensor(ReduceSumGradOp::getInIndex()));
   auto input_shape     = inShape(ReduceSumGradOp::getInIndex());
   auto output_shape    = outShape(ReduceSumGradOp::getOutIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());
@@ -73,9 +74,8 @@ void ReduceSumGradOpx::grow(snap::program::Sequence &prog) const {
   // output now matches the shape of output_shape
   setOutTensor(
       ReduceSumGradOp::getOutIndex(),
-      snap::Tensor{
-          output.reshape(outInfo(ReduceSumGradOp::getOutIndex()).shape_szt()),
-          graph()});
+
+      output.reshape(outInfo(ReduceSumGradOp::getOutIndex()).shape_szt()));
 }
 
 namespace {

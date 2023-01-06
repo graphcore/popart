@@ -2,8 +2,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <map>
-#include <snap/Graph.hpp>
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <poplar/Graph.hpp>
 #include <poplar/Target.hpp>
@@ -21,11 +19,10 @@ template <typename T> void rotate_right(T &t, std::size_t spaces) {
 
 } // namespace
 
-void LinearMapper::MapperImpl::mapTensor(snap::Graph &graph,
-                                         snap::Tensor &tensor) {
+void LinearMapper::MapperImpl::mapTensor(poplar::Graph &graph,
+                                         poplar::Tensor &tensor) {
   // poputil::calcLinearTileMapping always starts the mapping at tile0
-  auto mapping = poputil::calcLinearTileMapping(graph.getPoplarGraph(),
-                                                tensor.getPoplarTensor());
+  auto mapping = poputil::calcLinearTileMapping(graph, tensor);
   // the number of tiles the mapping is across
   auto mapping_tile_count = mapping.size();
 
@@ -37,15 +34,15 @@ void LinearMapper::MapperImpl::mapTensor(snap::Graph &graph,
   next_mapping_start_index += mapping_tile_count;
   next_mapping_start_index = next_mapping_start_index % tile_count;
 
-  graph.getPoplarGraph().setTileMapping(tensor.getPoplarTensor(), mapping);
+  graph.setTileMapping(tensor, mapping);
 }
 
-void LinearMapper::mapTensor(snap::Graph &graph, snap::Tensor &tensor) {
+void LinearMapper::mapTensor(poplar::Graph &graph, poplar::Tensor &tensor) {
   auto &mapper = getMapper(graph);
   mapper.mapTensor(graph, tensor);
 }
 
-LinearMapper::MapperImpl &LinearMapper::getMapper(snap::Graph &graph) {
+LinearMapper::MapperImpl &LinearMapper::getMapper(poplar::Graph &graph) {
   if (mappers.find(&graph) == mappers.end()) {
     mappers.insert({&graph, {}});
   }

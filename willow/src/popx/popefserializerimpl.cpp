@@ -444,10 +444,10 @@ void WriterImpl::createPopefAnchorsFromRNGState() {
   const auto &deviceInfo   = *irLowering.getDeviceInfo();
 
   // popart::DeviceInfo object is used to calculate rng state tensor shape
-  // (instead of snap::Graph) because snap::Graph might not exist when
+  // (instead of poplar::Graph) because poplar::Graph might not exist when
   // we are using deserialized executable. Note that poplar::Target in
   // DeviceInfo contains info about all replicas and poplar::Target in
-  // snap::Graph about one replica.
+  // poplar::Graph about one replica.
   const std::vector<size_t> tensorShape =
       RngStateLowering::getCombinedRngStateTensorShape(deviceInfo, repFactor);
   popart::Shape shape(tensorShape.begin(), tensorShape.end());

@@ -1,9 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <cstddef>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
+#include <ext/new_allocator.h>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -22,14 +20,19 @@
 
 namespace popart {
 class Op;
+
 namespace popx {
 class Devicex;
 } // namespace popx
 } // namespace popart
 
 namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+
 using Shape = std::vector<std::size_t>;
-}
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -41,14 +44,14 @@ InstanceNormOpx::InstanceNormOpx(Op *op, Devicex *devicex)
   verifyOp<InstanceNormOp>(op, {Onnx::Operators::InstanceNormalization_6});
 }
 
-void InstanceNormOpx::grow(snap::program::Sequence &prog) const {
+void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
 
   auto &op = getOp<InstanceNormOp>();
 
   // Get the inputs
-  auto input = getInTensor(InstanceNormOp::getInputInIndex()).getPoplarTensor();
-  auto scale = getInTensor(InstanceNormOp::getScaleInIndex()).getPoplarTensor();
-  auto b     = getInTensor(InstanceNormOp::getBInIndex()).getPoplarTensor();
+  auto input = getInTensor(InstanceNormOp::getInputInIndex());
+  auto scale = getInTensor(InstanceNormOp::getScaleInIndex());
+  auto b     = getInTensor(InstanceNormOp::getBInIndex());
 
   // Get the attributes
   float epsilon = getOp<InstanceNormOp>().getEpsilon();
@@ -60,31 +63,29 @@ void InstanceNormOpx::grow(snap::program::Sequence &prog) const {
   poplar::Tensor mean;
   poplar::Tensor invStdDev;
   std::tie(mean, invStdDev) =
-      popnn::in::instanceNormStatistics(graph().getPoplarGraph(),
+      popnn::in::instanceNormStatistics(graph(),
                                         input,
                                         epsilon,
-                                        prog.getPoplarSequence(),
+                                        prog,
                                         false,
                                         stable_algo,
                                         poplar::FLOAT,
                                         debugContext("instanceNormStatistics"));
 
   // Calculate the normalization
-  auto result = popnn::in::instanceNormalise(graph().getPoplarGraph(),
+  auto result = popnn::in::instanceNormalise(graph(),
                                              input,
                                              scale,
                                              b,
                                              mean,
                                              invStdDev,
-                                             prog.getPoplarSequence(),
+                                             prog,
                                              debugContext("instanceNorm"));
 
   // Return the result
-  setOutTensor(InstanceNormOp::getOutIndex(),
-               snap::Tensor{result.first, graph()});
-  setOutTensor(InstanceNormOp::getMeanOutIndex(), snap::Tensor{mean, graph()});
-  setOutTensor(InstanceNormOp::getInvStdDevOutIndex(),
-               snap::Tensor{invStdDev, graph()});
+  setOutTensor(InstanceNormOp::getOutIndex(), result.first);
+  setOutTensor(InstanceNormOp::getMeanOutIndex(), mean);
+  setOutTensor(InstanceNormOp::getInvStdDevOutIndex(), invStdDev);
 }
 
 InstanceNormGradOpx::InstanceNormGradOpx(Op *op, Devicex *devicex)
@@ -93,51 +94,43 @@ InstanceNormGradOpx::InstanceNormGradOpx(Op *op, Devicex *devicex)
                                Onnx::GradOperators::InstanceNormalizationGrad);
 }
 
-void InstanceNormGradOpx::grow(snap::program::Sequence &prog) const {
-  auto out_grad =
-      getInTensor(InstanceNormGradOp::getOutGradInIndex()).getPoplarTensor();
-  auto input =
-      getInTensor(InstanceNormGradOp::getInputInIndex()).getPoplarTensor();
-  auto scale =
-      getInTensor(InstanceNormGradOp::getScaleInIndex()).getPoplarTensor();
-  auto mean =
-      getInTensor(InstanceNormGradOp::getMeanInIndex()).getPoplarTensor();
-  auto inv_std_dev =
-      getInTensor(InstanceNormGradOp::getInvStdDevInIndex()).getPoplarTensor();
+void InstanceNormGradOpx::grow(poplar::program::Sequence &prog) const {
+  auto out_grad    = getInTensor(InstanceNormGradOp::getOutGradInIndex());
+  auto input       = getInTensor(InstanceNormGradOp::getInputInIndex());
+  auto scale       = getInTensor(InstanceNormGradOp::getScaleInIndex());
+  auto mean        = getInTensor(InstanceNormGradOp::getMeanInIndex());
+  auto inv_std_dev = getInTensor(InstanceNormGradOp::getInvStdDevInIndex());
 
   auto input_whitened =
-      popnn::in::instanceNormWhiten(graph().getPoplarGraph(),
+      popnn::in::instanceNormWhiten(graph(),
                                     input,
                                     mean,
                                     inv_std_dev,
-                                    prog.getPoplarSequence(),
+                                    prog,
                                     debugContext("instanceNormWhiten"));
 
   auto input_grad = popnn::in::instanceNormGradients(
-      graph().getPoplarGraph(),
+      graph(),
       input_whitened,
       out_grad,
       inv_std_dev,
       scale,
-      prog.getPoplarSequence(),
+      prog,
       poplar::FLOAT, // TODO: could this be HALF?
       debugContext("instanceNormGradients"));
 
   poplar::Tensor scale_grad, b_grad;
   std::tie(scale_grad, b_grad) = popnn::in::instanceNormParamGradients(
-      graph().getPoplarGraph(),
+      graph(),
       input_whitened,
       out_grad,
-      prog.getPoplarSequence(),
+      prog,
       poplar::FLOAT,
       debugContext("instanceNormParamGradients"));
 
-  setOutTensor(InstanceNormGradOp::getInputOutIndex(),
-               snap::Tensor{input_grad, graph()});
-  setOutTensor(InstanceNormGradOp::getScaleOutIndex(),
-               snap::Tensor{scale_grad, graph()});
-  setOutTensor(InstanceNormGradOp::getBOutIndex(),
-               snap::Tensor{b_grad, graph()});
+  setOutTensor(InstanceNormGradOp::getInputOutIndex(), input_grad);
+  setOutTensor(InstanceNormGradOp::getScaleOutIndex(), scale_grad);
+  setOutTensor(InstanceNormGradOp::getBOutIndex(), b_grad);
 }
 
 namespace {

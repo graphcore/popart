@@ -2,16 +2,16 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_PADX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_PADX_HPP_
 
-#include <snap/Tensor.hpp>
 #include <utility>
 #include <vector>
-#include <popart/popx/popopx.hpp>
+#include <poplar/Tensor.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 
@@ -60,58 +60,58 @@ class Op;
 namespace popx {
 class Devicex;
 
-class BasePadOpx : public PopOpx {
+class BasePadOpx : public Opx {
 public:
   BasePadOpx(Op *, Devicex *);
   const BasePadOp &getBasePadOp() const;
-  snap::Tensor padGrow(snap::Tensor inTensor,
-                       snap::program::Sequence &,
-                       bool inPlaceAllowed) const;
+  poplar::Tensor padGrow(poplar::Tensor inTensor,
+                         poplar::program::Sequence &,
+                         bool inPlaceAllowed) const;
 
 private:
-  snap::Tensor constantModePadGrow(snap::Tensor inTensor,
-                                   snap::program::Sequence &,
-                                   bool inPlaceAllowed) const;
+  poplar::Tensor constantModePadGrow(poplar::Tensor inTensor,
+                                     poplar::program::Sequence &,
+                                     bool inPlaceAllowed) const;
 
   // Padding with a constant needs to layout the constant. Sometimes there is an
   // obvious good choice for this: an example is if this Pad is a SliceGrad,
   // then the padding should have the layout of the original Tensor sliced.
-  std::pair<bool, snap::Tensor> getPropitiousPadLayout() const;
+  std::pair<bool, poplar::Tensor> getPropitiousPadLayout() const;
 
   // Return a Tensor of the same shape as inTensor, which is an alias of
   // inTensor at the core, and a copy of inTensor on the padding edges.
-  snap::Tensor cloneNcopyEdges(snap::Tensor inTensor,
-                               snap::program::Sequence &) const;
+  poplar::Tensor cloneNcopyEdges(poplar::Tensor inTensor,
+                                 poplar::program::Sequence &) const;
 
   struct Chisseled {
-    Chisseled(snap::Tensor c,
-              const std::vector<snap::Tensor> &l,
-              const std::vector<snap::Tensor> &u)
+    Chisseled(poplar::Tensor c,
+              const std::vector<poplar::Tensor> &l,
+              const std::vector<poplar::Tensor> &u)
         : core(c), lows(l), upps(u) {}
-    snap::Tensor core;
-    std::vector<snap::Tensor> lows;
-    std::vector<snap::Tensor> upps;
+    poplar::Tensor core;
+    std::vector<poplar::Tensor> lows;
+    std::vector<poplar::Tensor> upps;
   };
 
-  Chisseled getChisseled(const snap::Tensor &) const;
+  Chisseled getChisseled(const poplar::Tensor &) const;
 
-  snap::Tensor flip(const snap::Tensor &) const;
+  poplar::Tensor flip(const poplar::Tensor &) const;
 
-  snap::Tensor unflippedPadGrow(snap::Tensor inTensor,
-                                snap::program::Sequence &,
-                                bool inPlaceAllowed) const;
+  poplar::Tensor unflippedPadGrow(poplar::Tensor inTensor,
+                                  poplar::program::Sequence &,
+                                  bool inPlaceAllowed) const;
 };
 
 class PadOpx : public BasePadOpx {
 public:
   PadOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class PadInplaceOpx : public BasePadOpx {
 public:
   PadInplaceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

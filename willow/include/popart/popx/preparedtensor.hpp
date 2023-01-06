@@ -12,7 +12,7 @@ enum class CanAlias { No = 0, Yes };
 
 enum class RequireParallelWritable { No = 0, Yes };
 
-/// Struct that describes how to prepare a required (snap/poplar) tensor for an
+/// Struct that describes how to prepare a required (poplar) tensor for an
 /// Opx during lowering.
 struct PreparedTensorInfo {
 

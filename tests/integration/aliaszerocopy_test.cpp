@@ -10,7 +10,6 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <testdevice.hpp>
 #include <utility>
@@ -249,12 +248,10 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyTest0) {
           // AliasZeroCopy reports tensors as actively aliased
           BOOST_CHECK(aliased);
           // Additionally verify the poplar tensors agree
-          BOOST_CHECK(
-              poplar::concat(
-                  {dev.lowering().tensors().get(t0->id).getPoplarTensor(),
-                   dev.lowering().tensors().get(t1->id).getPoplarTensor()},
-                  0)
-                  .containsAliases());
+          BOOST_CHECK(poplar::concat({dev.lowering().tensors().get(t0->id),
+                                      dev.lowering().tensors().get(t1->id)},
+                                     0)
+                          .containsAliases());
         } else {
           BOOST_CHECK(!aliased);
         }

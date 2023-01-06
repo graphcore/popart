@@ -5,10 +5,9 @@
 #include <algorithm>
 #include <cstddef>
 #include <numeric>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
 #include <vector>
 #include <poplar/Graph.hpp>
+#include <poplar/Program.hpp>
 #include <poplar/RandomSeed.hpp>
 #include <poplar/ReplicatedStreamMode.hpp>
 #include <poplar/Target.hpp>
@@ -27,7 +26,7 @@
 #include "popart/op.hpp"
 #include "popart/popx/irlowering.hpp"
 #include "popart/popx/linearmapper.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/popx/popprograms.hpp"
 #include "popart/popx/poptensors.hpp"
 #include "popart/sessionoptions.hpp"
@@ -36,16 +35,17 @@
 namespace popart {
 namespace popx {
 
-RngStateLowering::RngStateLowering(IrLowering &irLowering_, snap::Graph &graph_)
+RngStateLowering::RngStateLowering(IrLowering &irLowering_,
+                                   poplar::Graph &graph_)
     : irLowering{irLowering_}, graph{graph_}, differingSeedsRngStateTensor{},
       identicalSeedsRngStateTensor{} {
 
   // Create the PRNG state tensor tensors.
-  // Create tensor to hold the inacive RNG state.
+  // Create tensor to hold the inactive RNG state.
   differingSeedsRngStateTensor =
       createRNGStateTensor(graph.get(), "differingSeedsRngStateTensor");
 
-  // Create tensor to hold the inacive RNG state.
+  // Create tensor to hold the inactive RNG state.
   identicalSeedsRngStateTensor =
       createRNGStateTensor(graph.get(), "identicalSeedsRngStateTensor");
 }
@@ -53,19 +53,15 @@ RngStateLowering::RngStateLowering(IrLowering &irLowering_, snap::Graph &graph_)
 RngStateLowering::~RngStateLowering() = default;
 
 void RngStateLowering::lowerInitRngStatesFromSeed(
-    snap::program::Sequence &seq,
-    const snap::Tensor &seed,
+    poplar::program::Sequence &seq,
+    const poplar::Tensor &seed,
     const poplar::DebugContext &dbgCtx) {
 
   // The call to `setSeed` below is what triggers deriving the RNG state from
   // `seed`. Note that at this point the value of `seed` should be identical
   // across replicas (this is a precondition of this function) and hence the
   // derived RNG state will also be identical across replicas.
-  poprand::setSeed(graph.get().getPoplarGraph(),
-                   seed.getPoplarTensor(),
-                   0,
-                   seq.getPoplarSequence(),
-                   dbgCtx);
+  poprand::setSeed(graph.get(), seed, 0, seq, dbgCtx);
 
   // Copy the replica-identical RNG state into the tensor we use to hold the
   // inactive RNG state. We will call `poplar::setHwSeeds` with this tensor
@@ -77,18 +73,11 @@ void RngStateLowering::lowerInitRngStatesFromSeed(
   // the seed). We get an offset value that's different for each replica, add
   // it to the seed and call `setSeed` to derive a replica-differing RNG state
   // from this value.
-  auto offset = graph.get().getPoplarGraph().addReplicationIndexConstant();
-  graph.get().getPoplarGraph().setTileMapping(offset, 0);
-  auto replicaDifferentValue = popops::add(graph.get().getPoplarGraph(),
-                                           seed.getPoplarTensor(),
-                                           offset,
-                                           seq.getPoplarSequence(),
-                                           dbgCtx);
-  poprand::setSeed(graph.get().getPoplarGraph(),
-                   replicaDifferentValue,
-                   0,
-                   seq.getPoplarSequence(),
-                   dbgCtx);
+  auto offset = graph.get().addReplicationIndexConstant();
+  graph.get().setTileMapping(offset, 0);
+  auto replicaDifferentValue =
+      popops::add(graph.get(), seed, offset, seq, dbgCtx);
+  poprand::setSeed(graph.get(), replicaDifferentValue, 0, seq, dbgCtx);
 
   // Copy the replica-differing RNG state into the tensor we use to hold the
   // inactive RNG state. We will call `poplar::setHwSeeds` with this tensor
@@ -100,7 +89,7 @@ void RngStateLowering::lowerInitRngStatesFromSeed(
   lowerSetHwSeeds(seq, identicalSeedsRngStateTensor, dbgCtx);
 }
 
-void RngStateLowering::lowerSetRngState(snap::program::Sequence &seq,
+void RngStateLowering::lowerSetRngState(poplar::program::Sequence &seq,
                                         Opx *opx) {
 
   Op *op = opx->op_p;
@@ -122,7 +111,7 @@ void RngStateLowering::lowerSetRngState(snap::program::Sequence &seq,
   }
 }
 
-void RngStateLowering::lowerGetRngState(snap::program::Sequence &seq,
+void RngStateLowering::lowerGetRngState(poplar::program::Sequence &seq,
                                         Opx *opx) {
 
   Op *op = opx->op_p;
@@ -144,8 +133,8 @@ void RngStateLowering::lowerGetRngState(snap::program::Sequence &seq,
   }
 }
 
-snap::Tensor RngStateLowering::createRNGStateTensor(snap::Graph &graph,
-                                                    const std::string &name) {
+poplar::Tensor RngStateLowering::createRNGStateTensor(poplar::Graph &graph,
+                                                      const std::string &name) {
   auto &target                            = graph.getTarget();
   std::vector<size_t> rngStateTensorShape = getRngStateTensorShape(graph);
   // Create tensor with specific mapping to avoid exchanges.
@@ -153,39 +142,30 @@ snap::Tensor RngStateLowering::createRNGStateTensor(snap::Graph &graph,
       target.getNumWorkerContexts() * rngStateSizePerWorker;
   auto result =
       graph.addVariable(poplar::UNSIGNED_INT, rngStateTensorShape, {name});
-  poputil::mapTensorLinearly(graph.getPoplarGraph(),
-                             result.getPoplarTensor(),
-                             minElementsPerTile,
-                             minElementsPerTile);
+  poputil::mapTensorLinearly(
+      graph, result, minElementsPerTile, minElementsPerTile);
   return result;
 }
 
 void RngStateLowering::lowerSetHwSeeds(
-    snap::program::Sequence &seq,
-    snap::Tensor &rngState,
+    poplar::program::Sequence &seq,
+    poplar::Tensor &rngState,
     const poplar::DebugContext &dbgCtx) const {
-  poplar::setHwSeeds(graph.get().getPoplarGraph(),
-                     rngState.getPoplarTensor(),
-                     seq.getPoplarSequence(),
-                     dbgCtx);
+  poplar::setHwSeeds(graph.get(), rngState, seq, dbgCtx);
 }
 
 void RngStateLowering::lowerGetHwSeeds(
-    snap::program::Sequence &seq,
-    snap::Tensor &rngState,
+    poplar::program::Sequence &seq,
+    poplar::Tensor &rngState,
     const poplar::DebugContext &dbgCtx) const {
-  auto tmp = snap::Tensor{poplar::getHwSeeds(graph.get().getPoplarGraph(),
-                                             seq.getPoplarSequence(),
-                                             dbgCtx),
-                          graph.get()};
-  seq.getPoplarSequence().add(
-      poplar::program::Copy(tmp, rngState, false, dbgCtx));
+  auto tmp = poplar::getHwSeeds(graph.get(), seq, dbgCtx);
+  seq.add(poplar::program::Copy(tmp, rngState, false, dbgCtx));
 }
 
 PriTask RngStateLowering::initRngStateTensor() {
   // Set up combinedRngStateTensor
   auto initRngStateTensorTask = [this]() {
-    SequenceMap seqs(graph.get());
+    SequenceMap seqs;
 
     std::vector<size_t> combinedRngStateTensorShape =
         getCombinedRngStateTensorShape(graph.get());
@@ -195,7 +175,7 @@ PriTask RngStateLowering::initRngStateTensor() {
                                 {"combinedRngStateTensor"});
     irLowering.get().getLinearMapper().mapTensor(graph.get(),
                                                  combinedRngStateTensor);
-    return SequenceMap(graph.get());
+    return SequenceMap();
   };
   return {+1e6, initRngStateTensorTaskId, {}, initRngStateTensorTask};
 }
@@ -212,11 +192,11 @@ PriTask RngStateLowering::randomSeedToHost() {
 
     logging::devicex::debug("Initializing random seed d2h.");
 
-    SequenceMap seqs(graph.get());
+    SequenceMap seqs;
     auto &seq =
         seqs.getSequence(&irLowering.get().progs().randomSeedToHostFragment());
 
-    seq.getPoplarSequence().add(poplar::program::Copy(
+    seq.add(poplar::program::Copy(
         streamedSeed, streamSeedToHost, false, {"randomSeedToHost"}));
     return seqs;
   };
@@ -241,25 +221,24 @@ PriTask RngStateLowering::rngStateFromHost() {
     logging::devicex::debug("Initializing RNG h2d with RNG size equal to {}.",
                             combinedRngTensorSize);
 
-    SequenceMap seqs(graph.get());
+    SequenceMap seqs;
     auto &seq =
         seqs.getSequence(&irLowering.get().progs().rngStateFromHostFragment());
 
     // Stream newRngState to combinedRngStateTensor
-    seq.getPoplarSequence().add(
-        poplar::program::Copy(streamRngFromHost,
-                              combinedRngStateTensor,
-                              false,
-                              {"copyStreamRngStateTensor"}));
+    seq.add(poplar::program::Copy(streamRngFromHost,
+                                  combinedRngStateTensor,
+                                  false,
+                                  {"copyStreamRngStateTensor"}));
     // Copy first half of combinedRngStateTensor to identicalSeedsRngStateTensor
-    seq.getPoplarSequence().add(poplar::program::Copy(
+    seq.add(poplar::program::Copy(
         combinedRngStateTensor[0],
         identicalSeedsRngStateTensor,
         false,
         {"copyRngStateTensorToIdenticalSeedsRngStateTensor"}));
     // Copy second half of combinedRngStateTensor to
     // differingSeedsRngStateTensor
-    seq.getPoplarSequence().add(poplar::program::Copy(
+    seq.add(poplar::program::Copy(
         combinedRngStateTensor[1],
         differingSeedsRngStateTensor,
         false,
@@ -283,20 +262,20 @@ PriTask RngStateLowering::rngStateToHost() {
     logging::devicex::debug("Initializing RNG d2h with RNG size equal to {}.",
                             combinedRngTensorSize);
 
-    SequenceMap seqs(graph.get());
+    SequenceMap seqs;
     auto &seq =
         seqs.getSequence(&irLowering.get().progs().rngStateToHostFragment());
 
     // Update combinedRngStateTensor with the new values of
     // identicalSeedsRngStateTensor and differingSeedsRngStateTensor
-    seq.getPoplarSequence().add(poplar::program::Copy(
-        snap::concat(identicalSeedsRngStateTensor.expand({0}),
-                     differingSeedsRngStateTensor.expand({0})),
+    seq.add(poplar::program::Copy(
+        poplar::concat(identicalSeedsRngStateTensor.expand({0}),
+                       differingSeedsRngStateTensor.expand({0})),
         combinedRngStateTensor,
         false,
         "seedsToRngStateTensor"));
     // Stream combinedRngStateTensor to host
-    seq.getPoplarSequence().add(poplar::program::Copy(
+    seq.add(poplar::program::Copy(
         combinedRngStateTensor, streamRngToHost, false, {"rngStateToHost"}));
     return seqs;
   };
@@ -308,14 +287,14 @@ PriTask RngStateLowering::rngStateToHost() {
 }
 
 std::vector<size_t>
-RngStateLowering::getCombinedRngStateTensorShape(const snap::Graph &graph) {
+RngStateLowering::getCombinedRngStateTensorShape(const poplar::Graph &graph) {
   std::vector<size_t> rngTensorShape = getRngStateTensorShape(graph);
   rngTensorShape.insert(rngTensorShape.begin(), numRngStateTensors);
   return rngTensorShape;
 }
 
 size_t
-RngStateLowering::getCombinedRngStateTensorSize(const snap::Graph &graph) {
+RngStateLowering::getCombinedRngStateTensorSize(const poplar::Graph &graph) {
   const std::vector<size_t> tensorShape = getCombinedRngStateTensorShape(graph);
   return std::accumulate(tensorShape.begin(),
                          tensorShape.end(),
@@ -344,7 +323,7 @@ size_t RngStateLowering::getCombinedRngStateTensorSize(
 }
 
 std::vector<size_t>
-RngStateLowering::getRngStateTensorShape(const snap::Graph &graph) {
+RngStateLowering::getRngStateTensorShape(const poplar::Graph &graph) {
   const size_t numTiles       = graph.getTarget().getNumTiles();
   const size_t workersPerTile = graph.getTarget().getNumWorkerContexts();
   return std::vector<size_t>{numTiles, workersPerTile, rngStateSizePerWorker};

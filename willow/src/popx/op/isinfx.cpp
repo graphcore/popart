@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popart/op/isinf.hpp>
 #include <popart/popx/op/isinfx.hpp>
@@ -9,11 +9,11 @@
 #include "popart/operators.hpp"
 #include "popart/popx/op/elementwisex.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -25,11 +25,11 @@ IsInfx::IsInfx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<IsInf>(op, Onnx::Operators::IsInf_10);
 }
 
-void IsInfx::grow(snap::program::Sequence &prog) const {
+void IsInfx::grow(poplar::program::Sequence &prog) const {
   // (x == x) && x !isFinite
   setOutTensor(
       IsInf::getOutIndex(),
-      snap::popops::map(
+      popops::map(
           graph(),
           popops::expr::And(
               popops::expr::Equal(popops::expr::_1, popops::expr::_1),

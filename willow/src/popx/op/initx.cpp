@@ -1,7 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
+#include <poplar/Program.hpp>
 #include <popops/Zero.hpp>
 #include <popart/op/init.hpp>
 #include <popart/popx/op/initx.hpp>
@@ -10,7 +8,7 @@
 #include "popart/error.hpp"
 #include "popart/graphcoreoperators.hpp"
 #include "popart/logging.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
 namespace popart {
 class Op;
@@ -18,24 +16,21 @@ class Op;
 namespace popx {
 class Devicex;
 
-InitOpx::InitOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+InitOpx::InitOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<InitOp>(op, Onnx::CustomOperators::Init_1);
 }
 
-void InitOpx::grow(snap::program::Sequence &prog) const {
+void InitOpx::grow(poplar::program::Sequence &prog) const {
   auto &initOp          = getOp<InitOp>();
   const auto &outTensor = getOutTensor(InitOp::getOutIndex());
 
   switch (initOp.getInitType()) {
   case InitType::Zero: {
-    popops::zero(graph().getPoplarGraph(),
-                 outTensor.getPoplarTensor(),
-                 prog.getPoplarSequence(),
-                 debugContext("init_zero"));
+    popops::zero(graph(), outTensor, prog, debugContext("init_zero"));
     break;
   }
   case InitType::NoInit: {
-    prog.getPoplarSequence().add(poplar::program::WriteUndef(outTensor));
+    prog.add(poplar::program::WriteUndef(outTensor));
     break;
   }
   default:

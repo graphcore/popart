@@ -1,11 +1,9 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <cstddef>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <utility>
 #include <vector>
+#include <poplar/Graph.hpp>
 #include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <popnn/Loss.hpp>
@@ -23,8 +21,14 @@
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
 #include "popart/popx/op/basesortx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/tensorinfo.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 namespace popx {
@@ -35,7 +39,7 @@ TopKOpx::TopKOpx(Op *op, Devicex *devicex) : BaseSortOpx(op, devicex) {
   K = static_cast<unsigned>(dynamic_cast<TopKOp *>(op)->getK());
 }
 
-TopKGradOpx::TopKGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+TopKGradOpx::TopKGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<TopKGradOp>(op, Onnx::GradOperators::TopKGrad);
   axis        = dynamic_cast<TopKGradOp *>(op)->getAxis();
   gradOutInfo = dynamic_cast<TopKGradOp *>(op)->getGradOutInfo();
@@ -49,20 +53,16 @@ const std::vector<size_t> &TopKGradOpx::getGradOutShape() const {
   return gradOutShape;
 }
 
-void TopKGradOpx::grow(snap::program::Sequence &prog) const {
+void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
   auto indices = getInTensor(TopKGradOp::indicesInIndex());
 
   auto gradIn = getInTensor(TopKGradOp::gradInIndex());
 
-  snap::Tensor dataGrad = graph().addVariable(
+  auto dataGrad = graph().addVariable(
       gradIn.elementType(), getGradOutShape(), debugContext("dataGrad"));
-  poputil::mapTensorLinearly(graph().getPoplarGraph(),
-                             dataGrad.getPoplarTensor());
+  poputil::mapTensorLinearly(graph(), dataGrad);
 
-  popops::zero(graph().getPoplarGraph(),
-               dataGrad.getPoplarTensor(),
-               prog.getPoplarSequence(),
-               debugContext("zero"));
+  popops::zero(graph(), dataGrad, prog, debugContext("zero"));
 
   scatterutilx::growScatter(prog,
                             graph(),
@@ -75,12 +75,12 @@ void TopKGradOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(TopKGradOp::gradOutIndex(), dataGrad);
 }
 
-void TopKOpx::grow(snap::program::Sequence &prog) const {
+void TopKOpx::grow(poplar::program::Sequence &prog) const {
   auto negateTensor = [&](auto &x) {
-    return popops::map(graph().getPoplarGraph(),
+    return popops::map(graph(),
                        popops::expr::UnaryOpType::NEGATE,
                        x,
-                       prog.getPoplarSequence(),
+                       prog,
                        debugContext("neg"));
   };
 
@@ -88,7 +88,7 @@ void TopKOpx::grow(snap::program::Sequence &prog) const {
   //   [a0, a1, a2, a3]
   // Output shape:
   //   [a0, a1, K,  a3]
-  auto input = getInTensor(TopKOp::getInIndex()).getPoplarTensor();
+  auto input = getInTensor(TopKOp::getInIndex());
 
   auto &topk = getOp<TopKOp>();
   if (!topk.getLargest()) {
@@ -112,15 +112,14 @@ void TopKOpx::grow(snap::program::Sequence &prog) const {
   indsShape[1]   = K;
   auto topKInds  = graph().addVariable(
       poplar::UNSIGNED_INT, indsShape, debugContext("topKInds"));
-  poputil::mapTensorLinearly(graph().getPoplarGraph(),
-                             topKInds.getPoplarTensor());
+  poputil::mapTensorLinearly(graph(), topKInds);
 
-  auto topKVals = popnn::topK(graph().getPoplarGraph(),
+  auto topKVals = popnn::topK(graph(),
                               input,
-                              topKInds.getPoplarTensor(),
+                              topKInds,
                               K,
                               topk.getSorted(),
-                              prog.getPoplarSequence(),
+                              prog,
                               debugContext("topK"));
   if (!topk.getLargest()) {
     topKVals = negateTensor(topKVals);
@@ -145,7 +144,7 @@ void TopKOpx::grow(snap::program::Sequence &prog) const {
     topKInds = topKInds.dimShufflePartial({axis, lastDim}, {lastDim, axis});
   }
 
-  setOutTensor(TopKOp::getValuesOutIndex(), snap::Tensor{topKVals, graph()});
+  setOutTensor(TopKOp::getValuesOutIndex(), topKVals);
   setOutTensor(TopKOp::getIndicesOutIndex(), topKInds);
 }
 

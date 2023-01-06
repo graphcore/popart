@@ -2,17 +2,19 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_ATAN2X_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_ATAN2X_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
-#include <snap/Tensor.hpp>
 #include <string>
+#include <poplar/Tensor.hpp>
 #include <popart/popx/op/elementwisex.hpp>
 
-namespace snap {
+#include "popart/popx/debugcontextx.hpp"
+
+namespace poplar {
 class Graph;
+
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -24,19 +26,19 @@ class Atan2Computex : public EwbComputex {
 public:
   explicit Atan2Computex(EwbComputex::InplacePolicy ip);
 
-  snap::Tensor outplace(snap::program::Sequence &,
-                        snap::Graph &,
-                        const snap::Tensor &,
-                        const snap::Tensor &,
-                        const poplar::DebugNameAndId &,
-                        const std::string &) const final;
+  poplar::Tensor outplace(poplar::program::Sequence &,
+                          poplar::Graph &,
+                          const poplar::Tensor &,
+                          const poplar::Tensor &,
+                          const poplar::DebugNameAndId &,
+                          const std::string &) const final;
 
-  snap::Tensor maybeInplace(snap::program::Sequence &,
-                            snap::Graph &,
-                            const snap::Tensor &,
-                            const snap::Tensor &,
-                            const poplar::DebugNameAndId &,
-                            const std::string &) const final;
+  poplar::Tensor maybeInplace(poplar::program::Sequence &,
+                              poplar::Graph &,
+                              poplar::Tensor &,
+                              poplar::Tensor &,
+                              const poplar::DebugNameAndId &,
+                              const std::string &) const final;
 };
 
 class Atan2Opx : public ElementWiseBinaryOutplaceOpx {

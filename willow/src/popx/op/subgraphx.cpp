@@ -13,7 +13,7 @@
 #include "popart/names.hpp"
 #include "popart/op.hpp"
 #include "popart/op/subgraph.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/popx/preparedtensor.hpp"
 #include "popart/tensor.hpp"
 #include "popart/tensordebuginfo.hpp"
@@ -23,7 +23,7 @@ namespace popart {
 namespace popx {
 class Devicex;
 
-SubgraphOpx::SubgraphOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
+SubgraphOpx::SubgraphOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 
 PreparedTensorInfos SubgraphOpx::getInputsToPrepare() const {
 

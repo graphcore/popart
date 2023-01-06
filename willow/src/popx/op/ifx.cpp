@@ -2,11 +2,11 @@
 #include <algorithm>
 #include <map>
 #include <memory>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <utility>
 #include <vector>
+#include <poplar/Graph.hpp>
+#include <poplar/Program.hpp>
+#include <poplar/Tensor.hpp>
 #include <popops/Zero.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/if.hpp>
@@ -22,7 +22,7 @@
 #include "popart/names.hpp"
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/popx/popprograms.hpp"
 #include "popart/popx/preparedtensor.hpp"
 #include "popart/tensor.hpp"
@@ -32,13 +32,13 @@ class Op;
 
 namespace popx {
 
-void IfOpx::copyInputs(snap::program::Sequence &thenProg,
-                       snap::program::Sequence &elseProg) const {
+void IfOpx::copyInputs(poplar::program::Sequence &thenProg,
+                       poplar::program::Sequence &elseProg) const {
   auto &ifop      = getOp<IfOp>();
   auto &thenGraph = ifop.getThenGraph();
   auto &elseGraph = ifop.getElseGraph();
 
-  auto copyInput = [&](snap::program::Sequence &prog,
+  auto copyInput = [&](poplar::program::Sequence &prog,
                        const Graph &graph,
                        InIndex ifopInputIndex,
                        InIndex branchInputIndex) {
@@ -49,10 +49,10 @@ void IfOpx::copyInputs(snap::program::Sequence &thenProg,
     auto branchInput = get(branchInputId);
 
     poplar::program::Copy copyProg(ifInput, branchInput, false, debugContext());
-    prog.getPoplarSequence().add(copyProg);
+    prog.add(copyProg);
   };
 
-  auto copyBranchInputs = [&](snap::program::Sequence &prog,
+  auto copyBranchInputs = [&](poplar::program::Sequence &prog,
                               const Graph &graph) {
     auto &idxMap = ifop.getBranchInIndicesMap(graph);
     for (auto &opIdx_branchIdx : idxMap) {
@@ -66,22 +66,22 @@ void IfOpx::copyInputs(snap::program::Sequence &thenProg,
   copyBranchInputs(elseProg, elseGraph);
 }
 
-void IfOpx::callBranch(snap::program::Sequence &prog,
+void IfOpx::callBranch(poplar::program::Sequence &prog,
                        const Graph &graph) const {
   auto &branch_progs = dv_p->lowering().progs().scopeFragments(graph);
   for (auto branch_prog : branch_progs) {
-    prog.getPoplarSequence().add(branch_prog);
+    prog.add(branch_prog);
   }
 }
 
-void IfOpx::copyOutputs(snap::program::Sequence &thenProg,
-                        snap::program::Sequence &elseProg,
-                        const std::vector<snap::Tensor> &outputs) const {
+void IfOpx::copyOutputs(poplar::program::Sequence &thenProg,
+                        poplar::program::Sequence &elseProg,
+                        const std::vector<poplar::Tensor> &outputs) const {
   auto &ifop      = getOp<IfOp>();
   auto &thenGraph = ifop.getThenGraph();
   auto &elseGraph = ifop.getElseGraph();
 
-  auto copyOutput = [&](snap::program::Sequence &prog,
+  auto copyOutput = [&](poplar::program::Sequence &prog,
                         const Graph &graph,
                         OutIndex opIndex,
                         OutIndex branchIndex) {
@@ -92,20 +92,17 @@ void IfOpx::copyOutputs(snap::program::Sequence &thenProg,
     auto branchOutput = get(branchId);
     poplar::program::Copy copyProg(
         branchOutput, opOutput, false, debugContext());
-    prog.getPoplarSequence().add(copyProg);
+    prog.add(copyProg);
   };
 
-  auto zeroOutput = [&](snap::program::Sequence &prog, OutIndex opIndex) {
+  auto zeroOutput = [&](poplar::program::Sequence &prog, OutIndex opIndex) {
     auto opId     = outId(opIndex);
     auto opOutput = outputs.at(opIndex);
-    popops::zero(graph().getPoplarGraph(),
-                 opOutput.getPoplarTensor(),
-                 prog.getPoplarSequence(),
-                 debugContext("zero"));
+    popops::zero(graph(), opOutput, prog, debugContext("zero"));
   };
 
   auto copyOrZeroBranchOutput =
-      [&](snap::program::Sequence &prog, const Graph &graph, int outIndex) {
+      [&](poplar::program::Sequence &prog, const Graph &graph, int outIndex) {
         auto &idxMap = ifop.getBranchOutIndicesMap(graph);
         auto found   = idxMap.find(outIndex);
         if (found != idxMap.end()) {
@@ -121,8 +118,8 @@ void IfOpx::copyOutputs(snap::program::Sequence &thenProg,
   }
 }
 
-std::vector<snap::Tensor> IfOpx::prepareOutputs() const {
-  std::vector<snap::Tensor> outputs;
+std::vector<poplar::Tensor> IfOpx::prepareOutputs() const {
+  std::vector<poplar::Tensor> outputs;
   auto &ifop = getOp<IfOp>();
 
   auto cloneOutput = [&](const Graph &branch, OutIndex branchIndex) {
@@ -153,17 +150,17 @@ std::vector<snap::Tensor> IfOpx::prepareOutputs() const {
   return outputs;
 }
 
-IfOpx::IfOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+IfOpx::IfOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<IfOp>(op);
 }
 
-void IfOpx::grow(snap::program::Sequence &prog) const {
+void IfOpx::grow(poplar::program::Sequence &prog) const {
   auto &ifop = getOp<IfOp>();
 
   auto thenDbgStr = logging::format("{}/then", ifop.getThenGraph().id);
   auto elseDbgStr = logging::format("{}/else", ifop.getElseGraph().id);
-  snap::program::Sequence then_prog(debugContext(thenDbgStr), graph());
-  snap::program::Sequence else_prog(debugContext(elseDbgStr), graph());
+  poplar::program::Sequence then_prog(debugContext(thenDbgStr));
+  poplar::program::Sequence else_prog(debugContext(elseDbgStr));
 
   copyInputs(then_prog, else_prog);
 
@@ -178,7 +175,7 @@ void IfOpx::grow(snap::program::Sequence &prog) const {
 
   // Reshape to scalar in case the user passed in tensor of shape [1]
   condition = condition.reshape({});
-  prog.getPoplarSequence().add(poplar::program::If(
+  prog.add(poplar::program::If(
       condition, then_prog, else_prog, debugContext("condition")));
 
   for (int i = 0; i < outputs.size(); i++) {

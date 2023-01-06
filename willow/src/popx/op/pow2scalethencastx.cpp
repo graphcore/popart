@@ -1,6 +1,5 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #include "popart/ir.hpp"
-#include <snap/Program.hpp>
 #include <poplar/MetadataCreation.hpp>
 #include <poplar/Quarter.hpp>
 #include <poplar/Tensor.hpp>
@@ -21,6 +20,12 @@
 #include "popart/popx/opx.hpp"
 #include "popart/tensorinfo.hpp"
 
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
+
 namespace pe = popops::expr;
 
 namespace popart {
@@ -36,7 +41,7 @@ Pow2ScaleThenCastOpx::Pow2ScaleThenCastOpx(Op *op, Devicex *devicex)
   verifyOp<Pow2ScaleThenCastOp>(op);
 }
 
-void Pow2ScaleThenCastOpx::grow(snap::program::Sequence &prog) const {
+void Pow2ScaleThenCastOpx::grow(poplar::program::Sequence &prog) const {
   Pow2ScaleThenCastOp op = getOp<Pow2ScaleThenCastOp>();
   auto popartScaleTensor =
       getInTensor(Pow2ScaleThenCastOp::getlog2ScaleInIndex());
@@ -45,7 +50,7 @@ void Pow2ScaleThenCastOpx::grow(snap::program::Sequence &prog) const {
     auto assertProg =
         createAssertLog2ScaleInRangeProg(graph(), popartScaleTensor, -32, 32);
 
-    prog.getPoplarSequence().add(assertProg);
+    prog.add(assertProg);
   }
   // We need to negate the scale tensor here, to ensure we are always
   // multiplying by the scale factor. This "undoes" the negation done in
@@ -56,18 +61,14 @@ void Pow2ScaleThenCastOpx::grow(snap::program::Sequence &prog) const {
                                   prog,
                                   debugContext());
 
-  auto metadataTensor =
-      poplar::createVariableMetadataTensor(graph(),
-                                           getDestinationFormat(),
-                                           popartScaleTensor,
-                                           prog.getPoplarSequence(),
-                                           debugContext());
+  auto metadataTensor = poplar::createVariableMetadataTensor(
+      graph(), getDestinationFormat(), popartScaleTensor, prog, debugContext());
 
   auto out = popops::cast(graph(),
                           getInTensor(Pow2ScaleThenCastOp::getInIndex()),
                           poplar::QUARTER,
                           metadataTensor,
-                          prog.getPoplarSequence(),
+                          prog,
                           debugContext());
 
   if (hasInViewChangers(Pow2ScaleThenCastOp::getInIndex())) {

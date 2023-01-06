@@ -4,16 +4,16 @@
 
 #include "popart/popx/debugcontextx.hpp"
 #include <set>
-#include <snap/Tensor.hpp>
-#include <popart/popx/popopx.hpp>
+#include <poplar/Tensor.hpp>
+#include <popart/popx/opx.hpp>
 
 #include "popart/names.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -22,15 +22,15 @@ namespace popx {
 class Devicex;
 class ViewChangers;
 
-class AdaDeltaUpdaterOpx : public PopOpx {
+class AdaDeltaUpdaterOpx : public Opx {
 public:
   AdaDeltaUpdaterOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   // can create the accumulator2 input Tensor (@Accl2 index)
   // from the weight gradient tensor (@Accl1 index)
-  snap::Tensor
-  createInputTensor(InIndex, const poplar::DebugNameAndId &dnai) const final;
+  poplar::Tensor createInput(InIndex,
+                             const poplar::DebugNameAndId &dnai) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex) const final;
   bool hasCreatorViewChangers(InIndex index) const final;

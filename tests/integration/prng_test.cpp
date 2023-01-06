@@ -10,9 +10,6 @@
 #include <memory>
 #include <numeric>
 #include <ostream>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <testdevice.hpp>
 #include <utility>
@@ -26,8 +23,8 @@
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/opmanager.hpp>
+#include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/popx/popopx.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
@@ -154,11 +151,11 @@ BOOST_AUTO_TEST_CASE(
        OpDefinition::Attributes({})});
 
   // Semantics for WeirdPrngOp.
-  class WeirdPrngOpx : public PopOpx {
+  class WeirdPrngOpx : public Opx {
   public:
-    WeirdPrngOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
+    WeirdPrngOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 
-    void grow(snap::program::Sequence &prog) const {
+    void grow(poplar::program::Sequence &prog) const {
 
       // Do some PRNG stuff when input0's first element is 0.0. To do this,
       // first we need to isolate the first element of input0, then map it to a
@@ -170,19 +167,17 @@ BOOST_AUTO_TEST_CASE(
                             "Expected WeirdPrngOpx input 0 to be FLOAT16");
 
       const uint16_t zeroHalfValue = floatToHalf(0.0f);
-      auto zeroHalfPoplarConst     = graph().getPoplarGraph().addConstantHalf(
-          poplar::HALF, {}, zeroHalfValue);
-      graph().getPoplarGraph().setTileMapping(zeroHalfPoplarConst, 0);
+      auto zeroHalfPoplarConst =
+          graph().addConstantHalf(poplar::HALF, {}, zeroHalfValue);
+      graph().setTileMapping(zeroHalfPoplarConst, 0);
 
       auto in0 = getInTensor(0);
       std::vector<size_t> in0Begin(in0.rank(), 0);
       std::vector<size_t> in0End(in0.rank(), 1);
       auto in0FirstElem = in0.slice(in0Begin, in0End);
 
-      auto condition = popops::eq(graph().getPoplarGraph(),
-                                  in0FirstElem.getPoplarTensor(),
-                                  zeroHalfPoplarConst,
-                                  prog.getPoplarSequence());
+      auto condition =
+          popops::eq(graph(), in0FirstElem, zeroHalfPoplarConst, prog);
 
       condition = condition.reshape({});
 
@@ -190,17 +185,10 @@ BOOST_AUTO_TEST_CASE(
       poplar::program::Sequence elseProg({});
 
       // Doing some poprand stuff should mess with the PRNG state.
-      poprand::uniform(graph().getPoplarGraph(),
-                       nullptr,
-                       0u,
-                       in0.getPoplarTensor(),
-                       poplar::FLOAT,
-                       0.0f,
-                       1.0f,
-                       thenProg);
+      poprand::uniform(
+          graph(), nullptr, 0u, in0, poplar::FLOAT, 0.0f, 1.0f, thenProg);
 
-      prog.getPoplarSequence().add(
-          poplar::program::If(condition, thenProg, elseProg));
+      prog.add(poplar::program::If(condition, thenProg, elseProg));
       for (auto entry : op_p->output->tensorMap()) {
         setOutTensor(entry.first, getInTensor(entry.first));
       }

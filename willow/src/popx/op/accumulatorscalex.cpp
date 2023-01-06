@@ -1,7 +1,4 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
 #include <popart/op/accumulatorscale.hpp>
@@ -11,6 +8,12 @@
 #include "popart/graphcoreoperators.hpp"
 #include "popart/optimizervalue.hpp"
 #include "popart/popx/op/varupdatex.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -23,37 +26,26 @@ AccumulatorScaleOpx::AccumulatorScaleOpx(Op *op, Devicex *devicex)
   verifyOp<AccumulatorScaleOp>(op, {Onnx::CustomOperators::AccumulatorScale});
 }
 
-void AccumulatorScaleOpx::grow(snap::program::Sequence &prog) const {
+void AccumulatorScaleOpx::grow(poplar::program::Sequence &prog) const {
 
   auto &accumulateOp = getOp<AccumulatorScaleOp>();
 
-  auto accum = getInTensor(AccumulatorScaleOp::getVarToUpdateInIndex())
-                   .getPoplarTensor();
+  auto accum = getInTensor(AccumulatorScaleOp::getVarToUpdateInIndex());
 
   auto factor = accumulateOp.getFactor();
 
   if (factor.isConst()) {
     auto val = factor.val();
     if (val == 0.0f) {
-      popops::zero(graph().getPoplarGraph(),
-                   accum,
-                   prog.getPoplarSequence(),
-                   debugContext("AccumulatorScale"));
+      popops::zero(graph(), accum, prog, debugContext("AccumulatorScale"));
     } else {
-      popops::mulInPlace(graph().getPoplarGraph(),
-                         accum,
-                         val,
-                         prog.getPoplarSequence(),
-                         debugContext("AccumulatorScale"));
+      popops::mulInPlace(
+          graph(), accum, val, prog, debugContext("AccumulatorScale"));
     }
   } else {
-    auto factor =
-        getInTensor(AccumulatorScaleOp::getFactorInIndex()).getPoplarTensor();
-    popops::mulInPlace(graph().getPoplarGraph(),
-                       accum,
-                       factor,
-                       prog.getPoplarSequence(),
-                       debugContext("AccumulatorScale"));
+    auto factor = getInTensor(AccumulatorScaleOp::getFactorInIndex());
+    popops::mulInPlace(
+        graph(), accum, factor, prog, debugContext("AccumulatorScale"));
   }
 
   if (hasInViewChangers(AccumulatorScaleOp::getVarToUpdateInIndex())) {
@@ -63,8 +55,7 @@ void AccumulatorScaleOpx::grow(snap::program::Sequence &prog) const {
   }
 
   // reference accum returned
-  setOutTensor(AccumulatorScaleOp::getUpdatedVarOutIndex(),
-               snap::Tensor{accum, graph()});
+  setOutTensor(AccumulatorScaleOp::getUpdatedVarOutIndex(), accum);
 }
 
 namespace {

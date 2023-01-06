@@ -1,14 +1,18 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popops/SequenceSlice.hpp>
 #include <popart/op/sequenceslice.hpp>
 #include <popart/popx/op/sequenceslicex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
 #include "popart/graphcoreoperators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -18,31 +22,28 @@ class Devicex;
 
 namespace {
 
-void growSequenceSlice(const PopOpx *opx,
-                       snap::program::Sequence &prog,
+void growSequenceSlice(const Opx *opx,
+                       poplar::program::Sequence &prog,
                        bool inplace) {
-  auto source =
-      opx->getInTensor(SequenceSliceOp::getSourceInIndex()).getPoplarTensor();
+  auto source      = opx->getInTensor(SequenceSliceOp::getSourceInIndex());
   auto destination = opx->getInTensor(SequenceSliceOp::getDestinationInIndex());
-  auto N = opx->getInTensor(SequenceSliceOp::getNInIndex()).getPoplarTensor();
+  auto N           = opx->getInTensor(SequenceSliceOp::getNInIndex());
   auto sourceOffset =
-      opx->getInTensor(SequenceSliceOp::getSourceOffsetInIndex())
-          .getPoplarTensor();
-  auto destOffset = opx->getInTensor(SequenceSliceOp::getDestOffsetInIndex())
-                        .getPoplarTensor();
+      opx->getInTensor(SequenceSliceOp::getSourceOffsetInIndex());
+  auto destOffset = opx->getInTensor(SequenceSliceOp::getDestOffsetInIndex());
 
   if (!inplace) {
     destination = opx->cloneNcopy(prog, destination);
   }
 
-  popops::sequenceSlice(opx->graph().getPoplarGraph(),
+  popops::sequenceSlice(opx->graph(),
                         source,
-                        destination.getPoplarTensor(),
+                        destination,
                         N,
                         sourceOffset,
                         destOffset,
                         opx->getOp<SequenceSliceOp>().zeroUnused,
-                        prog.getPoplarSequence(),
+                        prog,
                         opx->debugContext());
 
   opx->setOutTensor(SequenceSliceOp::getOutIndex(), destination);
@@ -51,20 +52,20 @@ void growSequenceSlice(const PopOpx *opx,
 } // namespace
 
 SequenceSliceOpx::SequenceSliceOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<SequenceSliceOp>(op);
 }
 
-void SequenceSliceOpx::grow(snap::program::Sequence &prog) const {
+void SequenceSliceOpx::grow(poplar::program::Sequence &prog) const {
   growSequenceSlice(this, prog, false);
 }
 
 SequenceSliceInplaceOpx::SequenceSliceInplaceOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<SequenceSliceInplaceOp>(op);
 }
 
-void SequenceSliceInplaceOpx::grow(snap::program::Sequence &prog) const {
+void SequenceSliceInplaceOpx::grow(poplar::program::Sequence &prog) const {
   growSequenceSlice(this, prog, true);
 }
 

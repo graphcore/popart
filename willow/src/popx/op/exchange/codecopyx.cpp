@@ -5,13 +5,16 @@
 #include <popart/popx/op/exchange/codecopyx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/basicoptionals.hpp"
+#include "popart/logging.hpp"
+#include "popart/op/exchange/exchange.hpp"
 #include "popart/popx/op/exchange/exchangex.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -25,7 +28,7 @@ RemoteCodeLoadOpx::RemoteCodeLoadOpx(Op *op, Devicex *devicex)
   verifyOp<RemoteCodeLoadOp>(op);
 }
 
-void RemoteCodeLoadOpx::grow(snap::program::Sequence &prog) const {
+void RemoteCodeLoadOpx::grow(poplar::program::Sequence &prog) const {
   auto &remoteCodeLoadOp = getOp<RemoteCodeLoadOp>();
   std::shared_ptr<ExchangeDescriptorx> descriptorx =
       getExchangeDescriptorx(dv_p, remoteCodeLoadOp.getExchangeDescriptor(0));

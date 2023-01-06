@@ -3,14 +3,13 @@
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_RESIZEX_HPP_
 
 #include <cstdint>
-#include <snap/Tensor.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -27,31 +26,31 @@ struct ResizeParams {
   ResizeCoordinateTransformationMode coordinateTransformationMode;
 };
 
-class ResizeOpx : public PopOpx {
+class ResizeOpx : public Opx {
 public:
   ResizeOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
-class ResizeGradOpx : public PopOpx {
+class ResizeGradOpx : public Opx {
 public:
   ResizeGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
-  snap::Tensor resizeNearestGrad(ResizeGradOp &op,
-                                 const snap::Tensor &input,
-                                 ResizeParams &params,
-                                 snap::program::Sequence &prog) const;
-  snap::Tensor reduceDimension(snap::program::Sequence &,
-                               const snap::Tensor &input,
-                               int dimension,
-                               float scale) const;
-  snap::Tensor padDimension(snap::program::Sequence &,
-                            const snap::Tensor &input,
-                            int dimension,
-                            int64_t newSize,
-                            float scale) const;
+  poplar::Tensor resizeNearestGrad(ResizeGradOp &op,
+                                   const poplar::Tensor &input,
+                                   ResizeParams &params,
+                                   poplar::program::Sequence &prog) const;
+  poplar::Tensor reduceDimension(poplar::program::Sequence &,
+                                 const poplar::Tensor &input,
+                                 int dimension,
+                                 float scale) const;
+  poplar::Tensor padDimension(poplar::program::Sequence &,
+                              const poplar::Tensor &input,
+                              int dimension,
+                              int64_t newSize,
+                              float scale) const;
 };
 
 } // namespace popx

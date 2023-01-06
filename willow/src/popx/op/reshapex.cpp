@@ -1,5 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/popx/op/reshapex.hpp>
 #include <popart/popx/opxmanager.hpp>
@@ -7,35 +7,35 @@
 #include "popart/names.hpp"
 #include "popart/op.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/region.hpp" // IWYU pragma: keep
 #include "popart/tensorinfo.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 namespace popx {
 class Devicex;
 
 // Test note : scale by 1.0001 in grad op makes the test fail. Good.
-void ReshapeOpx::grow(snap::program::Sequence &prog) const {
+void ReshapeOpx::grow(poplar::program::Sequence &prog) const {
   // not in-place, so cloning input
   auto outTensor = cloneNcopy(prog, getInTensor(ReshapeOp::getInIndex()));
   outTensor = outTensor.reshape(outInfo(ReshapeOp::getOutIndex()).shape_szt());
   setOutTensor(ReshapeOp::getOutIndex(), outTensor);
 }
 
-void ReshapeInplaceOpx::grow(snap::program::Sequence &) const {
+void ReshapeInplaceOpx::grow(poplar::program::Sequence &) const {
   auto outTensor = getInTensor(ReshapeOp::getInIndex());
   outTensor = outTensor.reshape(outInfo(ReshapeOp::getOutIndex()).shape_szt());
   setOutTensor(ReshapeOp::getOutIndex(), outTensor);
 }
 
-ReshapeBaseOpx::ReshapeBaseOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+ReshapeBaseOpx::ReshapeBaseOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ReshapeBaseOp>(op);
 }
 
@@ -52,9 +52,9 @@ InputCreatorType ReshapeBaseOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-snap::Tensor ReshapeBaseOpx::unwindTensorLayout(snap::Tensor tensor,
-                                                InIndex,
-                                                OutIndex) const {
+poplar::Tensor ReshapeBaseOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                  InIndex,
+                                                  OutIndex) const {
   return tensor.reshape(inInfo(ReshapeOp::getInIndex()).shape_szt());
 }
 

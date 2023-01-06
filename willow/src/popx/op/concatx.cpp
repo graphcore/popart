@@ -3,7 +3,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <poplar/Tensor.hpp>
 #include <popart/op/concat.hpp>
@@ -15,20 +14,20 @@
 #include "popart/op.hpp"
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 namespace popx {
 class Devicex;
 
 BaseConcatOpx::BaseConcatOpx(Op *op_, Devicex *devicex)
-    : PopOpx(op_, devicex), op(static_cast<ConcatOp *>(op_)) {}
+    : Opx(op_, devicex), op(static_cast<ConcatOp *>(op_)) {}
 
 ConcatOpx::ConcatOpx(Op *op_, Devicex *devicex)
     : BaseConcatOpx(op_, devicex), op(static_cast<ConcatOp *>(op_)) {
@@ -42,9 +41,9 @@ InputCreatorType BaseConcatOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-snap::Tensor BaseConcatOpx::unwindTensorLayout(snap::Tensor tensor,
-                                               InIndex inIndex,
-                                               OutIndex) const {
+poplar::Tensor BaseConcatOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                 InIndex inIndex,
+                                                 OutIndex) const {
   int64_t start = 0L;
   for (int i = 0; i < inIndex; ++i) {
     auto shape = op->inShape(ConcatOp::getInIndex(i));
@@ -66,19 +65,18 @@ view::RegMap BaseConcatOpx::unwindRegion(InIndex inIndex,
   return cop->bwdRegMap(inIndex, outIndex);
 }
 
-void ConcatOpx::grow(snap::program::Sequence &prog) const {
+void ConcatOpx::grow(poplar::program::Sequence &prog) const {
   std::vector<poplar::Tensor> tensors;
   tensors.reserve(op->input->n());
 
   for (int i = 0; i < op->input->n(); ++i) {
-    tensors.push_back(getInTensor(ConcatOp::getInIndex(i)).getPoplarTensor());
+    tensors.push_back(getInTensor(ConcatOp::getInIndex(i)));
   }
 
   poplar::Tensor concat =
       poplar::concat(tensors, static_cast<unsigned>(op->getAxis()));
 
-  setOutTensor(ConcatOp::getOutIndex(),
-               cloneNcopy(prog, snap::Tensor{concat, graph()}));
+  setOutTensor(ConcatOp::getOutIndex(), cloneNcopy(prog, concat));
 }
 
 ConcatInplaceOpx::ConcatInplaceOpx(Op *op_, Devicex *devicex)
@@ -86,33 +84,32 @@ ConcatInplaceOpx::ConcatInplaceOpx(Op *op_, Devicex *devicex)
   verifyOp<ConcatOp>(op_);
 }
 
-void ConcatInplaceOpx::grow(snap::program::Sequence &) const {
+void ConcatInplaceOpx::grow(poplar::program::Sequence &) const {
   std::vector<poplar::Tensor> tensors;
   tensors.reserve(op->input->n());
 
   for (int i = 0; i < op->input->n(); ++i) {
-    tensors.push_back(getInTensor(ConcatOp::getInIndex(i)).getPoplarTensor());
+    tensors.push_back(getInTensor(ConcatOp::getInIndex(i)));
   }
 
   poplar::Tensor concat =
       poplar::concat(tensors, static_cast<unsigned>(op->getAxis()));
 
-  setOutTensor(ConcatOp::getOutIndex(), snap::Tensor{concat, graph()});
+  setOutTensor(ConcatOp::getOutIndex(), concat);
 }
 
 ConcatGradOpx::ConcatGradOpx(Op *op_, Devicex *devicex)
-    : PopOpx(op_, devicex), op(static_cast<ConcatGradOp *>(op_)) {
+    : Opx(op_, devicex), op(static_cast<ConcatGradOp *>(op_)) {
   verifyOp<ConcatGradOp>(op_, Onnx::GradOperators::ConcatGrad);
 }
 
-void ConcatGradOpx::grow(snap::program::Sequence &prog) const {
-  auto input = getInTensor(ConcatGradOp::getInIndex()).getPoplarTensor();
+void ConcatGradOpx::grow(poplar::program::Sequence &prog) const {
+  auto input = getInTensor(ConcatGradOp::getInIndex());
   auto out   = input.slice(static_cast<std::size_t>(op->getStart()),
                          static_cast<std::size_t>(op->getEnd()),
                          static_cast<unsigned>(op->getAxis()));
 
-  setOutTensor(ConcatGradOp::getOutIndex(),
-               cloneNcopy(prog, snap::Tensor{out, graph()}));
+  setOutTensor(ConcatGradOp::getOutIndex(), cloneNcopy(prog, out));
 }
 
 namespace {

@@ -3,10 +3,9 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
+#include <ext/new_allocator.h>
 #include <vector>
+#include <poplar/Graph.hpp>
 #include <poplar/Tensor.hpp>
 #include <poplar/VariableMappingMethod.hpp>
 #include <popops/Sort.hpp>
@@ -20,9 +19,15 @@
 #include "popart/graphcoreoperators.hpp"
 #include "popart/names.hpp"
 #include "popart/op/reducemedian.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/tensorinfo.hpp"
 #include "popart/util.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -30,16 +35,15 @@ class Op;
 namespace popx {
 class Devicex;
 
-ReduceMedianOpx::ReduceMedianOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+ReduceMedianOpx::ReduceMedianOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ReduceMedianOp>(op);
 }
 
-void ReduceMedianOpx::grow(snap::program::Sequence &prog) const {
+void ReduceMedianOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op    = getOp<ReduceMedianOp>();
   const auto &axes  = op.getAxes();
   const auto &input = getInTensor(ReduceMedianOp::getInIndex());
-  auto output       = cloneNcopy(prog, input).getPoplarTensor();
+  auto output       = cloneNcopy(prog, input);
 
   const auto &pp = reducemedianinternal::computePreprocessingParams(
       op.inShape(ReduceMedianOp::getInIndex()), axes);
@@ -58,16 +62,15 @@ void ReduceMedianOpx::grow(snap::program::Sequence &prog) const {
   // Sort the flattened dimension along with indices and select the median
   // values.
   auto indices = sortutilx::getIotaTensor(graph(),
-                                          snap::Tensor{output, graph()},
+                                          output,
                                           pp.axes_complement.size(),
                                           prog,
-                                          getDebugNameAndId("iotaTensor"))
-                     .getPoplarTensor();
-  popops::sortKeyValueInPlace(graph().getPoplarGraph(),
+                                          getDebugNameAndId("iotaTensor"));
+  popops::sortKeyValueInPlace(graph(),
                               output,
                               indices,
                               pp.axes_complement.size(),
-                              prog.getPoplarSequence(),
+                              prog,
                               debugContext("sort"));
 
   size_t median_i;
@@ -93,23 +96,19 @@ void ReduceMedianOpx::grow(snap::program::Sequence &prog) const {
 
   setOutTensor(
       ReduceMedianOp::getOutIndex(),
-      snap::Tensor{
-          output.reshape(outInfo(ReduceMedianOp::getOutIndex()).shape_szt()),
-          graph()});
-  setOutTensor(
-      ReduceMedianOp::getIndicesOutIndex(),
-      snap::Tensor{
-          indices.reshape(
-              outInfo(ReduceMedianOp::getIndicesOutIndex()).shape_szt()),
-          graph()});
+
+      output.reshape(outInfo(ReduceMedianOp::getOutIndex()).shape_szt()));
+  setOutTensor(ReduceMedianOp::getIndicesOutIndex(),
+               indices.reshape(
+                   outInfo(ReduceMedianOp::getIndicesOutIndex()).shape_szt()));
 }
 
 ReduceMedianGradOpx::ReduceMedianGradOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<ReduceMedianGradOp>(op, Onnx::CustomGradOperators::ReduceMedianGrad);
 }
 
-void ReduceMedianGradOpx::grow(snap::program::Sequence &prog) const {
+void ReduceMedianGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &grad_op = getOp<ReduceMedianGradOp>();
   const auto &axes    = grad_op.getAxes();
   const auto &backward_shape =
@@ -121,18 +120,13 @@ void ReduceMedianGradOpx::grow(snap::program::Sequence &prog) const {
       vector_cast<std::size_t>(output_shape),
       poplar::VariableMappingMethod::LINEAR,
       debugContext("initGrad"));
-  popops::zero(graph().getPoplarGraph(),
-               grad.getPoplarTensor(),
-               prog.getPoplarSequence(),
-               debugContext("zeroGrad"));
+  popops::zero(graph(), grad, prog, debugContext("zeroGrad"));
 
   auto grad_top =
-      cloneNcopy(prog, getInTensor(ReduceMedianGradOp::getInIndex()))
-          .getPoplarTensor();
+      cloneNcopy(prog, getInTensor(ReduceMedianGradOp::getInIndex()));
   grad_top = grad_top.reshape(backward_shape);
   auto indices =
-      cloneNcopy(prog, getInTensor(ReduceMedianGradOp::getIndicesInIndex()))
-          .getPoplarTensor();
+      cloneNcopy(prog, getInTensor(ReduceMedianGradOp::getIndicesInIndex()));
   indices = indices.reshape(backward_shape);
 
   const auto &pp =
@@ -160,8 +154,8 @@ void ReduceMedianGradOpx::grow(snap::program::Sequence &prog) const {
   // in the op's input tensor.
   scatterutilx::growScatter(prog,
                             graph(),
-                            snap::Tensor{indices, graph()},
-                            snap::Tensor{grad_top, graph()},
+                            indices,
+                            grad_top,
                             grad,
                             pp.axes_complement.size(),
                             getDebugNameAndId("scatter"));

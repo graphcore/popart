@@ -27,7 +27,7 @@
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
 #include "popart/patterns/patterns.hpp"
-#include "popart/popx/popopx.hpp" // IWYU pragma: keep
+#include "popart/popx/opx.hpp" // IWYU pragma: keep
 #include "popart/vendored/any.hpp"
 
 using namespace popart;

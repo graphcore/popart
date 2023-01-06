@@ -1,5 +1,4 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <poplar/Tensor.hpp>
 #include <popart/op.hpp>
@@ -12,20 +11,20 @@
 #include "popart/names.hpp"
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/slicestruct.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 namespace popx {
 class Devicex;
 
-BaseSliceOpx::BaseSliceOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
+BaseSliceOpx::BaseSliceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 
 InputCreatorType BaseSliceOpx::getInputCreatorType(InIndex inIndex) const {
   if (inIndex != 0) {
@@ -34,8 +33,9 @@ InputCreatorType BaseSliceOpx::getInputCreatorType(InIndex inIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-snap::Tensor
-BaseSliceOpx::unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const {
+poplar::Tensor BaseSliceOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                InIndex,
+                                                OutIndex) const {
   return tensor;
 }
 
@@ -49,8 +49,8 @@ SliceOpx::SliceOpx(Op *op, Devicex *devicex) : BaseSliceOpx(op, devicex) {
   verifyOp<SliceOp>(op);
 }
 
-void SliceOpx::grow(snap::program::Sequence &prog) const {
-  auto t = getInTensor(SliceOp::getInIndex()).getPoplarTensor();
+void SliceOpx::grow(poplar::program::Sequence &prog) const {
+  auto t = getInTensor(SliceOp::getInIndex());
   for (auto slice : getSliceOp()->getSlices()) {
     t = t.slice(slice.start, slice.end, static_cast<unsigned>(slice.axis));
     if (slice.flip) {
@@ -58,21 +58,20 @@ void SliceOpx::grow(snap::program::Sequence &prog) const {
     }
   }
   // we clone and copy t, as this in not an inplace op
-  setOutTensor(SliceOp::getOutIndex(),
-               cloneNcopy(prog, snap::Tensor{t, graph()}));
+  setOutTensor(SliceOp::getOutIndex(), cloneNcopy(prog, t));
 }
 
 SliceOp *SliceOpx::getSliceOp() const { return dynamic_cast<SliceOp *>(op_p); }
 
-void SliceInplaceOpx::grow(snap::program::Sequence &) const {
-  auto t = getInTensor(SliceOp::getInIndex()).getPoplarTensor();
+void SliceInplaceOpx::grow(poplar::program::Sequence &) const {
+  auto t = getInTensor(SliceOp::getInIndex());
   for (auto slice : getSliceInplaceOp()->getSlices()) {
     t = t.slice(slice.start, slice.end, static_cast<unsigned>(slice.axis));
     if (slice.flip) {
       t = t.reverse(static_cast<unsigned>(slice.axis));
     }
   }
-  setOutTensor(SliceOp::getOutIndex(), snap::Tensor{t, graph()});
+  setOutTensor(SliceOp::getOutIndex(), t);
 }
 
 SliceInplaceOp *SliceInplaceOpx::getSliceInplaceOp() const {

@@ -1,8 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <gcl/Collectives.hpp>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <poplar/Tensor.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
@@ -11,18 +8,21 @@
 #include <popart/popx/op/collectives/replicatedallreducex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/commgroup.hpp"
 #include "popart/graphcoreoperators.hpp"
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
 #include "popart/op/collectives/collectives.hpp"
 #include "popart/popx/op/collectives/collectivesx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/region.hpp" // IWYU pragma: keep
+#include "popart/replicagrouping.hpp"
 #include "popart/util.hpp"
 
 namespace poplar {
 class OptionFlags;
+namespace program {
+class Sequence;
+} // namespace program
 } // namespace poplar
 
 namespace popart {
@@ -36,17 +36,17 @@ ReplicatedAllReduceOpx::ReplicatedAllReduceOpx(Op *op, Devicex *devicex)
   verifyOp<CollectivesBaseOp>(op);
 }
 
-void ReplicatedAllReduceOpx::grow(snap::program::Sequence &prog) const {
+void ReplicatedAllReduceOpx::grow(poplar::program::Sequence &prog) const {
   const auto &rarOp = getOp<ReplicatedAllReduceOp>();
 
   const auto inIndex      = ReplicatedAllReduceOp::getInIndex();
-  poplar::Tensor toReduce = getInTensor(inIndex).getPoplarTensor();
+  poplar::Tensor toReduce = getInTensor(inIndex);
   const poplar::OptionFlags &allReduceOptions = dv_p->lowering().gclOptions;
   poplar::Tensor output                       = gcl::allReduceCrossReplica(
-      graph().getPoplarGraph(),
+      graph(),
       toReduce,
       getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
-      prog.getPoplarSequence(),
+      prog,
       toGclCommGroup(rarOp.getReplicaGrouping()),
       debugContext("replicatedAllReduce"),
       allReduceOptions);
@@ -61,17 +61,16 @@ void ReplicatedAllReduceOpx::grow(snap::program::Sequence &prog) const {
     setOutViewChangers(ReplicatedAllReduceOp::getOutIndex(),
                        getInViewChangers(ReplicatedAllReduceOp::getInIndex()));
   }
-  setOutTensor(ReplicatedAllReduceOp::getOutIndex(),
-               snap::Tensor{output, graph()});
+  setOutTensor(ReplicatedAllReduceOp::getOutIndex(), output);
 }
 
 InputCreatorType ReplicatedAllReduceOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-snap::Tensor ReplicatedAllReduceOpx::unwindTensorLayout(snap::Tensor tensor,
-                                                        InIndex,
-                                                        OutIndex) const {
+poplar::Tensor ReplicatedAllReduceOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                          InIndex,
+                                                          OutIndex) const {
   return tensor;
 }
 
@@ -86,19 +85,20 @@ ReplicatedAllReduceInplaceOpx::ReplicatedAllReduceInplaceOpx(Op *op,
       op, Onnx::CustomOperators::ReplicatedAllReduceInplace);
 }
 
-void ReplicatedAllReduceInplaceOpx::grow(snap::program::Sequence &prog) const {
+void ReplicatedAllReduceInplaceOpx::grow(
+    poplar::program::Sequence &prog) const {
   const auto &rarOp = getOp<ReplicatedAllReduceOp>();
 
   const auto inIndex      = ReplicatedAllReduceInplaceOp::getInIndex();
-  poplar::Tensor toReduce = getInTensor(inIndex).getPoplarTensor();
+  poplar::Tensor toReduce = getInTensor(inIndex);
   const poplar::OptionFlags &allReduceOptions = dv_p->lowering().gclOptions;
   auto inputShape                             = toReduce.shape();
 
   gcl::allReduceInPlaceCrossReplica(
-      graph().getPoplarGraph(),
+      graph(),
       toReduce,
       getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
-      prog.getPoplarSequence(),
+      prog,
       toGclCommGroup(rarOp.getReplicaGrouping()),
       debugContext("replicatedAllReduce"),
       allReduceOptions);
@@ -115,8 +115,7 @@ void ReplicatedAllReduceInplaceOpx::grow(snap::program::Sequence &prog) const {
     setOutViewChangers(ReplicatedAllReduceOp::getOutIndex(),
                        getInViewChangers(ReplicatedAllReduceOp::getInIndex()));
   }
-  setOutTensor(ReplicatedAllReduceInplaceOp::getOutIndex(),
-               snap::Tensor{toReduce, graph()});
+  setOutTensor(ReplicatedAllReduceInplaceOp::getOutIndex(), toReduce);
 }
 
 namespace {

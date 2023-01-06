@@ -2,14 +2,12 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <ext/new_allocator.h>
 #include <memory>
 #include <queue>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <vector>
 #include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popops/OperationDef.hpp>
@@ -25,10 +23,16 @@
 #include "popart/op/variadic.hpp"
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/region.hpp" // IWYU pragma: keep
 #include "popart/tensorinfo.hpp"
 #include "popart/util.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -37,16 +41,16 @@ namespace popart {
 namespace popx {
 class Devicex;
 
-SumOpx::SumOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+SumOpx::SumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<SumOp>(op, {Onnx::Operators::Sum_6, Onnx::Operators::Sum_8});
 }
 
-void SumOpx::grow(snap::program::Sequence &prog) const {
+void SumOpx::grow(poplar::program::Sequence &prog) const {
 
   SumOp &sumOp = getOp<SumOp>();
 
   // The input tensors
-  std::vector<snap::Tensor> inputs;
+  std::vector<poplar::Tensor> inputs;
 
   // The "owner" of all expr nodes
   std::vector<std::unique_ptr<popops::expr::Expr>> exprs;
@@ -73,8 +77,8 @@ void SumOpx::grow(snap::program::Sequence &prog) const {
   }
 
   // Compute the sum
-  auto sum = snap::popops::map(
-      graph(), *expr.front(), inputs, prog, debugContext("sum"));
+  auto sum =
+      popops::map(graph(), *expr.front(), inputs, prog, debugContext("sum"));
   setOutTensor(SumOp::getOutIndex(), sum);
 }
 
@@ -95,8 +99,8 @@ InputCreatorType SumOpx::getInputCreatorType(InIndex index) const {
   }
 }
 
-snap::Tensor
-SumOpx::unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const {
+poplar::Tensor
+SumOpx::unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const {
   return tensor;
 }
 
@@ -104,10 +108,9 @@ view::RegMap SumOpx::unwindRegion(InIndex, OutIndex) const {
   return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
-SumArgGradOpx::SumArgGradOpx(Op *op_, Devicex *devicex_)
-    : PopOpx(op_, devicex_) {}
+SumArgGradOpx::SumArgGradOpx(Op *op_, Devicex *devicex_) : Opx(op_, devicex_) {}
 
-void SumArgGradOpx::grow(snap::program::Sequence &prog) const {
+void SumArgGradOpx::grow(poplar::program::Sequence &prog) const {
   auto gradOp = getOp<SumArgGradOp>();
 
   auto shapeOfInputToBwdOp = inInfo(VariadicGradOp::getGradInIndex()).shape();
@@ -119,13 +122,12 @@ void SumArgGradOpx::grow(snap::program::Sequence &prog) const {
 
   // Remove axes from the result that were not present ( or 1) in the input to
   // the fwd op
-  auto out = popops::reduce(
-      graph().getPoplarGraph(),
-      getInTensor(SumArgGradOp::getGradInIndex()).getPoplarTensor(),
-      vXtoY<int64_t, std::size_t>(axes),
-      {popops::Operation::ADD},
-      prog.getPoplarSequence(),
-      debugContext("add"));
+  auto out = popops::reduce(graph(),
+                            getInTensor(SumArgGradOp::getGradInIndex()),
+                            vXtoY<int64_t, std::size_t>(axes),
+                            {popops::Operation::ADD},
+                            prog,
+                            debugContext("add"));
 
   logging::info("{} Shape of SumArgGradOpx output {} {}",
                 out,
@@ -133,11 +135,8 @@ void SumArgGradOpx::grow(snap::program::Sequence &prog) const {
                 outInfo(SumArgGradOp::getOutIndex()).shape_szt());
 
   // Reshape the output, to add 1's if needed
-  setOutTensor(
-      SumArgGradOp::getOutIndex(),
-      snap::Tensor{
-          out.reshape(outInfo(SumArgGradOp::getOutIndex()).shape_szt()),
-          graph()});
+  setOutTensor(SumArgGradOp::getOutIndex(),
+               out.reshape(outInfo(SumArgGradOp::getOutIndex()).shape_szt()));
 }
 
 namespace {

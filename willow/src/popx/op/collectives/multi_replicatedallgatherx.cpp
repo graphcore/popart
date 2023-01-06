@@ -1,9 +1,15 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <ext/new_allocator.h>
+#include <gcl/CollectiveBalancedReorder.hpp>
 #include <gcl/Collectives.hpp>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
 #include <vector>
+#include <poplar/Graph.hpp>
 #include <poplar/Tensor.hpp>
 #include <popops/DynamicSlice.hpp>
 #include <popart/op/collectives/multi_replicatedallgather.hpp>
@@ -13,15 +19,27 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 
-#include "popart/commgroup.hpp"
+#include "popart/error.hpp"
 #include "popart/graphcoreoperators.hpp"
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
-#include "popart/op/collectives/collectives.hpp"
+#include "popart/op.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/linearmapper.hpp"
 #include "popart/popx/op/collectives/collectivesx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
+#include "popart/popx/viewchangers.hpp"
 #include "popart/region.hpp" // IWYU pragma: keep
-#include "popart/util.hpp"
+#include "popart/replicatedtensorsharding.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 namespace popx {
@@ -41,16 +59,13 @@ void MultiReplicatedAllGatherOpx::growPart(OpxGrowPartId id) const {
   OutIndex outputIndex = (OutIndex)id;
 
   // The input tensor is a pure pass-through
-  poplar::Tensor inputTensor  = getInTensor(id).flatten().getPoplarTensor();
+  poplar::Tensor inputTensor  = getInTensor(id).flatten();
   state->configuredInputs[id] = inputTensor;
 
   // The output tensor should be dyamically sliceable
   size_t numSlices            = myOp.getCommSize();
   poplar::Tensor outputTensor = popops::createSliceableTensorFromSlice(
-      outGraph(outputIndex).getPoplarGraph(),
-      inputTensor.expand({0}),
-      {0},
-      {numSlices});
+      outGraph(outputIndex), inputTensor.expand({0}), {0}, {numSlices});
   state->configuredOutputs[id] = outputTensor;
 
   if (getOp<MultiReplicatedAllGatherOp>().undoRearrangeGrowPartForCollective(
@@ -65,12 +80,10 @@ void MultiReplicatedAllGatherOpx::growPart(OpxGrowPartId id) const {
           op_p->debugName());
     }
   }
-  setOutTensor(id,
-               snap::Tensor(outputTensor.reshape(myOp.outInfo(id).shape_szt()),
-                            outGraph(outputIndex)));
+  setOutTensor(id, outputTensor.reshape(myOp.outInfo(id).shape_szt()));
 }
 
-void MultiReplicatedAllGatherOpx::grow(snap::program::Sequence &prog) const {
+void MultiReplicatedAllGatherOpx::grow(poplar::program::Sequence &prog) const {
   logging::opx::debug("Growing MultiReplicatedAllGatherOpx");
   auto &myOp = getOp<MultiReplicatedAllGatherOp>();
   MultiCollectivesOpxState *state =
@@ -106,10 +119,10 @@ void MultiReplicatedAllGatherOpx::grow(snap::program::Sequence &prog) const {
 
   // Perform the GCL call on the concatenated tensors
   gcl::allGatherToDestinationCrossReplica(
-      dv_p->lowering().graph().getPoplarGraph(),
+      dv_p->lowering().graph(),
       toGatherTensor,
       destinationTensor,
-      prog.getPoplarSequence(),
+      prog,
       toGclCommGroup(myOp.getReplicaGrouping()),
       "MultiReplicatedAllGather",
       dv_p->lowering().gclOptions);
@@ -118,16 +131,15 @@ void MultiReplicatedAllGatherOpx::grow(snap::program::Sequence &prog) const {
 InputCreatorType
 MultiReplicatedAllGatherOpx::getInputCreatorType(InIndex index) const {
   return index == 0 ? InputCreatorType::CanCreateOrUnwind
-                    : PopOpx::getInputCreatorType(index);
+                    : Opx::getInputCreatorType(index);
 }
 
-snap::Tensor
-MultiReplicatedAllGatherOpx::unwindTensorLayout(snap::Tensor tensor,
+poplar::Tensor
+MultiReplicatedAllGatherOpx::unwindTensorLayout(poplar::Tensor tensor,
                                                 InIndex in,
                                                 OutIndex out) const {
   auto cbr = createCollectiveBalancedReorder(tensor, in);
-  return snap::Tensor{cbr->createReplicaSlice(tensor.elementType()),
-                      inGraph(in)};
+  return cbr->createReplicaSlice(tensor.elementType());
 }
 
 view::RegMap MultiReplicatedAllGatherOpx::unwindRegion(InIndex in,
@@ -143,7 +155,7 @@ MultiReplicatedAllGatherOpx::mustExistBeforeCreate(InIndex) const {
   return {};
 }
 
-snap::Tensor MultiReplicatedAllGatherOpx::createInputTensor(
+poplar::Tensor MultiReplicatedAllGatherOpx::createInput(
     InIndex index,
     const poplar::DebugNameAndId &dnai) const {
   auto &op = getOp<MultiReplicatedAllGatherOp>();
@@ -151,13 +163,10 @@ snap::Tensor MultiReplicatedAllGatherOpx::createInputTensor(
   if (index < op.output->n()) {
     auto outInfo = op.outInfo(index);
     auto outTensor =
-        snap::Tensor{inGraph(index).getPoplarGraph().addVariable(
-                         popType(outInfo), outInfo.shape_szt(), dnai),
-                     inGraph(index)};
+        inGraph(index).addVariable(popType(outInfo), outInfo.shape_szt(), dnai);
     dv_p->lowering().getLinearMapper().mapTensor(inGraph(index), outTensor);
     auto cbr = createCollectiveBalancedReorder(outTensor, index);
-    return snap::Tensor{cbr->createReplicaSlice(popType(outInfo)),
-                        inGraph(index)};
+    return cbr->createReplicaSlice(popType(outInfo));
   }
 
   throw error("MultiReplicatedAllGatherOpx::createInput: Invalid index = " +

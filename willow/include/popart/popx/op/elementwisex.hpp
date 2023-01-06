@@ -2,24 +2,26 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_ELEMENTWISEX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_ELEMENTWISEX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
 #include <cstdint>
 #include <memory>
 #include <set>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <utility>
-#include <popart/popx/popopx.hpp>
+#include <poplar/OptionFlags.hpp>
+#include <popops/ExprOp.hpp>
+#include <popart/popx/opx.hpp>
 
 #include "popart/names.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "poplar/Tensor.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -34,36 +36,36 @@ public:
   EwuComputex()          = default;
   virtual ~EwuComputex() = default;
 
-  virtual snap::Tensor outplace(snap::program::Sequence &,
-                                snap::Graph &,
-                                const snap::Tensor &,
-                                const poplar::DebugNameAndId &,
-                                const std::string &) const;
+  virtual poplar::Tensor outplace(poplar::program::Sequence &,
+                                  poplar::Graph &,
+                                  const poplar::Tensor &,
+                                  const poplar::DebugNameAndId &,
+                                  const std::string &) const;
 
-  virtual void inplace(snap::program::Sequence &,
-                       snap::Graph &,
-                       const snap::Tensor &t,
-                       const poplar::DebugNameAndId &,
+  virtual void inplace(poplar::program::Sequence &,
+                       poplar::Graph &,
+                       const poplar::Tensor &t,
+                       const poplar::DebugNameAndId &dnai,
                        const std::string &) const = 0;
 
-  snap::Tensor cloneNcopy(snap::program::Sequence &,
-                          snap::Graph &,
-                          const snap::Tensor &,
-                          const poplar::DebugNameAndId &) const;
+  poplar::Tensor cloneNcopy(poplar::program::Sequence &,
+                            poplar::Graph &,
+                            const poplar::Tensor &,
+                            const poplar::DebugNameAndId &) const;
 
   // certain ops reshape the input tensor (eg Softmax and LogSoftmax)
-  virtual snap::Tensor reshape(const snap::Tensor &t) const { return t; }
+  virtual poplar::Tensor reshape(const poplar::Tensor &t) const { return t; }
 
-  static snap::Tensor coerceTo2D(const snap::Tensor &t, int64_t axis);
+  static poplar::Tensor coerceTo2D(const poplar::Tensor &t, int64_t axis);
 };
 
 // Base class for elementwise unary operations
-class ElementWiseUnaryOpx : public PopOpx {
+class ElementWiseUnaryOpx : public Opx {
 public:
   ElementWiseUnaryOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const override;
-  snap::Tensor
-      unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const override;
+  poplar::Tensor
+      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const override;
   view::RegMap unwindRegion(InIndex, OutIndex) const override;
 };
 
@@ -73,7 +75,7 @@ public:
   ElementWiseUnaryOutplaceOpx(Op *,
                               Devicex *,
                               std::unique_ptr<EwuComputex> cx_);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   std::unique_ptr<EwuComputex> cx;
@@ -86,7 +88,7 @@ public:
                              Devicex *devx,
                              std::unique_ptr<EwuComputex> cx_)
       : ElementWiseUnaryOpx(op, devx), cx(std::move(cx_)) {}
-  void grow(snap::program::Sequence &prog) const final;
+  void grow(poplar::program::Sequence &prog) const final;
 
 private:
   std::unique_ptr<EwuComputex> cx;
@@ -136,36 +138,44 @@ public:
   InIndex getOutplaceArgInIndex() const;
 
   // Evaluate the operation out-of-place
-  virtual snap::Tensor outplace(snap::program::Sequence &,
-                                snap::Graph &,
-                                const snap::Tensor &,
-                                const snap::Tensor &,
-                                const poplar::DebugNameAndId &,
-                                const std::string &) const = 0;
+  virtual poplar::Tensor outplace(poplar::program::Sequence &,
+                                  poplar::Graph &,
+                                  const poplar::Tensor &,
+                                  const poplar::Tensor &,
+                                  const poplar::DebugNameAndId &,
+                                  const std::string &) const = 0;
 
   // Evaluate the operation in-place if possible
-  virtual snap::Tensor maybeInplace(snap::program::Sequence &,
-                                    snap::Graph &,
-                                    const snap::Tensor &,
-                                    const snap::Tensor &,
-                                    const poplar::DebugNameAndId &,
-                                    const std::string &) const = 0;
+  virtual poplar::Tensor maybeInplace(poplar::program::Sequence &,
+                                      poplar::Graph &,
+                                      poplar::Tensor &,
+                                      poplar::Tensor &,
+                                      const poplar::DebugNameAndId &,
+                                      const std::string &) const = 0;
+
+  poplar::Tensor mapMaybeInPlace(poplar::Graph &graph,
+                                 popops::expr::BinaryOpType op,
+                                 poplar::Tensor &tInOut,
+                                 poplar::Tensor &tIn,
+                                 poplar::program::Sequence &prog,
+                                 const poplar::DebugContext &debugContext,
+                                 const poplar::OptionFlags &options = {},
+                                 const std::string &name            = "") const;
 
 private:
   InplacePolicy inplacePolicy;
 };
 
 // Base class for elementwise binary operations
-class ElementWiseBinaryOpx : public PopOpx {
+class ElementWiseBinaryOpx : public Opx {
 public:
   ElementWiseBinaryOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const override;
   std::set<TensorId> mustExistBeforeCreate(InIndex) const override;
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const override;
-  snap::Tensor
-  unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const override;
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const override;
+  poplar::Tensor
+  unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const override;
   view::RegMap unwindRegion(InIndex, OutIndex) const override;
 };
 
@@ -177,7 +187,7 @@ public:
                                std::unique_ptr<EwbComputex> cx_)
       : ElementWiseBinaryOpx(op, devx), cx(std::move(cx_)) {}
 
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   std::unique_ptr<EwbComputex> cx;
@@ -191,14 +201,14 @@ public:
                               std::unique_ptr<EwbComputex> cx_)
       : ElementWiseBinaryOpx(op, devx), cx(std::move(cx_)) {}
 
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   std::unique_ptr<EwbComputex> cx;
 };
 
 // Base class for binary comparison operations
-class BinaryComparisonOpx : public PopOpx {
+class BinaryComparisonOpx : public Opx {
 public:
   BinaryComparisonOpx(Op *, Devicex *);
 };

@@ -2,16 +2,16 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_MINX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_MINX_HPP_
 
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/names.hpp>
 
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -19,22 +19,22 @@ class Op;
 namespace popx {
 class Devicex;
 
-class MinOpx : public PopOpx {
+class MinOpx : public Opx {
 public:
   MinOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   InputCreatorType getInputCreatorType(InIndex) const override;
 
-  snap::Tensor
-      unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const override;
+  poplar::Tensor
+      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const override;
   view::RegMap unwindRegion(InIndex, OutIndex) const override;
 };
 
-class MinArgGradOpx : public PopOpx {
+class MinArgGradOpx : public Opx {
 public:
   MinArgGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

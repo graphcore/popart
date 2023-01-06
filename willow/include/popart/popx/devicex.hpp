@@ -11,6 +11,7 @@
 #include <set>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 #include <poplar/Engine.hpp> // IWYU pragma: keep
 #include <poplar/StreamCallback.hpp>
@@ -37,6 +38,9 @@ class Tensor;
 class TensorInfo;
 
 namespace popx {
+namespace serialization {
+class WriterImpl;
+} // namespace serialization
 
 using PopStreamId = std::string;
 

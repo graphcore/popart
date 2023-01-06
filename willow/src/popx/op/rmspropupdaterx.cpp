@@ -1,9 +1,9 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
 #include <algorithm>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <vector>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/op/rmspropupdater.hpp>
@@ -12,13 +12,13 @@
 
 #include "popart/graphcoreoperators.hpp"
 #include "popart/optimizervalue.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -29,11 +29,11 @@ namespace popx {
 class Devicex;
 
 RMSPropUpdaterOpx::RMSPropUpdaterOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<RMSPropUpdaterOp>(op, Onnx::CustomOperators::RMSPropUpdater);
 }
 
-void RMSPropUpdaterOpx::grow(snap::program::Sequence &prog) const {
+void RMSPropUpdaterOpx::grow(poplar::program::Sequence &prog) const {
 
   // see adaptive.hpp for the equations implemented here
 
@@ -42,7 +42,7 @@ void RMSPropUpdaterOpx::grow(snap::program::Sequence &prog) const {
   auto grad  = getInTensor(RMSPropUpdaterOp::getGradInIndex());
   auto accl1 = getInTensor(RMSPropUpdaterOp::getAccl1InIndex());
 
-  std::vector<snap::Tensor> tensors = {grad, accl1};
+  std::vector<poplar::Tensor> tensors = {grad, accl1};
 
   pe::Any rmsexpr(pe::Const(0.0f));
   if (hasInput(RMSPropUpdaterOp::getAccl2InIndex())) {
@@ -73,14 +73,14 @@ void RMSPropUpdaterOpx::grow(snap::program::Sequence &prog) const {
     denominatorexpr = pe::Add(pe::Sqrt(rmsexpr), epsexpr);
   }
 
-  auto updater = snap::popops::map(
-      graph(),
-      pe::Cast(
-          pe::Divide(pe::Cast(pe::_1, accl1.elementType()), denominatorexpr),
-          grad.elementType()),
-      tensors,
-      prog,
-      debugContext(""));
+  auto updater =
+      popops::map(graph(),
+                  pe::Cast(pe::Divide(pe::Cast(pe::_1, accl1.elementType()),
+                                      denominatorexpr),
+                           grad.elementType()),
+                  tensors,
+                  prog,
+                  debugContext(""));
 
   if (hasInViewChangers(RMSPropUpdaterOp::getGradInIndex())) {
     setOutViewChangers(RMSPropUpdaterOp::getUpdaterOutIndex(),

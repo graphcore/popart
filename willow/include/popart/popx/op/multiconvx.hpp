@@ -2,22 +2,23 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_MULTICONVX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_MULTICONVX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <poplar/OptionFlags.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/popx/op/convbasex.hpp>
+
+#include "popart/popx/debugcontextx.hpp"
 
 namespace poplin {
 namespace multiconv {
 struct CreateTensorArgs;
 } // namespace multiconv
 } // namespace poplin
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -29,13 +30,13 @@ class MultiConvOpx : public MultiConvBaseOpx {
 public:
   MultiConvOpx(Op *, Devicex *);
 
-  snap::Tensor createWeightsInput(const poplar::DebugNameAndId &dnai,
-                                  int convIndex) const final;
-  snap::Tensor createDataInput(const poplar::DebugNameAndId &dnai,
-                               int convIndex) const final;
-  std::vector<snap::Tensor>
-  convolve(snap::program::Sequence &,
-           const std::vector<snap::Tensor> &) const final;
+  poplar::Tensor createWeightsInput(const poplar::DebugNameAndId &dnai,
+                                    int convIndex) const final;
+  poplar::Tensor createDataInput(const poplar::DebugNameAndId &dnai,
+                                 int convIndex) const final;
+  std::vector<poplar::Tensor>
+  convolve(poplar::program::Sequence &,
+           const std::vector<poplar::Tensor> &) const final;
 
 private:
   std::vector<poplin::multiconv::CreateTensorArgs>
@@ -46,8 +47,8 @@ private:
 class MultiConvWeightsGradOpx : public MultiConvWeightsGradBaseOpx {
 public:
   MultiConvWeightsGradOpx(Op *, Devicex *);
-  std::vector<snap::Tensor>
-  calculateWeightDeltas(snap::program::Sequence &) const final;
+  std::vector<poplar::Tensor>
+  calculateWeightDeltas(poplar::program::Sequence &) const final;
 
 private:
   poplar::OptionFlags getGlobalOptions() const;

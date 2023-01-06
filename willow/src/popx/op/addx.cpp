@@ -1,10 +1,10 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <memory>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <string>
 #include <vector>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
+#include <popops/ExprOp.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/add.hpp>
 #include <popart/popx/op/addx.hpp>
@@ -14,17 +14,19 @@
 #include "popart/op.hpp"
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
+#include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/elementwisex.hpp"
 #include "popart/popx/op/reducesumx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/sessionoptions.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
+
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 namespace popx {
@@ -32,22 +34,30 @@ class Devicex;
 
 AddComputex::AddComputex(EwbComputex::InplacePolicy ip) : EwbComputex(ip) {}
 
-snap::Tensor AddComputex::outplace(snap::program::Sequence &prog,
-                                   snap::Graph &graph,
-                                   const snap::Tensor &a,
-                                   const snap::Tensor &b,
-                                   const poplar::DebugNameAndId &dnai,
-                                   const std::string &name) const {
-  return snap::popops::add(graph, a, b, prog, {dnai, name});
+poplar::Tensor AddComputex::outplace(poplar::program::Sequence &prog,
+                                     poplar::Graph &graph,
+                                     const poplar::Tensor &a,
+                                     const poplar::Tensor &b,
+                                     const poplar::DebugNameAndId &dnai,
+                                     const std::string &name) const {
+  return popops::add(graph, a, b, prog, {dnai, name});
 }
 
-snap::Tensor AddComputex::maybeInplace(snap::program::Sequence &prog,
-                                       snap::Graph &graph,
-                                       const snap::Tensor &tInOut,
-                                       const snap::Tensor &tIn,
-                                       const poplar::DebugNameAndId &dnai,
-                                       const std::string &name) const {
-  return snap::popops::addMaybeInPlace(graph, tInOut, tIn, prog, {dnai, name});
+poplar::Tensor AddComputex::maybeInplace(poplar::program::Sequence &prog,
+                                         poplar::Graph &graph,
+                                         poplar::Tensor &tInOut,
+                                         poplar::Tensor &tIn,
+                                         const poplar::DebugNameAndId &dnai,
+                                         const std::string &name) const {
+
+  return mapMaybeInPlace(graph,
+                         popops::expr::BinaryOpType::ADD,
+                         tInOut,
+                         tIn,
+                         prog,
+                         {dnai, name},
+                         {},
+                         name);
 }
 
 AddOpx::AddOpx(Op *op, Devicex *devicex)

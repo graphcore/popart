@@ -1,11 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <limits>
 #include <memory>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <utility>
 #include <vector>
+#include <poplar/Tensor.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
 #include <popart/popx/op/exchange/hostcopyx.hpp>
 #include <popart/popx/opxmanager.hpp>
@@ -14,19 +13,20 @@
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
 #include "popart/op/exchange/exchange.hpp"
+#include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/exchange/exchangex.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/region.hpp" // IWYU pragma: keep
 #include "popart/tensor.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorindex.hpp"
 #include "popart/tensorlocation.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -42,12 +42,12 @@ HostLoadOpx::HostLoadOpx(Op *op, Devicex *devicex) : HostBaseOpx(op, devicex) {
   inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
-void HostLoadOpx::grow(snap::program::Sequence &prog) const {
+void HostLoadOpx::grow(poplar::program::Sequence &prog) const {
   auto &hostLoadOp = getOp<HostLoadOp>();
 
   TensorId inTensorId =
       hostLoadOp.input->tensor(HostLoadOp::getLocalTensorInIndex())->id;
-  snap::Tensor inTensor = getInTensor(HostLoadOp::getLocalTensorInIndex());
+  poplar::Tensor inTensor = getInTensor(HostLoadOp::getLocalTensorInIndex());
 
   logging::opx::debug(
       "[HostLoadOpx] Growing HostLoad for tensor {} -> {}, "
@@ -96,12 +96,12 @@ InputCreatorType HostLoadOpx::getInputCreatorType(InIndex index) const {
     // `Unwind`: Fallback if creating the tensor is not possible
     return InputCreatorType::CanCreateOrUnwind;
   }
-  return PopOpx::getInputCreatorType(index);
+  return Opx::getInputCreatorType(index);
 }
 
-snap::Tensor
-HostLoadOpx::createInputTensor(InIndex index,
-                               const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+HostLoadOpx::createInput(InIndex index,
+                         const poplar::DebugNameAndId &dnai) const {
   auto &hostLoadOp = getOp<HostLoadOp>();
   auto descriptor  = hostLoadOp.getExchangeDescriptor(0);
   std::shared_ptr<ExchangeDescriptorx> descriptorx =
@@ -109,13 +109,13 @@ HostLoadOpx::createInputTensor(InIndex index,
   return descriptorx->create(inGraph(index), inInfo(index));
 }
 
-snap::Tensor HostLoadOpx::unwindTensorLayout(snap::Tensor tensor,
-                                             InIndex in,
-                                             OutIndex out) const {
+poplar::Tensor HostLoadOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                               InIndex in,
+                                               OutIndex out) const {
   auto &hostLoadOp = getOp<HostLoadOp>();
   std::shared_ptr<ExchangeDescriptorx> descriptorx =
       getExchangeDescriptorx(dv_p, hostLoadOp.getExchangeDescriptor(0));
-  return descriptorx->unwind(srcVirtualGraph(in), tensor);
+  return descriptorx->unwind(srcGraph(in), tensor);
 }
 
 view::RegMap HostLoadOpx::unwindRegion(InIndex, OutIndex) const {
@@ -134,12 +134,12 @@ HostStoreOpx::HostStoreOpx(Op *op, Devicex *devicex)
   inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
-void HostStoreOpx::grow(snap::program::Sequence &prog) const {
+void HostStoreOpx::grow(poplar::program::Sequence &prog) const {
   auto &hostStoreOp = getOp<HostStoreOp>();
 
   TensorId inTensorId =
       hostStoreOp.input->tensor(HostStoreOp::getLocalTensorInIndex())->id;
-  snap::Tensor inTensor = getInTensor(HostStoreOp::getLocalTensorInIndex());
+  poplar::Tensor inTensor = getInTensor(HostStoreOp::getLocalTensorInIndex());
 
   logging::opx::debug(
       "[HostStoreOpx] Growing HostStore for tensor {} using Stream {}",
@@ -174,12 +174,12 @@ InputCreatorType HostStoreOpx::getInputCreatorType(InIndex index) const {
     // IO tiles
     return InputCreatorType::CanCreate;
   }
-  return PopOpx::getInputCreatorType(index);
+  return Opx::getInputCreatorType(index);
 }
 
-snap::Tensor
-HostStoreOpx::createInputTensor(InIndex index,
-                                const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+HostStoreOpx::createInput(InIndex index,
+                          const poplar::DebugNameAndId &dnai) const {
   auto &hostStoreOp = getOp<HostStoreOp>();
   auto descriptor   = hostStoreOp.getExchangeDescriptor(0);
   std::shared_ptr<ExchangeDescriptorx> descriptorx =

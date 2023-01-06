@@ -7,14 +7,14 @@
 #include <vector>
 #include <popart/popx/op/basesortx.hpp>
 
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/tensorinfo.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -25,16 +25,16 @@ class Devicex;
 class TopKOpx : public BaseSortOpx {
 public:
   TopKOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   unsigned K;
 };
 
-class TopKGradOpx : public PopOpx {
+class TopKGradOpx : public Opx {
 public:
   TopKGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   // The info of the output of this Op
   const std::vector<size_t> &getGradOutShape() const;
 

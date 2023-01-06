@@ -2,14 +2,14 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_ARGMINX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_ARGMINX_HPP_
 
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/popx/op/argextremax.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 
@@ -20,8 +20,8 @@ public:
   using ArgExtremaOpx::ArgExtremaOpx;
 
 private:
-  snap::Tensor extremaOp(snap::program::Sequence &,
-                         const snap::Tensor &) const final;
+  poplar::Tensor extremaOp(poplar::program::Sequence &,
+                           const poplar::Tensor &) const final;
 };
 
 } // namespace popx

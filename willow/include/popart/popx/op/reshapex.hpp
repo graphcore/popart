@@ -2,15 +2,15 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_RESHAPEX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_RESHAPEX_HPP_
 
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -18,26 +18,26 @@ class Op;
 namespace popx {
 class Devicex;
 
-class ReshapeBaseOpx : public PopOpx {
+class ReshapeBaseOpx : public Opx {
 public:
   ReshapeBaseOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const final;
-  snap::Tensor unwindTensorLayout(snap::Tensor tensor,
-                                  InIndex inIndex,
-                                  OutIndex outIndex) const final;
+  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
+                                    InIndex inIndex,
+                                    OutIndex outIndex) const final;
   view::RegMap unwindRegion(InIndex inIndex, OutIndex outIndex) const final;
 };
 
 class ReshapeOpx : public ReshapeBaseOpx {
 public:
   ReshapeOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class ReshapeInplaceOpx : public ReshapeBaseOpx {
 public:
   ReshapeInplaceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 // The gradient of a reshape is the reshape in reverse

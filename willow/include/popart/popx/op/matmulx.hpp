@@ -2,30 +2,31 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_MATMULX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_MATMULX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
 #include <cstddef>
 #include <set>
-#include <snap/Tensor.hpp>
 #include <utility>
 #include <vector>
-#include <poplar/Program.hpp>
+#include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
+
+#include "popart/popx/debugcontextx.hpp"
 
 namespace poplar {
 class OptionFlags;
 } // namespace poplar
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class MatMulOp;
 class MatMulBaseOp;
 class Op;
+
 namespace popx {
 class Devicex;
 } // namespace popx
@@ -33,31 +34,30 @@ class Devicex;
 enum class MatMulPartialsType;
 namespace popx {
 
-class MatMulOpx : public PopOpx {
+class MatMulOpx : public Opx {
 public:
   MatMulOpx(Op *, Devicex *);
   ~MatMulOpx() override = default;
 
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const final;
   InputCreatorType getInputCreatorType(InIndex index) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex index0) const final;
 
   MatMulOp *getMatMulOp() const;
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
-  poplar::Type getOutputType(const snap::Tensor &output) const;
+  poplar::Type getOutputType(const poplar::Tensor &output) const;
   static std::vector<std::size_t> onnxShapeToPoplar(const Shape &shape);
   static void appendPoplarOptionsForOp(const MatMulBaseOp &op,
                                        poplar::OptionFlags &opts);
   static void addPartialsType(const MatMulPartialsType &partialsType,
                               poplar::OptionFlags &opts);
 
-  static std::pair<snap::Tensor, snap::Tensor>
+  static std::pair<poplar::Tensor, poplar::Tensor>
   groupedMatMulInputsFromOpxInputs(MatMulBaseOp &matmul,
-                                   snap::Tensor lhs,
-                                   snap::Tensor rhs);
+                                   poplar::Tensor lhs,
+                                   poplar::Tensor rhs);
 
   // Check that mamtul pre-planning has worked, and that growing the matmul
   // operation has not added unexpected entries to the planning cache. Note:

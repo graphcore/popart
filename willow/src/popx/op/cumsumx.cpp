@@ -2,14 +2,11 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <ext/new_allocator.h>
 #include <functional>
 #include <numeric>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <poplar/Tensor.hpp>
-#include <poplar/Type.hpp>
 #include <poplin/MatMul.hpp>
 #include <popart/op/cumsum.hpp>
 #include <popart/popx/op/cumsumx.hpp>
@@ -18,7 +15,13 @@
 #include "popart/error.hpp"
 #include "popart/logging.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -32,16 +35,14 @@ namespace {
 // exclusive/reverse:  1) F/F 2) T/F 3) F/T 4) T/T
 //   triangular type:     11     01     10     00
 //                        01     00     11     10
-poplar::Tensor triangularMatrix(const PopOpx &opx,
+poplar::Tensor triangularMatrix(const Opx &opx,
                                 std::size_t triangularSize_,
                                 bool exclusive_,
                                 bool reverse_,
                                 bool transpose_ = false) {
-  auto x = opx.getInTensor(CumSumOp::xInIndex()).getPoplarTensor();
-  const poplar::Tensor one =
-      opx.getConst(x.elementType(), {1}, 1.f, "one").getPoplarTensor();
-  const poplar::Tensor zero =
-      opx.getConst(x.elementType(), {1}, 0.f, "zero").getPoplarTensor();
+  auto x                    = opx.getInTensor(CumSumOp::xInIndex());
+  const poplar::Tensor one  = opx.getConst(x.elementType(), {1}, 1.f, "one");
+  const poplar::Tensor zero = opx.getConst(x.elementType(), {1}, 0.f, "zero");
 
   std::vector<poplar::Tensor> pieces;
   for (int k = 0; k < triangularSize_; k++) {
@@ -111,7 +112,7 @@ void checkAxisValue(int64_t axis_, unsigned xRank_) {
 
 } // namespace
 
-CumSumOpx::CumSumOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+CumSumOpx::CumSumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<CumSumOp>(op, {Onnx::Operators::CumSum_11});
 }
 
@@ -122,14 +123,14 @@ CumSumOpx::CumSumOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 // We multiply the triangular matrix with the input matrix which effectively
 // gives us cumulative sum. We shuffle and reshape back to get the final
 // result. We expect good performance as MatMul is highly optimised on the IPU.
-void CumSumOpx::grow(snap::program::Sequence &prog) const {
+void CumSumOpx::grow(poplar::program::Sequence &prog) const {
 
   const auto &op       = getOp<CumSumOp>();
   const int64_t axis   = op.getAxis();
   const bool exclusive = op.getExclusive();
   const bool reverse   = op.getReverse();
 
-  auto x = getInTensor(CumSumOp::xInIndex()).getPoplarTensor();
+  auto x = getInTensor(CumSumOp::xInIndex());
   checkAxisValue(axis, x.rank());
   const std::vector<std::size_t> xShape = x.shape();
   int64_t axisNN                        = toNonNegativeAxis(axis, x.rank());
@@ -146,18 +147,14 @@ void CumSumOpx::grow(snap::program::Sequence &prog) const {
   poplar::Tensor triangularM =
       triangularMatrix(*this, xMulDim0, exclusive, reverse);
 
-  x = poplin::matMul(graph().getPoplarGraph(),
-                     x,
-                     triangularM,
-                     prog.getPoplarSequence(),
-                     debugContext("cumsum_mul"));
+  x = poplin::matMul(graph(), x, triangularM, prog, debugContext("cumsum_mul"));
   x = x.reshape(xMiddleShape);
   x = x.dimShuffle(perm);
 
-  setOutTensor(CumSumOp::outIndex(), snap::Tensor{x, graph()});
+  setOutTensor(CumSumOp::outIndex(), x);
 }
 
-CumSumGradOpx::CumSumGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+CumSumGradOpx::CumSumGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<CumSumGradOp>(op, Onnx::GradOperators::CumSumGrad);
 }
 
@@ -165,14 +162,14 @@ CumSumGradOpx::CumSumGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 // dCumulativeSum(dOut) = reverse(CumulativeSum(reverse(dOut))
 // This can be interpreted as the MatMul gradient where the
 // triangular matrix has been transposed.
-void CumSumGradOpx::grow(snap::program::Sequence &prog) const {
+void CumSumGradOpx::grow(poplar::program::Sequence &prog) const {
 
   const auto &op       = getOp<CumSumGradOp>();
   const int64_t axis   = op.getAxis();
   const bool exclusive = op.getExclusive();
   const bool reverse   = op.getReverse();
 
-  auto dx = getInTensor(CumSumGradOp::outGradXInIndex()).getPoplarTensor();
+  auto dx = getInTensor(CumSumGradOp::outGradXInIndex());
   const std::vector<std::size_t> dxShape = dx.shape();
   int64_t axisNN                         = toNonNegativeAxis(axis, dx.rank());
   std::size_t xMulDim0                   = dx.dim(axisNN);
@@ -188,15 +185,12 @@ void CumSumGradOpx::grow(snap::program::Sequence &prog) const {
   poplar::Tensor triangularM =
       triangularMatrix(*this, xMulDim0, exclusive, reverse, true);
 
-  dx = poplin::matMul(graph().getPoplarGraph(),
-                      dx,
-                      triangularM,
-                      prog.getPoplarSequence(),
-                      debugContext("cumsum_mul"));
+  dx = poplin::matMul(
+      graph(), dx, triangularM, prog, debugContext("cumsum_mul"));
   dx = dx.reshape(xMiddleShape);
   dx = dx.dimShuffle(perm);
 
-  setOutTensor(CumSumGradOp::outIndex(), snap::Tensor{dx, graph()});
+  setOutTensor(CumSumGradOp::outIndex(), dx);
 }
 
 namespace {

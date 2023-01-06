@@ -3,22 +3,22 @@
 #define POPART_WILLOW_SRC_POPX_RNG_RNGSTATELOWERING_HPP_
 
 #include <functional>
-#include <snap/Tensor.hpp>
 #include <stddef.h>
 #include <string>
 #include <vector>
 #include <poplar/Target.hpp>
+#include <poplar/Tensor.hpp>
 
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/pritask.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class TaskId;
@@ -47,7 +47,7 @@ public:
   /**
    * Initialise a RngStateLowering object.
    */
-  RngStateLowering(IrLowering &irLowering, snap::Graph &graph);
+  RngStateLowering(IrLowering &irLowering, poplar::Graph &graph);
   virtual ~RngStateLowering();
 
   /**
@@ -70,8 +70,8 @@ public:
    * @param seed The Poplar tensor (the user's seed).
    * @param dbgCtx The debug context to use.
    */
-  virtual void lowerInitRngStatesFromSeed(snap::program::Sequence &seq,
-                                          const snap::Tensor &seed,
+  virtual void lowerInitRngStatesFromSeed(poplar::program::Sequence &seq,
+                                          const poplar::Tensor &seed,
                                           const poplar::DebugContext &dbgCtx);
 
   /**
@@ -90,7 +90,7 @@ public:
    * @param seq The poplar sequence to load the RNG state change into.
    * @param op The Op prior for which we're making the change.
    */
-  virtual void lowerSetRngState(snap::program::Sequence &seq, Opx *opx);
+  virtual void lowerSetRngState(poplar::program::Sequence &seq, Opx *opx);
 
   /**
    * Lower the Poplar logic required to get the RNG state after the growing
@@ -108,7 +108,7 @@ public:
    * @param seq The poplar sequence to load the RNG state change into.
    * @param op The Op prior for which we're making the change.
    */
-  virtual void lowerGetRngState(snap::program::Sequence &seq, Opx *opx);
+  virtual void lowerGetRngState(poplar::program::Sequence &seq, Opx *opx);
 
   /**
    * @return Task to set up combinedRngStateTensor
@@ -159,7 +159,7 @@ public:
    * - Fourth dim: Size of single RNG state in bytes
    */
   static std::vector<size_t>
-  getCombinedRngStateTensorShape(const snap::Graph &graph);
+  getCombinedRngStateTensorShape(const poplar::Graph &graph);
 
   /**
    * @param graph This object represents a graph program to be
@@ -167,7 +167,7 @@ public:
    * poplar::Target from graph contains target for single replicas.
    * @return Flattened size of combined rng state tensor.
    */
-  static size_t getCombinedRngStateTensorSize(const snap::Graph &graph);
+  static size_t getCombinedRngStateTensorSize(const poplar::Graph &graph);
 
   /**
    * @param deviceInfo Information about the device which session
@@ -205,19 +205,19 @@ public:
   static const unsigned rngStateSizePerWorker = 4;
 
 protected:
-  // Helper function to create a tensor to hold the inacive RNG state.
-  static snap::Tensor createRNGStateTensor(snap::Graph &graph,
-                                           const std::string &name);
+  // Helper function to create a tensor to hold the inactive RNG state.
+  static poplar::Tensor createRNGStateTensor(poplar::Graph &graph,
+                                             const std::string &name);
 
 private:
   // Helper function for calling `setHwSeeds` with `rngState`.
-  virtual void lowerSetHwSeeds(snap::program::Sequence &seq,
-                               snap::Tensor &rngState,
+  virtual void lowerSetHwSeeds(poplar::program::Sequence &seq,
+                               poplar::Tensor &rngState,
                                const poplar::DebugContext &dbgCtx) const;
 
   // Helper function for calling `getHwSeeds` with `rngState`.
-  virtual void lowerGetHwSeeds(snap::program::Sequence &seq,
-                               snap::Tensor &rngState,
+  virtual void lowerGetHwSeeds(poplar::program::Sequence &seq,
+                               poplar::Tensor &rngState,
                                const poplar::DebugContext &dbgCtx) const;
 
   /**
@@ -229,7 +229,7 @@ private:
    * - Second dim: The number of workers existing on a single tile.
    * - Third dim: Size of single RNG state in bytes
    */
-  static std::vector<size_t> getRngStateTensorShape(const snap::Graph &graph);
+  static std::vector<size_t> getRngStateTensorShape(const poplar::Graph &graph);
 
   /**
    * @param deviceInfo Information about the device which session
@@ -248,17 +248,17 @@ private:
 
   // Reference to IR.
   std::reference_wrapper<IrLowering> irLowering;
-  // Reference to the snap Graph.
-  std::reference_wrapper<snap::Graph> graph;
+  // Reference to the poplar Graph.
+  std::reference_wrapper<poplar::Graph> graph;
 
   // We maintain two RNG states, one that is identical between replicas and one
   // that is not identical.
-  snap::Tensor differingSeedsRngStateTensor;
-  snap::Tensor identicalSeedsRngStateTensor;
+  poplar::Tensor differingSeedsRngStateTensor;
+  poplar::Tensor identicalSeedsRngStateTensor;
 
   // Tensor used to upload / download the value [identicalSeedsRngStateTensor,
   // differingSeedsRngStateTensor].
-  snap::Tensor combinedRngStateTensor;
+  poplar::Tensor combinedRngStateTensor;
 
   // TaskIds for the different tasks
   static const TaskId initRngStateTensorTaskId;

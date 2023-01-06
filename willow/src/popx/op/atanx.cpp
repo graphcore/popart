@@ -1,10 +1,10 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <memory>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <string>
 #include <vector>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/op/atan.hpp>
@@ -14,15 +14,15 @@
 #include "popart/operators.hpp"
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -42,19 +42,19 @@ AtanOpx::AtanOpx(Op *op, Devicex *devicex)
   verifyOp<AtanOp>(op, Onnx::Operators::Atan_7);
 }
 
-snap::Tensor AtanComputex::outplace(snap::program::Sequence &p,
-                                    snap::Graph &g,
-                                    const snap::Tensor &t,
-                                    const poplar::DebugNameAndId &dnai,
-                                    const std::string &s) const {
+poplar::Tensor AtanComputex::outplace(poplar::program::Sequence &p,
+                                      poplar::Graph &g,
+                                      const poplar::Tensor &t,
+                                      const poplar::DebugNameAndId &dnai,
+                                      const std::string &s) const {
   auto outTensor = cloneNcopy(p, g, t, dnai);
   inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
 
-void AtanComputex::inplace(snap::program::Sequence &p,
-                           snap::Graph &g,
-                           const snap::Tensor &t,
+void AtanComputex::inplace(poplar::program::Sequence &p,
+                           poplar::Graph &g,
+                           const poplar::Tensor &t,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
@@ -67,14 +67,14 @@ void AtanComputex::inplace(snap::program::Sequence &p,
   exprs.push_back(std::make_unique<pe::Sqrt>(*exprs.back()));
   exprs.push_back(std::make_unique<pe::Divide>(pe::_1, *exprs.back()));
   exprs.push_back(std::make_unique<pe::Asin>(*exprs.back()));
-  snap::popops::mapInPlace(g, *exprs.back(), {t}, p, {dnai, s});
+  popops::mapInPlace(g, *exprs.back(), {t}, p, {dnai, s});
 }
 
-AtanGradOpx::AtanGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+AtanGradOpx::AtanGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<AtanGradOp>(op, Onnx::GradOperators::AtanGrad);
 }
 
-void AtanGradOpx::grow(snap::program::Sequence &prog) const {
+void AtanGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto input     = getInTensor(AtanGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(AtanGradOp::getFwdArgInIndex());
 
@@ -86,11 +86,11 @@ void AtanGradOpx::grow(snap::program::Sequence &prog) const {
   exprs.push_back(std::make_unique<pe::Divide>(pe::Const(1.0f), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
-  auto output = snap::popops::map(graph(),
-                                  *exprs.back(),
-                                  {input, fwd_input},
-                                  prog,
-                                  debugContext("inverse_tangent_grad"));
+  auto output = popops::map(graph(),
+                            *exprs.back(),
+                            {input, fwd_input},
+                            prog,
+                            debugContext("inverse_tangent_grad"));
 
   setOutTensor(AtanGradOp::getOutIndex(), output);
 }

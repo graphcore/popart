@@ -1,8 +1,8 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <string>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/op/softsign.hpp>
@@ -12,15 +12,15 @@
 #include "popart/operators.hpp"
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -38,15 +38,15 @@ SoftSignOpx::SoftSignOpx(Op *op, Devicex *devicex)
   verifyOp<SoftSignOp>(op, {Onnx::Operators::Softsign_1});
 }
 
-void SoftSignComputex::inplace(snap::program::Sequence &prog,
-                               snap::Graph &graph,
-                               const snap::Tensor &tensor,
+void SoftSignComputex::inplace(poplar::program::Sequence &prog,
+                               poplar::Graph &graph,
+                               const poplar::Tensor &tensor,
                                const poplar::DebugNameAndId &dnai,
                                const std::string &debug_prefix) const {
   // Softsign definition: x/(1+abs(x))
   auto expr = pe::Divide(pe::_1, pe::Add(pe::Const(1.0f), pe::Abs(pe::_1)));
 
-  snap::popops::mapInPlace(graph, expr, {tensor}, prog, {dnai, debug_prefix});
+  popops::mapInPlace(graph, expr, {tensor}, prog, {dnai, debug_prefix});
 }
 
 SoftSignInplaceOpx::SoftSignInplaceOpx(Op *op, Devicex *devicex)
@@ -57,12 +57,11 @@ SoftSignInplaceOpx::SoftSignInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<SoftSignInplaceOp>(op, Onnx::CustomOperators::SoftSignInplace);
 }
 
-SoftSignGradOpx::SoftSignGradOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+SoftSignGradOpx::SoftSignGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<SoftSignGradOp>(op, Onnx::GradOperators::SoftSignGrad);
 }
 
-void SoftSignGradOpx::grow(snap::program::Sequence &prog) const {
+void SoftSignGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto grad_in   = getInTensor(SoftSignGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(SoftSignGradOp::getFwdArgInIndex());
 
@@ -76,7 +75,7 @@ void SoftSignGradOpx::grow(snap::program::Sequence &prog) const {
       pe::_1,
       pe::Pow(pe::Add(pe::Const(1.0f), pe::Abs(pe::_2)), pe::Const(2.0f)));
 
-  auto output = snap::popops::map(
+  auto output = popops::map(
       graph(), expr, {grad_in, fwd_input}, prog, debugContext("softsign_grad"));
 
   setOutTensor(SoftSignGradOp::getOutIndex(), output);

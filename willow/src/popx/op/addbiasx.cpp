@@ -1,10 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
+#include <poplar/Tensor.hpp>
 #include <poplin/Convolution.hpp>
 #include <popart/error.hpp>
 #include <popart/op/addbias.hpp>
@@ -14,8 +11,15 @@
 #include "popart/graphcoreoperators.hpp"
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
+#include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/reducesumx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -23,12 +27,12 @@ class Op;
 namespace popx {
 class Devicex;
 
-AddBiasOpx::AddBiasOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+AddBiasOpx::AddBiasOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<AddBiasOp>(op);
 }
 
 AddBiasDataGradOpx::AddBiasDataGradOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<AddBiasDataGradOp>(op, Onnx::CustomGradOperators::AddBiasDataGrad);
 }
 
@@ -37,20 +41,20 @@ AddBiasInplaceOpx::AddBiasInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<AddBiasInplaceOp>(op, Onnx::CustomOperators::AddBiasInplace);
 }
 
-void AddBiasOpx::grow(snap::program::Sequence &prog) const {
+void AddBiasOpx::grow(poplar::program::Sequence &prog) const {
   // Clone & copy the input tensor because poplin::addBias is in-place.
   const auto result =
-      PopOpx::cloneNcopy(prog, getInTensor(AddBiasOp::getDataInIndex()));
-  poplin::addBias(graph().getPoplarGraph(),
-                  result.getPoplarTensor(),
-                  getInTensor(AddBiasOp::getBiasInIndex()).getPoplarTensor(),
-                  prog.getPoplarSequence(),
+      Opx::cloneNcopy(prog, getInTensor(AddBiasOp::getDataInIndex()));
+  poplin::addBias(graph(),
+                  result,
+                  getInTensor(AddBiasOp::getBiasInIndex()),
+                  prog,
                   debugContext());
   setOutTensor(AddBiasOp::getOutIndex(), result);
 }
 
-void AddBiasDataGradOpx::grow(snap::program::Sequence &prog) const {
-  setOutTensor(0, PopOpx::cloneNcopy(prog, getInTensor(0)));
+void AddBiasDataGradOpx::grow(poplar::program::Sequence &prog) const {
+  setOutTensor(0, Opx::cloneNcopy(prog, getInTensor(0)));
 }
 
 std::set<TensorId> AddBiasOpx::mustExistBeforeCreate(InIndex index) const {
@@ -67,20 +71,16 @@ InputCreatorType AddBiasOpx::getInputCreatorType(InIndex index) const {
                                               : InputCreatorType::Deadend;
 }
 
-snap::Tensor
-AddBiasOpx::createInputTensor(InIndex index,
-                              const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+AddBiasOpx::createInput(InIndex index,
+                        const poplar::DebugNameAndId &dnai) const {
   if (index != AddBiasOp::getBiasInIndex()) {
     throw error("AddBiasOpx::createInput : Invalid index = " +
                 std::to_string(index));
   }
 
-  return snap::Tensor{
-      poplin::createBiases(
-          graph().getPoplarGraph(),
-          getInTensor(AddBiasOp::getDataInIndex()).getPoplarTensor(),
-          dnai),
-      graph()};
+  return poplin::createBiases(
+      graph(), getInTensor(AddBiasOp::getDataInIndex()), dnai);
 }
 
 AddBiasBiasGradOpx::AddBiasBiasGradOpx(Op *op, Devicex *devicex)
@@ -88,15 +88,11 @@ AddBiasBiasGradOpx::AddBiasBiasGradOpx(Op *op, Devicex *devicex)
   verifyOp<AddBiasBiasGradOp>(op, Onnx::CustomGradOperators::AddBiasBiasGrad);
 }
 
-void AddBiasInplaceOpx::grow(snap::program::Sequence &prog) const {
-  auto dataIn = getInTensor(AddBiasOp::getDataInIndex()).getPoplarTensor();
-  auto biasIn = getInTensor(AddBiasOp::getBiasInIndex()).getPoplarTensor();
-  poplin::addBias(graph().getPoplarGraph(),
-                  dataIn,
-                  biasIn,
-                  prog.getPoplarSequence(),
-                  debugContext());
-  setOutTensor(AddBiasOp::getOutIndex(), snap::Tensor{dataIn, graph()});
+void AddBiasInplaceOpx::grow(poplar::program::Sequence &prog) const {
+  auto dataIn = getInTensor(AddBiasOp::getDataInIndex());
+  auto biasIn = getInTensor(AddBiasOp::getBiasInIndex());
+  poplin::addBias(graph(), dataIn, biasIn, prog, debugContext());
+  setOutTensor(AddBiasOp::getOutIndex(), dataIn);
 }
 
 namespace {

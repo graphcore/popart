@@ -24,16 +24,14 @@
 #include "popart/util.hpp"
 #include "popart/vendored/optional.hpp"
 
-namespace snap {
+namespace poplar {
 
 class Graph;
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 
 int SequenceMap::debugCtxNo = 0;
-
-SequenceMap::SequenceMap(snap::Graph &g) : graph(g) {}
 
 void SequenceMap::addSingleSequence(Sequence &sequence) {
   // Defensively check for misuse of this class.
@@ -46,7 +44,7 @@ void SequenceMap::addSingleSequence(Sequence &sequence) {
   // here but this information is not accessible.
   std::stringstream dbgCtx;
   dbgCtx << "sequence_map/" << debugCtxNo++;
-  localSeqs.push_back({Sequence(dbgCtx.str(), graph)});
+  localSeqs.push_back({Sequence({}, dbgCtx.str())});
   indexMap[&sequence] = std::make_tuple(localSeqs.size() - 1, 0);
 }
 
@@ -66,7 +64,7 @@ void SequenceMap::addScopeFragments(Sequences &sequences) {
     // here but this information is not accessible.
     std::stringstream dbgCtx;
     dbgCtx << "sequence_map/" << part << "/" << debugCtxNo;
-    seqs.push_back(Sequence(dbgCtx.str(), graph));
+    seqs.push_back(Sequence({}, dbgCtx.str()));
   }
 
   debugCtxNo++;

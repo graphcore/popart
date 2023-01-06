@@ -5,18 +5,17 @@
 #include "popart/popx/debugcontextx.hpp"
 #include <cstdint>
 #include <set>
-#include <snap/Tensor.hpp>
 #include <tuple>
 #include <poplar/Tensor.hpp>
 #include <popops/DynamicSlice.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -24,16 +23,16 @@ class Op;
 namespace popx {
 class Devicex;
 
-class GatherBaseOpx : public PopOpx {
+class GatherBaseOpx : public Opx {
 public:
   GatherBaseOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override = 0;
+  void grow(poplar::program::Sequence &) const override = 0;
 
-  // create the input snap::Tensor for input at index
+  // create the input poplar::Tensor for input at index
   // default : throw error (not all Opxs can createInput)
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const override = 0;
+  poplar::Tensor
+  createInput(InIndex index,
+              const poplar::DebugNameAndId &dnai) const override = 0;
 
   // default return DEADEND, i.e. unable to create input tensor, and
   // cannot use downstream opxs as candidates to create input
@@ -51,12 +50,12 @@ protected:
   // Zero indices that are out of range so they produce output from the weight
   // tensor
   std::tuple<poplar::Tensor, poplar::Tensor>
-  zeroIndiciesThatAreOutOfRange(snap::program::Sequence &prog,
+  zeroIndiciesThatAreOutOfRange(poplar::program::Sequence &prog,
                                 const poplar::Tensor &data,
                                 const poplar::Tensor &offsets) const;
 
   // Zero output corresponding to out of range indices
-  void zeroOutputOfOutOfRangeIndices(snap::program::Sequence &prog,
+  void zeroOutputOfOutOfRangeIndices(poplar::program::Sequence &prog,
                                      poplar::Tensor &result,
                                      const poplar::Tensor &mask,
                                      const poplar::Tensor &data) const;
@@ -65,12 +64,12 @@ protected:
 class GatherOpx final : public GatherBaseOpx {
 public:
   GatherOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   // create the input poplar::Tensor for input at index
   // default : throw error (not all Opxs can createInput)
-  snap::Tensor
-  createInputTensor(int index, const poplar::DebugNameAndId &dnai) const final;
+  poplar::Tensor createInput(int index,
+                             const poplar::DebugNameAndId &dnai) const final;
 
   InputCreatorType getInputCreatorType(int index) const final;
 
@@ -78,10 +77,10 @@ private:
   popops::SlicePlan plan;
 };
 
-class GatherGradOpx : public PopOpx {
+class GatherGradOpx : public Opx {
 public:
   GatherGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   static std::tuple<poplar::Tensor, poplar::Tensor, poplar::Tensor>
   handleNDMultiUpdate(poplar::Tensor target,
@@ -90,9 +89,8 @@ public:
                       int64_t axis);
   // create the input poplar::Tensor for input at index
   // default : throw error (not all Opxs can createInput)
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const final;
   // default return DEADEND, i.e. unable to create input tensor, and
   // cannot use downstream opxs as candidates to create input
   // tensor

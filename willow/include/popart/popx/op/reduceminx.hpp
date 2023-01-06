@@ -2,13 +2,13 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_REDUCEMINX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_REDUCEMINX_HPP_
 
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -16,16 +16,16 @@ class Op;
 namespace popx {
 class Devicex;
 
-class ReduceMinOpx : public PopOpx {
+class ReduceMinOpx : public Opx {
 public:
   ReduceMinOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override;
+  void grow(poplar::program::Sequence &) const override;
 };
 
-class ReduceMinGradOpx : public PopOpx {
+class ReduceMinGradOpx : public Opx {
 public:
   ReduceMinGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override;
+  void grow(poplar::program::Sequence &) const override;
 };
 
 } // namespace popx

@@ -1,7 +1,4 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <poplar/Tensor.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/ScaledAdd.hpp>
@@ -14,6 +11,12 @@
 #include "popart/graphcoreoperators.hpp"
 #include "popart/popx/op/varupdatex.hpp"
 
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
+
 namespace popart {
 class Op;
 
@@ -25,41 +28,38 @@ SGD1VarUpdateOpx::SGD1VarUpdateOpx(Op *op, Devicex *devicex)
   verifyOp<SGD1VarUpdateOp>(op, Onnx::CustomOperators::SGD1VarUpdate);
 }
 
-void SGD1VarUpdateOpx::grow(snap::program::Sequence &prog) const {
+void SGD1VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   // see optimizer.hpp for the equations implemented here
 
   auto sgd1varUpdateOp = getOp<SGD1VarUpdateOp>();
 
   poplar::Tensor velocity =
-      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
-          .getPoplarTensor();
+      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
 
-  poplar::Tensor weights =
-      getInTensor(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor();
+  poplar::Tensor weights = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
 
   // non-const scaled learning rate case
   if (!sgd1varUpdateOp.initSlr1.isConst()) {
     popops::scaledAddTo(
-        graph().getPoplarGraph(),
+        graph(),
         weights,
         velocity,
-        popops::neg(
-            graph().getPoplarGraph(),
-            getInTensor(SGD1VarUpdateOp::getSlr1InIndex()).getPoplarTensor(),
-            prog.getPoplarSequence(),
-            debugContext("neg")),
-        prog.getPoplarSequence(),
+        popops::neg(graph(),
+                    getInTensor(SGD1VarUpdateOp::getSlr1InIndex()),
+                    prog,
+                    debugContext("neg")),
+        prog,
         debugContext("nonConstScaledSubtractSGD1"));
   }
 
   // const scaled learning rate case
   else {
-    popops::scaledAddTo(graph().getPoplarGraph(),
+    popops::scaledAddTo(graph(),
                         weights,
                         velocity,
                         -sgd1varUpdateOp.initSlr1.val(),
-                        prog.getPoplarSequence(),
+                        prog,
                         debugContext("constScaledSubtractSGD1"));
   }
 

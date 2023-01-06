@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/popops/ElementWise.hpp>
 #include <vector>
+#include <popops/ElementWise.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/op/equal.hpp>
 #include <popart/popx/op/equalx.hpp>
@@ -10,11 +10,11 @@
 #include "popart/operators.hpp"
 #include "popart/popx/op/elementwisex.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -30,15 +30,15 @@ EqualOpx::EqualOpx(Op *op, Devicex *devicex)
                      Onnx::Operators::Equal_11});
 }
 
-void EqualOpx::grow(snap::program::Sequence &prog) const {
+void EqualOpx::grow(poplar::program::Sequence &prog) const {
 
   insert(outId(EqualOp::getOutIndex()),
-         snap::popops::map(graph(),
-                           popops::expr::BinaryOpType::EQUAL,
-                           get(inId(EqualOp::getArg0InIndex())),
-                           get(inId(EqualOp::getArg1InIndex())),
-                           prog,
-                           debugContext()));
+         popops::map(graph(),
+                     popops::expr::BinaryOpType::EQUAL,
+                     get(inId(EqualOp::getArg0InIndex())),
+                     get(inId(EqualOp::getArg1InIndex())),
+                     prog,
+                     debugContext()));
 }
 
 namespace {

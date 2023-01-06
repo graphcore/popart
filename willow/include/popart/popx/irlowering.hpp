@@ -9,13 +9,12 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <snap/DataStream.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <tuple>
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <poplar/DataStream.hpp>
 #include <poplar/Executable.hpp>
 #include <poplar/FunctionBufferMappingType.hpp>
 #include <poplar/GraphElements.hpp>
@@ -55,14 +54,14 @@ namespace poplin {
 struct ConvParams;
 struct MatMulParams;
 } // namespace poplin
-namespace snap {
+namespace poplar {
 class Function;
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class DeviceInfo;
@@ -82,6 +81,7 @@ class SubgraphCopyingStrategy;
 class SubgraphPartitioner;
 } // namespace liveness
 namespace popx {
+class PopOpx;
 namespace serialization {
 // Forward declaration.
 class Reader;
@@ -151,7 +151,7 @@ private:
 class IrLowering {
 private:
   const Ir &_ir;
-  std::unique_ptr<snap::Graph> pGraph{nullptr};
+  std::unique_ptr<poplar::Graph> pGraph;
 
   std::vector<VirtualGraph> virtualGraphs;
 
@@ -188,7 +188,7 @@ private:
   // determining where an exception has occurred. It is enabled by setting
   // POPART_OPX_TRACE environment variable to "1"
   bool opxTrace = false;
-  snap::Tensor opxTraceTensor;
+  poplar::Tensor opxTraceTensor;
 
   // A set of tensor ids to print during graph execution.
   // This is an alternative to the PrintTensor op.
@@ -220,32 +220,32 @@ private:
 
   // Non-const tensors used to keep track of batch count, modulo the return
   // period
-  std::map<ReturnPeriod, snap::Tensor> batchCountingTensors;
-  std::map<ReturnPeriod, snap::Tensor> batchCountCheckingTensors;
+  std::map<ReturnPeriod, poplar::Tensor> batchCountingTensors;
+  std::map<ReturnPeriod, poplar::Tensor> batchCountCheckingTensors;
 
   // Implicit pipelining index tensors (i.e. stash and restore counters)
-  std::vector<snap::Tensor> pipelineIndexTensors;
+  std::vector<poplar::Tensor> pipelineIndexTensors;
 
   // Map tensors evenly across all tiles
   LinearMapper linearMapper;
 
-  snap::Tensor randomSeedTensor;
+  poplar::Tensor randomSeedTensor;
 
   // TODO T11630: Combine the inputStreams/outputStreams with the
   // fromHostStreams/toHostAnchorStreams streams?
 
-  //  poplar::Streams for snap::Tensors,
+  //  poplar::Streams for poplar::Tensors,
   //  1) from host to device;
-  std::map<TensorId, snap::DataStream> fromHostStreams;
+  std::map<TensorId, poplar::DataStream> fromHostStreams;
 
   // and 2) from device to host;
-  std::map<TensorId, snap::DataStream> toHostAnchorStreams;
-  std::map<TensorId, snap::DataStream> toHostWeightStreams;
+  std::map<TensorId, poplar::DataStream> toHostAnchorStreams;
+  std::map<TensorId, poplar::DataStream> toHostWeightStreams;
 
   // Streams for doing allreduce on host side
-  std::map<TensorId, snap::DataStream> toHostGradientStreams;
-  std::map<TensorId, snap::DataStream> fromHostGradientStreams;
-  std::map<TensorId, snap::DataStream> fromHostWeightLoadStreams;
+  std::map<TensorId, poplar::DataStream> toHostGradientStreams;
+  std::map<TensorId, poplar::DataStream> fromHostGradientStreams;
+  std::map<TensorId, poplar::DataStream> fromHostWeightLoadStreams;
 
   // The maximum number of inputs on any Op
   int maxOpInputs;
@@ -269,7 +269,7 @@ private:
 
   void verifyTaskOrder(const std::vector<TaskId> &taskOrder) const;
 
-  // Task to create a snap::Tensor from nothing, choosing
+  // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
   // If dependencyFree is true, the creator must not depend on any other tensor
   // having been created. This can be (sparingly) used to resolve cyclic
@@ -279,7 +279,7 @@ private:
                         RequireParallelWritable requireParallelWritable,
                         bool dependencyFree = false);
 
-  // Task to create a snap::Tensor with methods defined by InitTensorPtrs
+  // Task to create a poplar::Tensor with methods defined by InitTensorPtrs
   PriTask initTensorTask(InitTensorPtrs inits);
 
   static TaskId initTensorTaskId(TensorId);
@@ -290,57 +290,64 @@ private:
   PriTask setInitTensorValTask(Tensor *);
   static TaskId setInitTensorValTaskId(TensorId);
 
-  // Task to create a poplar::Stream to write to snap::Tensor
+  // Task to create a poplar::Stream to write to poplar::Tensor
   // C++ Note: if a lambda function which modifies `this' is created
   // it must be const w.r.t this, even if it not run
   PriTask streamFromHostTask(TensorId streamTensorId,
                              std::vector<Tensor *> tensors);
   static TaskId streamFromHostTaskId(TensorId);
 
-  // Task to append a Copy from poplar::Stream to snap::Tensor
-  PriTask fromHostTask(Tensor *tensor, snap::program::Sequence &streamSq);
+  // Task to append a Copy from poplar::Stream to poplar::Tensor
+  PriTask fromHostTask(Tensor *tensor, poplar::program::Sequence &streamSq);
 
   static TaskId fromHostTaskId(TensorId);
 
-  // Task to create a poplar::Stream to write from snap::Tensor to host
+  // Task to create a poplar::Stream to write from poplar::Tensor to host
   PriTask streamToHostTask(TensorId streamTensorId,
                            std::vector<Tensor *> tensors,
                            bool isAnchorStream);
   static TaskId streamToHostTaskId(TensorId, bool isAnchorStream);
 
-  snap::program::Sequence &getAnchorReturnFragment(Tensor *tensor);
+  poplar::program::Sequence &getAnchorReturnFragment(Tensor *tensor);
 
-  // Task to append a Copy to poplar::Stream from snap::Tensor
-  PriTask
-  toHostTask(Tensor *tensor, snap::program::Sequence &, ToHostStreamType) const;
+  // Task to append a Copy to poplar::Stream from poplar::Tensor
+  PriTask toHostTask(Tensor *tensor,
+                     poplar::program::Sequence &,
+                     ToHostStreamType) const;
   static TaskId toHostTaskId(TensorId, bool isAnchorStream);
 
-  // Task to create an accumulator and scaleAddto to a snap::Tensor to be
+  // Task to create an accumulator and scaleAddto to a poplar::Tensor to be
   // Copied on the final batch per step
-  PriTask anchorReturnTypeSumTask(Tensor *tensor, snap::program::Sequence &sq);
+  PriTask anchorReturnTypeSumTask(Tensor *tensor,
+                                  poplar::program::Sequence &sq);
   static TaskId anchorSumTaskId(const TensorId &);
 
-  // Task to create snap::Tensors from nothing, specifically for
+  // Task to create poplar::Tensors from nothing, specifically for
   // use in keeping track of the batch count
-  PriTask initBatchCounterTensorsTask(snap::program::Sequence &sq);
+  PriTask initBatchCounterTensorsTask(poplar::program::Sequence &sq);
   static TaskId initBatchCounterTensorsTaskId();
 
   // Task to add a program to increment and check the batch count
-  PriTask updateBatchCountTask(snap::program::Sequence &sq);
+  PriTask updateBatchCountTask(poplar::program::Sequence &sq);
   static TaskId updateBatchCountTaskId();
 
-  // Task to append a Copy to poplar::Stream from snap::Tensor every
+  // Task to append a Copy to poplar::Stream from poplar::Tensor every
   // N batches
   PriTask toHostEveryNBatchesTask(Tensor *tensor,
                                   ReturnPeriod N,
-                                  snap::program::Sequence &);
+                                  poplar::program::Sequence &);
 
   // The tasks associated with lowering an operation
   std::vector<PriTask> opTasks(Op *, double priority, TaskId prevOpTaskId);
 
   void opTaskFunc(TaskId taskId, Op *, SequenceMap &seqs);
   void pipelinedOpTaskFunc(TaskId taskId, Op *, SequenceMap &seqs);
-  void growOpx(Opx *, SequenceMap::SequenceInterval seqInterval);
+
+  // PopOpx version of growOpx(Opx *, SequenceMap::SequenceInterval seqInterval)
+  // for code transition, see above.
+  [[deprecated("Temporary function to help with code transition. Internal use "
+               "only.")]] void
+  growPopOpxCall(PopOpx *popOpx, SequenceMap::SequenceInterval seqInterval);
 
   // The name of the task associated with growing an operation
   TaskId opTaskId(Op *) const;
@@ -369,8 +376,8 @@ private:
   void setInitVal(Tensor *tensor, DataType dstType = DataType::UNDEFINED);
   void setInitValHalf(Tensor *tensor);
 
-  void setFloatingPointBehaviour(snap::Graph &graph);
-  void setStochasticRoundingBehaviour(snap::Graph &graph);
+  void setFloatingPointBehaviour(poplar::Graph &graph);
+  void setStochasticRoundingBehaviour(poplar::Graph &graph);
 
   using ConvPlanParams   = std::tuple<const poplar::Target *,
                                     const poplin::ConvParams,
@@ -392,6 +399,10 @@ public:
   virtual ~IrLowering();
 
   const Ir &ir() const { return _ir; }
+
+  void growOpx(Opx *, SequenceMap::SequenceInterval seqInterval);
+
+  void growOpxCall(Opx *, SequenceMap::SequenceInterval seqInterval);
 
   poplar::OptionFlags pooling_options;
   poplar::OptionFlags lstmOptions;
@@ -437,25 +448,24 @@ public:
   const PopPrograms &progs() const { return progs_; }
   PopPrograms &progs() { return progs_; }
 
-  void instrumentWithHardwareCycleCounter(snap::program::Sequence &,
+  void instrumentWithHardwareCycleCounter(poplar::program::Sequence &,
                                           int64_t tileId = 0,
                                           std::string id = "");
 
-  snap::Graph &graph() {
+  poplar::Graph &graph() {
     if (pGraph == nullptr) {
       throw error(
-          "snap::Graph is null when the lowering state is deserialized");
+          "poplar::Graph is null when the lowering state is deserialized");
     }
     return *pGraph;
   }
-  const snap::Graph &graph() const {
+  const poplar::Graph &graph() const {
     if (pGraph == nullptr) {
       throw error(
-          "snap::Graph is null when the lowering state is deserialized");
+          "poplar::Graph is null when the lowering state is deserialized");
     }
     return *pGraph;
   }
-
   // Prepares the graph ready for poplar compilation
   void prepareGraph();
 
@@ -476,15 +486,15 @@ public:
 
   // Return virtual graph mapping to IPU virtualGraphIndex,
   // ioTileGraph selects between compute and IO tile graph.
-  snap::Graph &getVirtualGraph(VGraphId virtualGraphIndex,
-                               TileSet tileSet = TileSet::Compute);
+  poplar::Graph &getVirtualGraph(VGraphId virtualGraphIndex,
+                                 TileSet tileSet = TileSet::Compute);
 
-  // Return the name of the task which initializes/creates a snap::Tensor in a
-  // snap::Graph. This is NOT about creating a poplar::Program.
+  // Return the name of the task which initializes/creates a poplar::Tensor in a
+  // poplar::Graph. This is NOT about creating a poplar::Program.
   PriTaskDependency taskWhichCreates(TensorId) const;
 
   // Return the name of the task which adds code which sets the initial
-  // values of snap::Tensor to a fragment. This IS about creating a
+  // values of poplar::Tensor to a fragment. This IS about creating a
   // poplar::Program. For Variable Tensors, this is the Copy from Stream program
   TaskId taskWhichPopulates(TensorId) const;
 
@@ -524,11 +534,11 @@ public:
   void createFragment(const Graph &graph, SubgraphPartIndex subgraphPart);
   // Wrap all Poplar sequences associated with a graph in to a poplar function
   // that can be called and return them all.
-  std::vector<snap::Function> &getFragmentFunctions(const Graph &graph);
+  std::vector<poplar::Function> &getFragmentFunctions(const Graph &graph);
   // Wrap all Poplar sequences associated with a graph in to a poplar function
   // that can be called and return a specific one.
-  snap::Function &getFragmentFunction(const Graph &graph,
-                                      SubgraphPartIndex subgraphPart);
+  poplar::Function &getFragmentFunction(const Graph &graph,
+                                        SubgraphPartIndex subgraphPart);
 
   /**
    * Add a vector of pairs {f, buffer} for a given graph id,
@@ -599,11 +609,11 @@ public:
   std::vector<ICreatorCandidatePtr>
   getTensorCreators(const Tensor *tensor, bool dependencyFree) const;
 
-  snap::Tensor getConst(snap::Graph &graph,
-                        const poplar::Type &type,
-                        const std::vector<size_t> &shape,
-                        double val,
-                        const poplar::DebugContext &dc = {});
+  poplar::Tensor getConst(poplar::Graph &graph,
+                          const poplar::Type &type,
+                          const std::vector<size_t> &shape,
+                          double val,
+                          const poplar::DebugContext &dc = {});
 
   const ReplicatedTensorShardingBundle &
   getReplicatedTensorShardingBundle() const {
@@ -614,9 +624,9 @@ public:
     return replicatedTensorShardingBundle;
   }
 
-  snap::Tensor getScalarVariable(snap::Graph &graph,
-                                 const poplar::Type &type,
-                                 const poplar::DebugContext &dc = {});
+  poplar::Tensor getScalarVariable(poplar::Graph &graph,
+                                   const poplar::Type &type,
+                                   const poplar::DebugContext &dc = {});
 
   LinearMapper &getLinearMapper() { return linearMapper; }
 
@@ -669,7 +679,7 @@ public:
 
   bool usingCachedExecutable() const { return usingCachedExecutable_; }
 
-  // The ID of the poplar::Stream host->device for snap::Tensor
+  // The ID of the poplar::Stream host->device for poplar::Tensor
   static PopStreamId h2dId(TensorId);
 
   // and for device->host
@@ -679,13 +689,14 @@ public:
   static PopStreamId gradientLoadStreamId(TensorId id);
   static PopStreamId weightLoadStreamId(TensorId id);
 
-  snap::DataStream &
-  insertGradientStoreStream(TensorId, TensorInfo, snap::Graph &);
-  snap::DataStream &
-  insertGradientLoadStream(TensorId, TensorInfo, snap::Graph &);
-  snap::DataStream &insertWeightLoadStream(TensorId, TensorInfo, snap::Graph &);
+  poplar::DataStream &
+  insertGradientStoreStream(TensorId, TensorInfo, poplar::Graph &);
+  poplar::DataStream &
+  insertGradientLoadStream(TensorId, TensorInfo, poplar::Graph &);
+  poplar::DataStream &
+  insertWeightLoadStream(TensorId, TensorInfo, poplar::Graph &);
 
-  void addPipelineIndexTensor(const snap::Tensor &tensor) {
+  void addPipelineIndexTensor(const poplar::Tensor &tensor) {
     pipelineIndexTensors.push_back(tensor);
   }
 
@@ -701,19 +712,19 @@ public:
    */
   const ExchangeBundle &getExchangeBundle() const { return exchangeBundle; }
 
-  const std::vector<snap::Tensor> getPipelineIndexTensors() {
+  const std::vector<poplar::Tensor> getPipelineIndexTensors() {
     return pipelineIndexTensors;
   }
 
-  const std::map<TensorId, snap::DataStream> &getFromHostStreams() const {
+  const std::map<TensorId, poplar::DataStream> &getFromHostStreams() const {
     return fromHostStreams;
   }
 
-  const std::map<TensorId, snap::DataStream> &getToHostAnchorStreams() const {
+  const std::map<TensorId, poplar::DataStream> &getToHostAnchorStreams() const {
     return toHostAnchorStreams;
   }
 
-  const std::map<TensorId, snap::DataStream> &getToHostWeightStreams() const {
+  const std::map<TensorId, poplar::DataStream> &getToHostWeightStreams() const {
     return toHostWeightStreams;
   }
 

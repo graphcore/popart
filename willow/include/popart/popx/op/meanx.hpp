@@ -4,13 +4,13 @@
 
 #include <popart/popx/op/elementwisex.hpp>
 
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -21,13 +21,13 @@ class Devicex;
 class MeanOpx : public ElementWiseUnaryOpx {
 public:
   MeanOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
-class MeanArgGradOpx : public PopOpx {
+class MeanArgGradOpx : public Opx {
 public:
   MeanArgGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

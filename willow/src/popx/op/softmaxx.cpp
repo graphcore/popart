@@ -1,14 +1,12 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <cstddef>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
+#include <ext/new_allocator.h>
 #include <string>
 #include <vector>
 #include <poplar/Tensor.hpp>
 #include <popnn/NonLinearity.hpp>
 #include <popnn/NonLinearityDef.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popops/OperationDef.hpp>
@@ -27,9 +25,16 @@
 #include "popart/operators.hpp"
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/sessionoptions.hpp"
 #include "popart/tensorinfo.hpp"
+
+namespace poplar {
+class Graph;
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -64,19 +69,19 @@ SoftmaxOpx::SoftmaxOpx(Op *op, Devicex *devicex)
               devicex->ir().getSessionOptions().enableNonStableSoftmax,
               op->inInfo(SoftmaxOp::getInIndex()).shape_szt())) {}
 
-snap::Tensor SoftmaxComputex::outplace(snap::program::Sequence &p,
-                                       snap::Graph &g,
-                                       const snap::Tensor &t,
-                                       const poplar::DebugNameAndId &dnai,
-                                       const std::string &s) const {
+poplar::Tensor SoftmaxComputex::outplace(poplar::program::Sequence &p,
+                                         poplar::Graph &g,
+                                         const poplar::Tensor &t,
+                                         const poplar::DebugNameAndId &dnai,
+                                         const std::string &s) const {
   auto outTensor = cloneNcopy(p, g, t, dnai);
   inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
 
-void SoftmaxComputex::inplace(snap::program::Sequence &p,
-                              snap::Graph &g,
-                              const snap::Tensor &tIn,
+void SoftmaxComputex::inplace(poplar::program::Sequence &p,
+                              poplar::Graph &g,
+                              const poplar::Tensor &tIn,
                               const poplar::DebugNameAndId &dnai,
                               const std::string &dbs) const {
 
@@ -92,14 +97,10 @@ void SoftmaxComputex::inplace(snap::program::Sequence &p,
     nlType = popnn::NonLinearityType::SOFTMAX_STABLE;
   }
 
-  popnn::nonLinearityInPlace(g.getPoplarGraph(),
-                             nlType,
-                             input.getPoplarTensor(),
-                             p.getPoplarSequence(),
-                             {dnai, dbs});
+  popnn::nonLinearityInPlace(g, nlType, input, p, {dnai, dbs});
 }
 
-snap::Tensor SoftmaxComputex::reshape(const snap::Tensor &t) const {
+poplar::Tensor SoftmaxComputex::reshape(const poplar::Tensor &t) const {
   return t.reshape(outShape);
 }
 
@@ -109,14 +110,14 @@ SoftmaxGradOpx::SoftmaxGradOpx(Op *op, Devicex *devicex)
 }
 
 SoftmaxGradDirectOpx::SoftmaxGradDirectOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<SoftmaxGradDirectOp>(op,
                                 Onnx::CustomGradOperators::SoftmaxGradDirect);
 }
 
 NlllWithSoftmaxGradDirectOpx::NlllWithSoftmaxGradDirectOpx(Op *op,
                                                            Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<NlllWithSoftmaxGradDirectOp>(
       op, Onnx::CustomGradOperators::NlllWithSoftmaxGradDirect);
 }
@@ -135,28 +136,29 @@ NlllWithSoftmaxGradDirectOpx::NlllWithSoftmaxGradDirectOpx(Op *op,
 //   d(loss)/d(v_i) = p_i
 //   d(loss)/d(v_j) = p_j - 1
 
-void SoftmaxGradDirectOpx::grow(snap::program::Sequence &prog) const {
+void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   SoftmaxGradDirectOp &op = getOp<SoftmaxGradDirectOp>();
-  const snap::Tensor &probs =
+  const poplar::Tensor &probs =
       getInTensor(SoftmaxGradDirectOp::getProbsInIndex());
-  const snap::Tensor &label =
+  const poplar::Tensor &label =
       getInTensor(SoftmaxGradDirectOp::getLabelInIndex());
-  snap::Tensor gradIn = getInTensor(SoftmaxGradDirectOp::getGradProbsInIndex());
+  poplar::Tensor gradIn =
+      getInTensor(SoftmaxGradDirectOp::getGradProbsInIndex());
 
-  snap::Tensor probs2D;
-  snap::Tensor label1D;
-  snap::Tensor oneHot;
+  poplar::Tensor probs2D;
+  poplar::Tensor label1D;
+  poplar::Tensor oneHot;
 
   NllOpx::flattenAndEncodeOneHot(
       *this, prog, probs, label, probs2D, label1D, oneHot);
 
   // -1 at position "label", 0 elsewhere.
   // p - 1 at position "label" label, p elsewhere.
-  snap::popops::mapInPlace(graph(),
-                           pe::Add(pe::Neg(pe::_1), pe::_2),
-                           {oneHot, probs2D},
-                           prog,
-                           debugContext("negsub"));
+  popops::mapInPlace(graph(),
+                     pe::Add(pe::Neg(pe::_1), pe::_2),
+                     {oneHot, probs2D},
+                     prog,
+                     debugContext("negsub"));
 
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());
@@ -173,7 +175,7 @@ void SoftmaxGradDirectOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(0, oneHot);
 }
 
-void SoftmaxGradOpx::grow(snap::program::Sequence &prog) const {
+void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto axis = getOp<SoftmaxGradOp>().getAxis();
 
   // Note: Implementation for SOFTMAX and SOFTMAX_STABLE gradient
@@ -182,54 +184,54 @@ void SoftmaxGradOpx::grow(snap::program::Sequence &prog) const {
   auto outActs   = getInTensor(SoftmaxGradOp::getProbsInIndex());
   auto outActs2D = EwuComputex::coerceTo2D(outActs, axis);
   auto outGrad   = getInTensor(SoftmaxGradOp::getGradProbsInIndex())
-                     .getPoplarTensor()
+
                      .reshape(outActs2D.shape());
   auto outTensor = popnn::nonLinearityInputGradient(
-      graph().getPoplarGraph(),                // graph,
+      graph(),                                 // graph,
       popnn::NonLinearityType::SOFTMAX_STABLE, // nonLinearityType
-      outActs2D.getPoplarTensor(),             // out,
+      outActs2D,                               // out,
       outGrad,                                 // outGradient,
-      prog.getPoplarSequence(),                // prog,
-      debugContext("SoftmaxGrad")              // debugContext
+      prog,
+      debugContext("SoftmaxGrad") // debugContext
   );
 
-  setOutTensor(0, snap::Tensor{outTensor.reshape(outActs.shape()), graph()});
+  setOutTensor(0, outTensor.reshape(outActs.shape()));
 }
 
-void NlllWithSoftmaxGradDirectOpx::grow(snap::program::Sequence &prog) const {
+void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   NlllWithSoftmaxGradDirectOp &op = getOp<NlllWithSoftmaxGradDirectOp>();
 
-  const snap::Tensor &probs =
+  const poplar::Tensor &probs =
       getInTensor(NlllWithSoftmaxGradDirectOp::getProbsInIndex());
-  const snap::Tensor &label =
+  const poplar::Tensor &label =
       getInTensor(NlllWithSoftmaxGradDirectOp::getLabelInIndex());
-  snap::Tensor gradIn =
+  poplar::Tensor gradIn =
       getInTensor(NlllWithSoftmaxGradDirectOp::getGradProbsInIndex());
-  snap::Tensor probs2D;
-  snap::Tensor label1D;
-  snap::Tensor oneHot;
+  poplar::Tensor probs2D;
+  poplar::Tensor label1D;
+  poplar::Tensor oneHot;
 
   NllOpx::flattenAndEncodeOneHot(
       *this, prog, probs, label, probs2D, label1D, oneHot);
 
   // oneHotProbs, from a tensor which is sparse with a single 1 per row,
   //              to a tensor which is sparse with a single p per row.
-  auto oneHotProbs = snap::popops::map(graph(),
-                                       popops::expr::BinaryOpType::MULTIPLY,
-                                       oneHot,
-                                       probs2D,
-                                       prog,
-                                       debugContext("mul"));
+  auto oneHotProbs = popops::map(graph(),
+                                 popops::expr::BinaryOpType::MULTIPLY,
+                                 oneHot,
+                                 probs2D,
+                                 prog,
+                                 debugContext("mul"));
 
   // Now compute the SoftmaxGrad:
 
   // -1 at position "label", 0 elsewhere.
   // p - 1 at position "label" label, p elsewhere.
-  snap::popops::mapInPlace(graph(),
-                           pe::Add(pe::Neg(pe::_1), pe::_2),
-                           {oneHot, probs2D},
-                           prog,
-                           debugContext("NegSub"));
+  popops::mapInPlace(graph(),
+                     pe::Add(pe::Neg(pe::_1), pe::_2),
+                     {oneHot, probs2D},
+                     prog,
+                     debugContext("NegSub"));
 
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());
@@ -248,23 +250,21 @@ void NlllWithSoftmaxGradDirectOpx::grow(snap::program::Sequence &prog) const {
   // Now compute the rest of the nll loss from the same one-hot encoded tensor:
 
   // sum rows, so that just the p corresponding to the label remains
-  snap::Tensor reduction =
-      snap::Tensor{popops::reduce(graph().getPoplarGraph(),
-                                  oneHotProbs.getPoplarTensor(),
-                                  {1},
-                                  {popops::Operation::ADD},
-                                  prog.getPoplarSequence(),
-                                  debugContext("add")),
-                   graph()};
+  poplar::Tensor reduction = popops::reduce(graph(),
+                                            oneHotProbs,
+                                            {1},
+                                            {popops::Operation::ADD},
+                                            prog,
+                                            debugContext("add"));
 
   // Create an epsilon value
-  snap::Tensor eps = getConst(probs.elementType(), {1}, 1.0e-7, "epsilon");
+  poplar::Tensor eps = getConst(probs.elementType(), {1}, 1.0e-7, "epsilon");
   // Add eps to reduction to make sure it does not have any 0's and log it,
-  snap::popops::mapInPlace(graph(),
-                           pe::Log(pe::Add(pe::_1, pe::_2)),
-                           {reduction, eps},
-                           prog,
-                           debugContext("LogEpsMul"));
+  popops::mapInPlace(graph(),
+                     pe::Log(pe::Add(pe::_1, pe::_2)),
+                     {reduction, eps},
+                     prog,
+                     debugContext("LogEpsMul"));
 
   // TODO: T8305, re-use the mask created above
   if (op.hasIgnoreIndex()) {

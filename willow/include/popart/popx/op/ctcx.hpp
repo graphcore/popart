@@ -2,18 +2,19 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_CTCX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_CTCX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
 #include <memory>
 #include <set>
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+#include "popart/popx/debugcontextx.hpp"
+
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popnn {
 namespace ctc {
@@ -27,44 +28,43 @@ class Op;
 namespace popx {
 class Devicex;
 
-class CtcOpx : public PopOpx {
+class CtcOpx : public Opx {
 public:
   CtcOpx(Op *, Devicex *);
   ~CtcOpx();
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
-  // See PopOpx::createInputTensor.
-  virtual snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const override;
+  // See Opx::createInput.
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const override;
 
-  // See PopOpx::getInputCreatorType.
+  // See Opx::getInputCreatorType.
   InputCreatorType getInputCreatorType(InIndex index) const override;
 
-  // See PopOpx::mustExistBeforeCreate.
+  // See Opx::mustExistBeforeCreate.
   std::set<TensorId> mustExistBeforeCreate(InIndex index) const override;
 
 private:
   // Helper function to apply reduction.
-  snap::Tensor applyReduction(snap::program::Sequence &prog,
-                              snap::Tensor loss,
-                              snap::Tensor targetLengths) const;
+  poplar::Tensor applyReduction(poplar::program::Sequence &prog,
+                                poplar::Tensor loss,
+                                poplar::Tensor targetLengths) const;
 
   // Unique pointer (so we can forward-declare and avoid including poplar
   // headers).
   std::unique_ptr<popnn::ctc::Plan> plan;
 };
 
-class CtcGradOpx : public PopOpx {
+class CtcGradOpx : public Opx {
 public:
   CtcGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   // Helper function to apply partial derivative of reduction.
-  snap::Tensor applyReductionGrad(snap::program::Sequence &prog,
-                                  const snap::Tensor &ctcLossGrad,
-                                  const snap::Tensor &targetLengths) const;
+  poplar::Tensor applyReductionGrad(poplar::program::Sequence &prog,
+                                    const poplar::Tensor &ctcLossGrad,
+                                    const poplar::Tensor &targetLengths) const;
 };
 
 } // namespace popx

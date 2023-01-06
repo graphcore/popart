@@ -1,5 +1,4 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -8,13 +7,18 @@
 #include <memory>
 #include <numeric>
 #include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <utility>
 #include <vector>
+#include <poplar/Graph.hpp>
+#include <poplar/OptionFlags.hpp>
+#include <poplar/Program.hpp>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
+#include <popops/ExprOp.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
+#include <poputil/Broadcast.hpp>
+#include <poputil/TileMapping.hpp>
 #include <popart/op/elementwise.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
@@ -25,7 +29,8 @@
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
 #include "popart/op.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/popx/poptensors.hpp"
 #include "popart/popx/viewchangers.hpp"
 #include "popart/tensor.hpp"
@@ -47,15 +52,15 @@ ElementWiseUnaryOutplaceOpx::ElementWiseUnaryOutplaceOpx(
     : ElementWiseUnaryOpx(op, devx), cx(std::move(cx_)) {}
 
 ElementWiseUnaryOpx::ElementWiseUnaryOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {}
+    : Opx(op, devicex) {}
 
 InputCreatorType ElementWiseUnaryOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-snap::Tensor ElementWiseUnaryOpx::unwindTensorLayout(snap::Tensor tensor,
-                                                     InIndex,
-                                                     OutIndex) const {
+poplar::Tensor ElementWiseUnaryOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                       InIndex,
+                                                       OutIndex) const {
   return tensor;
 }
 
@@ -64,7 +69,7 @@ view::RegMap ElementWiseUnaryOpx::unwindRegion(InIndex, OutIndex) const {
 }
 
 ElementWiseBinaryOpx::ElementWiseBinaryOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {}
+    : Opx(op, devicex) {}
 
 InputCreatorType
 ElementWiseBinaryOpx::getInputCreatorType(InIndex index) const {
@@ -132,9 +137,9 @@ ElementWiseBinaryOpx::mustExistBeforeCreate(InIndex index) const {
   return mustExist;
 }
 
-snap::Tensor ElementWiseBinaryOpx::createInputTensor(
-    InIndex index,
-    const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+ElementWiseBinaryOpx::createInput(InIndex index,
+                                  const poplar::DebugNameAndId &dnai) const {
 
   const auto arg0Idx = ElementWiseBinaryBaseOp::getArg0InIndex();
   const auto arg1Idx = ElementWiseBinaryBaseOp::getArg1InIndex();
@@ -155,7 +160,7 @@ snap::Tensor ElementWiseBinaryOpx::createInputTensor(
               std::to_string(index));
 }
 
-void ElementWiseUnaryInplaceOpx::grow(snap::program::Sequence &prog) const {
+void ElementWiseUnaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
 
   const auto growTimeTracker =
       op_p->getIr().timePartitionLogger().scopedStopwatch(
@@ -184,7 +189,7 @@ void ElementWiseUnaryInplaceOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(ElementWiseUnaryOp::getOutIndex(), outTensor);
 }
 
-void ElementWiseUnaryOutplaceOpx::grow(snap::program::Sequence &prog) const {
+void ElementWiseUnaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
   auto outTensor = cx->outplace(prog,
                                 graph(),
                                 getInTensor(ElementWiseUnaryOp::getInIndex()),
@@ -195,9 +200,9 @@ void ElementWiseUnaryOutplaceOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(ElementWiseUnaryOp::getOutIndex(), outTensor);
 }
 
-snap::Tensor ElementWiseBinaryOpx::unwindTensorLayout(snap::Tensor tensor,
-                                                      InIndex,
-                                                      OutIndex) const {
+poplar::Tensor ElementWiseBinaryOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                        InIndex,
+                                                        OutIndex) const {
   return tensor;
 }
 
@@ -205,27 +210,28 @@ view::RegMap ElementWiseBinaryOpx::unwindRegion(InIndex, OutIndex) const {
   return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
-snap::Tensor EwuComputex::cloneNcopy(snap::program::Sequence &prog,
-                                     snap::Graph &graph,
-                                     const snap::Tensor &tensor,
-                                     const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+EwuComputex::cloneNcopy(poplar::program::Sequence &prog,
+                        poplar::Graph &graph,
+                        const poplar::Tensor &tensor,
+                        const poplar::DebugNameAndId &dnai) const {
   auto outTensor = graph.clone(tensor, {dnai});
   poplar::program::Copy copyProg(tensor, outTensor, false, {dnai});
-  prog.getPoplarSequence().add(copyProg);
+  prog.add(copyProg);
   return outTensor;
 }
 
-snap::Tensor EwuComputex::outplace(snap::program::Sequence &prog,
-                                   snap::Graph &graph,
-                                   const snap::Tensor &tensor,
-                                   const poplar::DebugNameAndId &dnai,
-                                   const std::string &debug_prefix) const {
+poplar::Tensor EwuComputex::outplace(poplar::program::Sequence &prog,
+                                     poplar::Graph &graph,
+                                     const poplar::Tensor &tensor,
+                                     const poplar::DebugNameAndId &dnai,
+                                     const std::string &debug_prefix) const {
   auto out_tensor = cloneNcopy(prog, graph, tensor, dnai);
   inplace(prog, graph, out_tensor, dnai, debug_prefix);
   return out_tensor;
 }
 
-snap::Tensor EwuComputex::coerceTo2D(const snap::Tensor &t, int64_t axis) {
+poplar::Tensor EwuComputex::coerceTo2D(const poplar::Tensor &t, int64_t axis) {
   const auto in_shape = t.shape();
   auto k              = in_shape.begin();
   std::advance(k, axis);
@@ -262,7 +268,34 @@ InIndex EwbComputex::getOutplaceArgInIndex() const {
   return inplaceIdx == arg0Idx ? arg1Idx : arg0Idx;
 }
 
-void ElementWiseBinaryOutplaceOpx::grow(snap::program::Sequence &prog) const {
+// Maybe move these to popops?
+
+poplar::Tensor
+EwbComputex::mapMaybeInPlace(poplar::Graph &graph,
+                             popops::expr::BinaryOpType op,
+                             poplar::Tensor &tInOut,
+                             poplar::Tensor &tIn,
+                             poplar::program::Sequence &prog,
+                             const poplar::DebugContext &debugContext,
+                             const poplar::OptionFlags &options,
+                             const std::string &name) const {
+
+  const unsigned maxTileImbalance = 150000;
+
+  if (poputil::getTileImbalance(graph, tInOut) > maxTileImbalance) {
+    // outplace branch
+    auto t = popops::map(graph, op, tInOut, tIn, prog, debugContext, options);
+
+    return tInOut;
+  } else {
+    // inplace branch
+    popops::mapInPlace(graph, op, tInOut, tIn, prog, debugContext, options);
+    poputil::broadcastToMatch(tInOut, tIn);
+    return tInOut;
+  }
+}
+
+void ElementWiseBinaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
   if (cx->inplaceSupported()) {
     throw internal_error(
         "Operation {} was configured for inplacing and attempting "
@@ -304,15 +337,15 @@ void ElementWiseBinaryOutplaceOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(outIdx, outTensor);
 }
 
-void ElementWiseBinaryInplaceOpx::grow(snap::program::Sequence &prog) const {
+void ElementWiseBinaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
   if (!cx->inplaceSupported()) {
     throw error("Invalid operation {} was not configured for inplacing and "
                 "attempting to compute in-place",
                 debugContext().getPathName());
   }
 
-  auto tInOut    = getInTensor(cx->getInplaceArgInIndex());
-  const auto tIn = getInTensor(cx->getOutplaceArgInIndex());
+  auto tInOut = getInTensor(cx->getInplaceArgInIndex());
+  auto tIn    = getInTensor(cx->getOutplaceArgInIndex());
 
   if (tInOut.isParallelWriteable()) {
     tInOut =
@@ -329,7 +362,7 @@ void ElementWiseBinaryInplaceOpx::grow(snap::program::Sequence &prog) const {
 }
 
 BinaryComparisonOpx::BinaryComparisonOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {}
+    : Opx(op, devicex) {}
 
 } // namespace popx
 } // namespace popart

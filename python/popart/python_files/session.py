@@ -201,7 +201,7 @@ class InferenceSession(_InferenceSessionCore):
     def compileAndExport(self, filename: str) -> None:
         """Compile the graph and export it to a file.
 
-        This method will first create :cpp:class:`snap::Graph` and compile
+        This method will first create :cpp:class:`poplar::Graph` and compile
         :cpp:class:`poplar::Executable`. Next, it will export the executable and
         metadata to the file. The exported file will be in the :doc:`PopEF
         <popef:index>` format. This means that the file can be used to
@@ -241,7 +241,7 @@ class InferenceSession(_InferenceSessionCore):
     def prepareDevice(self, loadEngine: bool = True) -> None:
         """Prepare the network for execution.
 
-        This will create :cpp:class:`snap::Graph` and
+        This will create :cpp:class:`poplar::Graph` and
         :cpp:class:`poplar::Engine`, and set up
         :cpp:class:`poplar::Streams`.
 
@@ -384,7 +384,7 @@ class TrainingSession(_TrainingSessionCore):
     def compileAndExport(self, filename: str) -> None:
         """Compile the graph and export it to a file.
 
-        This method will first create :cpp:class:`snap::Graph` and compile
+        This method will first create :cpp:class:`poplar::Graph` and compile
         :cpp:class:`poplar::Executable`. Next, it will export the executable and
         metadata to the file. The exported file will be in the :doc:`PopEF
         <popef:index>` format. This means that the file can be used to
@@ -423,7 +423,7 @@ class TrainingSession(_TrainingSessionCore):
     def prepareDevice(self, loadEngine: bool = True) -> None:
         """Prepare the network for execution.
 
-        This will create :cpp:class:`snap::Graph` and
+        This will create :cpp:class:`poplar::Graph` and
         :cpp:class:`poplar::Engine`, and set up :cpp:class:`poplar::Streams`.
 
         Arguments:

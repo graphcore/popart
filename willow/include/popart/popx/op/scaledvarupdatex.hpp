@@ -2,14 +2,14 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SCALEDVARUPDATEX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SCALEDVARUPDATEX_HPP_
 
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/popx/op/varupdatex.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class ScaledVarUpdateOp;
@@ -21,21 +21,21 @@ class Devicex;
 class ScaledVarUpdateOpx : public VarUpdateOpx {
 public:
   ScaledVarUpdateOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   // does not create inputs
 private:
-  snap::Tensor getOrCreateLrTensor() const;
-  snap::Tensor getOrCreateWdTensor() const;
+  poplar::Tensor getOrCreateLrTensor() const;
+  poplar::Tensor getOrCreateWdTensor() const;
 
-  void growWithLrAsInput(snap::program::Sequence &prog,
+  void growWithLrAsInput(poplar::program::Sequence &prog,
                          const ScaledVarUpdateOp &op,
-                         const snap::Tensor &var,
-                         const snap::Tensor &updater) const;
-  void growWithLrInUpdater(snap::program::Sequence &prog,
+                         const poplar::Tensor &var,
+                         const poplar::Tensor &updater) const;
+  void growWithLrInUpdater(poplar::program::Sequence &prog,
                            const ScaledVarUpdateOp &op,
-                           const snap::Tensor &var,
-                           const snap::Tensor &updater) const;
+                           const poplar::Tensor &var,
+                           const poplar::Tensor &updater) const;
 };
 
 } // namespace popx

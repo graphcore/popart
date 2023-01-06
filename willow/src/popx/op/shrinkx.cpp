@@ -1,10 +1,10 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <memory>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <string>
 #include <vector>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/error.hpp>
@@ -17,15 +17,15 @@
 #include "popart/operators.hpp"
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -52,22 +52,22 @@ ShrinkOpx::ShrinkOpx(Op *op, Devicex *devicex)
   verifyOp<ShrinkOp>(op, {Onnx::Operators::Shrink_9});
 }
 
-snap::Tensor ShrinkComputex::outplace(snap::program::Sequence &prog,
-                                      snap::Graph &graph,
-                                      const snap::Tensor &tensor,
-                                      const poplar::DebugNameAndId &dnai,
-                                      const std::string &debug_prefix) const {
+poplar::Tensor ShrinkComputex::outplace(poplar::program::Sequence &prog,
+                                        poplar::Graph &graph,
+                                        const poplar::Tensor &tensor,
+                                        const poplar::DebugNameAndId &dnai,
+                                        const std::string &debug_prefix) const {
   auto out_tensor = cloneNcopy(prog, graph, tensor, dnai);
   inplace(prog, graph, out_tensor, dnai, debug_prefix);
   return out_tensor;
 }
 
-void ShrinkComputex::inplace(snap::program::Sequence &prog,
-                             snap::Graph &graph,
-                             const snap::Tensor &tensor,
+void ShrinkComputex::inplace(poplar::program::Sequence &prog,
+                             poplar::Graph &graph,
+                             const poplar::Tensor &tensor,
                              const poplar::DebugNameAndId &dnai,
                              const std::string &debug_prefix) const {
-  snap::popops::mapInPlace(
+  popops::mapInPlace(
       graph,
       pe::Select(pe::Add(pe::_1, pe::Const(this->bias())),
                  pe::Select(pe::Sub(pe::_1, pe::Const(this->bias())),
@@ -88,11 +88,11 @@ ShrinkInplaceOpx::ShrinkInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<ShrinkInplaceOp>(op, Onnx::CustomOperators::ShrinkInplace);
 }
 
-ShrinkGradOpx::ShrinkGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+ShrinkGradOpx::ShrinkGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ShrinkGradOp>(op, Onnx::GradOperators::ShrinkGrad);
 }
 
-void ShrinkGradOpx::grow(snap::program::Sequence &prog) const {
+void ShrinkGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op       = getOp<ShrinkGradOp>();
   const auto input     = getInTensor(ShrinkGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(ShrinkGradOp::getFwdArgInIndex());
@@ -105,11 +105,11 @@ void ShrinkGradOpx::grow(snap::program::Sequence &prog) const {
   exprs.push_back(std::make_unique<pe::Mul>(pe::Const(0.5f), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
-  auto output = snap::popops::map(graph(),
-                                  *exprs.back(),
-                                  {input, fwd_input},
-                                  prog,
-                                  debugContext("output_grad"));
+  auto output = popops::map(graph(),
+                            *exprs.back(),
+                            {input, fwd_input},
+                            prog,
+                            debugContext("output_grad"));
 
   setOutTensor(ShrinkGradOp::getOutIndex(), output);
 }

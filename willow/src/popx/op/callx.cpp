@@ -3,14 +3,15 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <ext/new_allocator.h>
 #include <memory>
 #include <ostream>
 #include <set>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <tuple>
 #include <vector>
+#include <poplar/Program.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/aliaszerocopy.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -31,7 +32,7 @@
 #include "popart/operatoridentifier.hpp"
 #include "popart/pointercomparators.hpp"
 #include "popart/popx/op/subgraphx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/region.hpp"
 #include "popart/tensordebuginfo.hpp"
 
@@ -48,7 +49,7 @@ InputCreatorType CallOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanDelegate;
 }
 
-void CallOpx::copyModified(snap::program::Sequence &prog,
+void CallOpx::copyModified(poplar::program::Sequence &prog,
                            InIndex inputIndex) const {
   auto &callop = getOp<CallOp>();
   auto &i      = inputIndex;
@@ -81,7 +82,7 @@ void CallOpx::copyModified(snap::program::Sequence &prog,
                           callop.inId(i));
       poplar::program::Copy copy_prog(
           graph_input, call_input, false, debugContext());
-      prog.getPoplarSequence().add(copy_prog);
+      prog.add(copy_prog);
     } else {
       logging::opx::trace("[CallOpx] Skipping copy modified input {}->{}",
                           graph_input_id,
@@ -90,7 +91,7 @@ void CallOpx::copyModified(snap::program::Sequence &prog,
   }
 }
 
-void CallOpx::copyInput(snap::program::Sequence &prog,
+void CallOpx::copyInput(poplar::program::Sequence &prog,
                         InIndex inputIndex) const {
   auto &callop = getOp<CallOp>();
   auto &i      = inputIndex;
@@ -120,7 +121,7 @@ void CallOpx::copyInput(snap::program::Sequence &prog,
           "[CallOpx] Copying input {}->{}", call_input_id, graph_input_id);
       poplar::program::Copy copy_prog(
           call_input, graph_input, false, debugContext());
-      prog.getPoplarSequence().add(copy_prog);
+      prog.add(copy_prog);
     } else {
       logging::opx::trace("[CallOpx] Skipping copy input {}->{} "
                           "(tensor not read in subgraph)",
@@ -133,12 +134,11 @@ void CallOpx::copyInput(snap::program::Sequence &prog,
   }
   if (accessType == view::AccessType::Write) {
     logging::opx::trace("[CallOpx] Write undef tensor {}", graph_input_id);
-    prog.getPoplarSequence().add(
-        poplar::program::WriteUndef(graph_input, debugContext()));
+    prog.add(poplar::program::WriteUndef(graph_input, debugContext()));
   }
 }
 
-void CallOpx::copyOutput(snap::program::Sequence &prog,
+void CallOpx::copyOutput(poplar::program::Sequence &prog,
                          OutIndex outputIndex) const {
   auto &callop = getOp<CallOp>();
   auto &i      = outputIndex;
@@ -176,7 +176,7 @@ void CallOpx::copyOutput(snap::program::Sequence &prog,
           "[CallOpx] Copying output {}->{}", graph_output_id, callop.outId(i));
       poplar::program::Copy copy_prog(
           graph_output, call_output, false, debugContext());
-      prog.getPoplarSequence().add(copy_prog);
+      prog.add(copy_prog);
     } else {
       logging::opx::trace(
           "[CallOpx] Skipping output {}->{}", graph_output_id, callop.outId(i));
@@ -187,7 +187,7 @@ void CallOpx::copyOutput(snap::program::Sequence &prog,
   }
 }
 
-void CallOpx::doCall(snap::program::Sequence &prog,
+void CallOpx::doCall(poplar::program::Sequence &prog,
                      SubgraphPartIndex subgraphPart) const {
   auto &callop       = getOp<CallOp>();
   auto &called_graph = callop.getCalledGraph();
@@ -198,11 +198,10 @@ void CallOpx::doCall(snap::program::Sequence &prog,
                       called_graph.getGraphString(),
                       subgraphPart);
   auto dbgStr = logging::format("{}/{}", called_graph.id.str(), subgraphPart);
-  prog.getPoplarSequence().add(
-      snap::program::Call(graph(), graph_prog, debugContext(dbgStr)));
+  prog.add(poplar::program::Call(graph_prog, debugContext(dbgStr)));
 }
 
-void CallOpx::grow(std::vector<snap::program::Sequence> &sequences) const {
+void CallOpx::grow(std::vector<poplar::program::Sequence> &sequences) const {
 
   auto partitioner    = dv_p->lowering().getSubgraphPartitioner();
   auto &callop        = getOp<CallOp>();
@@ -225,7 +224,7 @@ void CallOpx::grow(std::vector<snap::program::Sequence> &sequences) const {
         int subgraphPart = (sequences.size() + offsetSubgraphPart);
         std::stringstream ss;
         ss << callop.getGraph().id.str() << "/" << subgraphPart;
-        sequences.push_back({debugContext(ss.str()), dv_p->lowering().graph()});
+        sequences.push_back(debugContext(ss.str()));
       }
 
       using CallOpPartType = liveness::SubgraphPartitioner::CallOpPartType;
@@ -269,7 +268,7 @@ void CallOpx::grow(std::vector<snap::program::Sequence> &sequences) const {
   }
 }
 
-void CallOpx::grow(snap::program::Sequence &prog) const {
+void CallOpx::grow(poplar::program::Sequence &prog) const {
   throw error("growing CallOpx requires a vector of sequences {}", op_p->opid);
 }
 

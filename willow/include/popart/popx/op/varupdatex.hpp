@@ -2,7 +2,7 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_VARUPDATEX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_VARUPDATEX_HPP_
 
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
 namespace popart {
 class Op;
@@ -10,9 +10,9 @@ class Op;
 namespace popx {
 class Devicex;
 
-class VarUpdateOpx : public PopOpx {
+class VarUpdateOpx : public Opx {
 public:
-  VarUpdateOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
+  VarUpdateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 };
 
 } // namespace popx

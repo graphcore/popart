@@ -1,16 +1,15 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <poplar/Graph.hpp>
+#include <poplar/Program.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/op/tensorremap.hpp>
 #include <popart/popx/op/tensorremapx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
 #include "popart/graphcoreoperators.hpp"
 #include "popart/names.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/region.hpp" // IWYU pragma: keep
 
 namespace popart {
@@ -19,20 +18,17 @@ class Op;
 namespace popx {
 class Devicex;
 
-TensorRemapOpx::TensorRemapOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+TensorRemapOpx::TensorRemapOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<TensorRemapOp>(op, Onnx::CustomOperators::TensorRemap_1);
 }
 
-void TensorRemapOpx::grow(snap::program::Sequence &prog) const {
-  snap::Tensor out;
+void TensorRemapOpx::grow(poplar::program::Sequence &prog) const {
+  poplar::Tensor out;
 
   if (hasInput(TensorRemapOp::getRefInIndex())) {
     // Clone from reference
-    out = snap::Tensor{graph().getPoplarGraph().clone(
-                           getInTensor(hasInput(TensorRemapOp::getRefInIndex()))
-                               .getPoplarTensor(),
-                           debugContext(outId(TensorRemapOp::getOutIndex()))),
-                       graph()};
+    out = graph().clone(getInTensor(hasInput(TensorRemapOp::getRefInIndex())),
+                        debugContext(outId(TensorRemapOp::getOutIndex())));
     setOutTensor(TensorRemapOp::getOutIndex(), out);
   } else {
     // Create new output tensor (externally)
@@ -44,7 +40,7 @@ void TensorRemapOpx::grow(snap::program::Sequence &prog) const {
       out,
       false,
       debugContext(outId(TensorRemapOp::getOutIndex())));
-  prog.getPoplarSequence().add(copyProg);
+  prog.add(copyProg);
 }
 
 bool TensorRemapOpx::outputCreatedExternally(OutIndex) const {
@@ -65,9 +61,9 @@ InputCreatorType TensorRemapOpx::getInputCreatorType(InIndex index) const {
   }
 }
 
-snap::Tensor TensorRemapOpx::unwindTensorLayout(snap::Tensor tensor,
-                                                InIndex,
-                                                OutIndex) const {
+poplar::Tensor TensorRemapOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                  InIndex,
+                                                  OutIndex) const {
   return tensor;
 }
 

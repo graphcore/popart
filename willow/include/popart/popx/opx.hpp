@@ -2,25 +2,28 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OPX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OPX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
 #include <cstddef>
 #include <cstdint>
-#include <snap/Tensor.hpp>
+#include <ostream>
+#include <set>
 #include <string>
+#include <typeinfo>
 #include <vector>
-
-#include <poplar/DeviceManager.hpp>
-#include <poplar/Engine.hpp>
-#include <poplar/Graph.hpp>
+#include <poplar/OptionFlags.hpp>
 #include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
+#include <popops/ExprOp.hpp>
+#include <popart/error.hpp>
+#include <popart/op.hpp>
+#include <popart/popx/inputcreatortype.hpp>
+#include <popart/popx/preparedtensor.hpp>
+#include <popart/popx/pritask.hpp>
+#include <popart/popx/viewchangers.hpp>
 
 #include "popart/error.hpp"
 #include "popart/names.hpp"
-#include "popart/op.hpp"
 #include "popart/operatoridentifier.hpp"
-#include "popart/popx/preparedtensor.hpp"
-#include "popart/popx/viewchangers.hpp"
+#include "popart/popx/debugcontextx.hpp"
 
 namespace poplar {
 class Graph;
@@ -29,42 +32,15 @@ namespace program {
 class Sequence;
 } // namespace program
 } // namespace poplar
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
 
 namespace popart {
-class Op;
 class DebugInfo;
+class Tensor;
+class TensorInfo;
 
 namespace popx {
 class Devicex;
 class ViewChangers;
-
-enum class InputCreatorType {
-  // PopOpx has a poplar call to a function that can
-  // lay out the input tensor on the device
-  CanCreate = 0,
-  // Cannot create the input tensor, but can
-  // allow an PopOpx downstream in the graph to
-  // create it
-  CanUnwind,
-  // Can create or unwind
-  CanCreateOrUnwind,
-  // Cannot create tensor, nor can it allow a
-  // a downstream PopOpx to create the tensor
-  Deadend,
-  // Has a potential creator, but can also allow an PopOpx downstream in the
-  // graph
-  // to create it instead.
-  CanDelegate,
-  // Has a potential creator, but can also allow an PopOpx downstream in the
-  // graph
-  // to create it instead (either propagated through the subgraph, or directly).
-  CanDelegateOrUnwind
-};
 
 class Opx {
 public: // methods
@@ -74,10 +50,10 @@ public: // methods
   virtual ~Opx();
 
   // create the input poplar::Tensor for input at index with name
-  // default : throw error (not all PopOpxs can createInput)
+  // default : throw error (not all Opxs can createInput)
   virtual poplar::Tensor createInput(InIndex index,
                                      const poplar::DebugNameAndId &dnai) const;
-  [[deprecated]] virtual snap::Tensor
+  virtual poplar::Tensor
   createInputTensor(popart::InIndex index,
                     const poplar::DebugNameAndId &dnai) const;
 
@@ -99,9 +75,6 @@ public: // methods
   // CANUNWIND
   virtual poplar::Tensor
   unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const;
-  [[deprecated("Please use the poplar:: version of the method instead of "
-               "snap::")]] virtual snap::Tensor
-  unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const;
 
   // If this Opx creates a poplar::Tensor at index0 (via createInput),
   // does it create the same poplar::Tensor as if opx1 creates one at
@@ -147,6 +120,15 @@ public: // methods
   int64_t getVirtualGraphId() const;
   // Returns the virtual graph if enabled, else returns the dv_p->graph
   poplar::Graph &graph() const;
+  // Returns the top level graph (dv_p->graph)
+  poplar::Graph &topLevelGraph() const;
+  // The default assumes all Opx input and output tensors are laid out on the
+  // same virtual graph. These methods should be overridden when this is not
+  // the case, such as for IpuCopyOpx.
+  // Returns the virtual graph for the tensor at InIndex, defaults to graph()
+  virtual poplar::Graph &srcGraph(InIndex) const;
+  // Returns the virtual graph for the tensor at OutIndex, defaults to graph()
+  virtual poplar::Graph &dstGraph(OutIndex) const;
   // shortcut for dv_p->tensors.get
   const poplar::Tensor &get(TensorId) const;
   // shortcut for dv_p->tensors.getView
@@ -252,6 +234,20 @@ public: // methods
   poplar::Tensor getScalarVariable(const poplar::Type &type,
                                    const std::string &name) const;
 
+  // New, from PopOpx:
+
+  // Create a tensor of 0s of specified shape
+  // The tensor is broadcasted from a scalar value to reduce memory footprint
+  poplar::Tensor
+      getZerosTensor(std::vector<std::size_t>, poplar::Type, std::string) const;
+
+  /**
+   * Return the virtual graph associated with input at index in
+   * \param in the input index
+   * \return the corresponding poplar virtual graph
+   */
+  poplar::Graph &inGraph(InIndex in) const;
+
   // Get the part id of the Opx grow function that creates the output tensor
   virtual std::set<OpxGrowPartId> getInGrowPartIds(Tensor *inTensor) const;
   virtual OpxGrowPartId getOutGrowPartId(Tensor *outTensor) const;
@@ -266,16 +262,13 @@ public: // methods
   // to be assembled in Opx::grow
   virtual void growPart(OpxGrowPartId id) const;
 
-  // using PopOpx::grow;
-  [[deprecated("Please use grow(poplar::program::Sequence &).")]] virtual void
-  grow(snap::program::Sequence &) const;
+  // adds poplar::Tensors to devicex_->popTensors,
+  // one for each output of op_.
   virtual void grow(poplar::program::Sequence &) const;
+
   // Akin to the grow function above except it allows for growing over multiple
   // fragments. This is mostly for CallOp optimisations, the default behaviour
   // is to call the single sequence grow function.
-  [[deprecated("Please use grow(std::vector<poplar::program::Sequence> "
-               "&).")]] virtual void
-  grow(std::vector<snap::program::Sequence> &) const;
   virtual void grow(std::vector<poplar::program::Sequence> &) const;
 
   // the debug info to pass to poplar calls
@@ -299,6 +292,13 @@ public: // methods
   // The Opx inputs that go to any subgraph and need to be prepared
   virtual PreparedTensorInfos getInputsToPrepare() const;
 
+  /**
+   * Return the virtual graph associated with output at index out
+   * \param out the output index
+   * \return the corresponding poplar virtual graph
+   */
+  poplar::Graph &outGraph(OutIndex out) const;
+
   // shortcut for op_p->input.tensor(int)->info.shape_szt()
   const std::vector<size_t> inShapeSzt(InIndex) const;
 
@@ -310,25 +310,17 @@ public: // data
   // The Op corresponding to this PopOpx
   Op *op_p;
 
+  poplar::Tensor mapMaybeInPlace(popops::expr::BinaryOpType,
+                                 poplar::Tensor &,
+                                 poplar::Tensor &,
+                                 poplar::program::Sequence &,
+                                 const poplar::DebugContext &,
+                                 const poplar::OptionFlags &,
+                                 const std::string &);
+
 protected: // data
   // The Devicex to which this PopOpx belongs
   Devicex *dv_p;
-
-public: // temporary methods
-  [[deprecated("Temporary function to help with code transition. Internal use "
-               "only.")]] const snap::Tensor &snapGet(TensorId) const;
-  [[deprecated("Temporary function to help with code transition. Internal use "
-               "only.")]] snap::Graph &
-  snapGraph() const;
-  [[deprecated("Temporary function to help with code transition. Internal use "
-               "only.")]] const snap::Tensor &
-  snapGetInTensor(InIndex index) const;
-  [[deprecated("Temporary function to help with code transition. Internal use "
-               "only.")]] const snap::Tensor &
-  snapGetOutTensor(OutIndex index) const;
-  [[deprecated("Temporary function to help with code transition. Internal use "
-               "only.")]] virtual snap::Graph &
-      snapSrcVirtualGraph(InIndex) const;
 };
 
 } // namespace popx

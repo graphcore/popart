@@ -2,17 +2,17 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_EXCHANGE_REMOTEX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_EXCHANGE_REMOTEX_HPP_
 
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/popx/op/exchange/exchangex.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
 #include "popart/names.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -28,15 +28,16 @@ public:
 class RemoteStoreOpx : public RemoteBaseOpx {
 public:
   RemoteStoreOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class RemoteLoadOpx : public RemoteBaseOpx {
 public:
   RemoteLoadOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex index) const final;
-  snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
+  poplar::Tensor
+      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 

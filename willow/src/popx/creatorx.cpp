@@ -1,5 +1,4 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -9,13 +8,11 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <snap/Graph.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 #include <poplar/ArrayRef.hpp>
+#include <poplar/Graph.hpp>
 #include <poplar/Tensor.hpp>
 #include <poputil/TileMapping.hpp>
 #include <popart/popx/creatorx.hpp>
@@ -26,7 +23,9 @@
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
 #include "popart/op.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/pointercomparators.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/popx/viewchangers.hpp"
 #include "popart/region.hpp"
 #include "popart/tensordebuginfo.hpp"
@@ -63,9 +62,9 @@ TensorRegions fragment(const view::Region fullRegion,
   return allTensorRegions;
 }
 
-snap::Tensor compose(const TensorRegions &tensorRegions,
-                     const view::Region fullRegion,
-                     snap::Tensor fullTensor) {
+poplar::Tensor compose(const TensorRegions &tensorRegions,
+                       const view::Region fullRegion,
+                       poplar::Tensor fullTensor) {
   TensorRegions currentTensorRegions;
 
   logging::devicex::trace("[creatorx] Full region {} {}",
@@ -144,7 +143,7 @@ snap::Tensor compose(const TensorRegions &tensorRegions,
   // Merge along dimensions
   for (int64_t d = fullRegion.rank() - 1; d >= 0; --d) {
     nonstd::optional<view::Region> r;
-    nonstd::optional<snap::Tensor> t;
+    nonstd::optional<poplar::Tensor> t;
     for (auto &tensorRegion : currentTensorRegions) {
       std::pair<int64_t, view::Region> rd(-1, view::Region({}, {}));
       if (r.has_value()) {
@@ -162,10 +161,8 @@ snap::Tensor compose(const TensorRegions &tensorRegions,
       } else {
         // Merge region & concatenate tensor if possible
         if (rd.first == d) {
-          t = snap::Tensor{poplar::concat(t->getPoplarTensor(),
-                                          tensorRegion.tensor.getPoplarTensor(),
-                                          static_cast<uint32_t>(d)),
-                           t.value()};
+          t = poplar::concat(
+              t.value(), tensorRegion.tensor, static_cast<uint32_t>(d));
           r = rd.second;
         }
       }
@@ -234,9 +231,9 @@ view::Regions InputCreatorCandidate::unwind(popart::view::Region region) {
   return rqueue;
 }
 
-std::pair<snap::Tensor, ViewChangers>
+std::pair<poplar::Tensor, ViewChangers>
 InputCreatorCandidate::unwindOnPath(const OpxInAndOutIndex &opxOnPath,
-                                    const snap::Tensor &outTensor,
+                                    const poplar::Tensor &outTensor,
                                     const view::Regions &outRegions,
                                     view::Regions &inRegions) {
   logging::devicex::trace("[creatorx] Unwinding at {}",
@@ -284,10 +281,9 @@ InputCreatorCandidate::unwindOnPath(const OpxInAndOutIndex &opxOnPath,
 
   auto inInfo = opxOnPath.opx->getOp<Op>().inInfo(opxOnPath.inIndex);
 
-  auto &graph     = opxOnPath.opx->snapSrcVirtualGraph(opxOnPath.inIndex);
+  auto &graph     = opxOnPath.opx->srcGraph(opxOnPath.inIndex);
   auto fullTensor = graph.addVariable(popType(inInfo), inInfo.shape_szt(), "");
-  poputil::mapTensorLinearly(graph.getPoplarGraph(),
-                             fullTensor.getPoplarTensor());
+  poputil::mapTensorLinearly(graph, fullTensor);
 
   logging::devicex::trace("[creatorx] Tensor shape before compose: {}",
                           inTensor.shape());
@@ -312,8 +308,8 @@ InputCreatorCandidate::unwindOnPath(const OpxInAndOutIndex &opxOnPath,
   return {inTensor, ViewChangers()};
 }
 
-std::pair<snap::Tensor, ViewChangers>
-InputCreatorCandidate::unwind(snap::Tensor input) {
+std::pair<poplar::Tensor, ViewChangers>
+InputCreatorCandidate::unwind(poplar::Tensor input) {
 
   // Reverse the path,
   // The first element is now the Opx producing a tensor consumed by
@@ -327,7 +323,7 @@ InputCreatorCandidate::unwind(snap::Tensor input) {
 
   view::Regions outRegions = {region};
 
-  snap::Tensor output;
+  poplar::Tensor output;
   for (auto &opxOnPath : pathToInput) {
     view::Regions inRegions;
     auto out = unwindOnPath(opxOnPath, input, outRegions, inRegions);
@@ -344,9 +340,9 @@ InputCreatorCandidate::unwind(snap::Tensor input) {
   return {input, ViewChangers()};
 }
 
-std::pair<snap::Tensor, ViewChangers>
+std::pair<poplar::Tensor, ViewChangers>
 InputCreatorCandidate::createInput(const poplar::DebugNameAndId &dnai) {
-  snap::Tensor t = getOpx()->createInputTensor(getIndex(), dnai);
+  poplar::Tensor t = getOpx()->createInputTensor(getIndex(), dnai);
   if (getOpx()->hasCreatorViewChangers(getIndex())) {
     return {t, getOpx()->getCreatorViewChangers(getIndex())};
   }
@@ -394,8 +390,8 @@ view::Regions InputMultiCreatorCandidate::unwind(popart::view::Region) {
   throw("Not expected to unwind on InputMultiCreatorCandidate");
 }
 
-std::pair<snap::Tensor, ViewChangers>
-InputMultiCreatorCandidate::unwind(snap::Tensor) {
+std::pair<poplar::Tensor, ViewChangers>
+InputMultiCreatorCandidate::unwind(poplar::Tensor) {
   throw("Not expected to unwind on InputMultiCreatorCandidate");
 }
 
@@ -443,7 +439,7 @@ int64_t InputMultiCreatorCandidate::getNumElems() const {
 }
 
 // Create tensor by composing parts created by candidates
-std::pair<snap::Tensor, ViewChangers>
+std::pair<poplar::Tensor, ViewChangers>
 InputMultiCreatorCandidate::createInput(const poplar::DebugNameAndId &dnai) {
   auto candidateIdx = 0;
 

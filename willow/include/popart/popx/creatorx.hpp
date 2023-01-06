@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
-#include <snap/Tensor.hpp>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -14,6 +14,7 @@
 #include "popart/pointercomparators.hpp"
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/region.hpp"
+#include "poplar/Tensor.hpp"
 
 namespace popart {
 class Graph;
@@ -32,11 +33,13 @@ struct UnwindEndpoint;
 using UnwindEndpointPtr = std::shared_ptr<UnwindEndpoint>;
 
 struct TensorRegion {
-  TensorRegion(view::Region offset_, view::Region region_, snap::Tensor tensor_)
+  TensorRegion(view::Region offset_,
+               view::Region region_,
+               poplar::Tensor tensor_)
       : offset(offset_), region(region_), tensor(tensor_) {}
   view::Region offset;
   view::Region region;
-  snap::Tensor tensor;
+  poplar::Tensor tensor;
 };
 
 using TensorRegions = std::vector<TensorRegion>;
@@ -80,7 +83,7 @@ public:
   virtual ~ICreatorCandidate() = default;
 
   // Creates an input tensor
-  virtual std::pair<snap::Tensor, ViewChangers>
+  virtual std::pair<poplar::Tensor, ViewChangers>
   createInput(const poplar::DebugNameAndId &dnai) = 0;
 
   // Returns the list of tensors (DNF) that must be created before this one
@@ -102,7 +105,7 @@ public:
   // unwound tensor if the tensor does not match IR specifications.
   // Unwinding will currently stop and return when an unwinding Opx that
   // supplies a ViewChanger is reached
-  virtual std::pair<snap::Tensor, ViewChangers> unwind(snap::Tensor) = 0;
+  virtual std::pair<poplar::Tensor, ViewChangers> unwind(poplar::Tensor) = 0;
 
   virtual std::vector<popart::view::Region> unwind(popart::view::Region) = 0;
   virtual std::vector<popart::view::Region> unwind()                     = 0;
@@ -121,7 +124,7 @@ public:
   InputCreatorCandidate()           = default;
   ~InputCreatorCandidate() override = default;
 
-  std::pair<snap::Tensor, ViewChangers>
+  std::pair<poplar::Tensor, ViewChangers>
   createInput(const poplar::DebugNameAndId &dnai) override;
 
   DnfTensorIds mustExistBeforeCreate() override;
@@ -141,7 +144,7 @@ public:
     pathFromInput = value;
   }
 
-  std::pair<snap::Tensor, ViewChangers> unwind(snap::Tensor) override;
+  std::pair<poplar::Tensor, ViewChangers> unwind(poplar::Tensor) override;
   std::vector<popart::view::Region> unwind(popart::view::Region) override;
   std::vector<popart::view::Region> unwind() override;
 
@@ -153,9 +156,9 @@ protected:
   std::vector<OpxInAndOutIndex> pathFromInput;
 
 private:
-  std::pair<snap::Tensor, ViewChangers>
+  std::pair<poplar::Tensor, ViewChangers>
   unwindOnPath(const OpxInAndOutIndex &opxOnPath,
-               const snap::Tensor &outTensor,
+               const poplar::Tensor &outTensor,
                const view::Regions &outRegions,
                view::Regions &inRegions);
 
@@ -185,7 +188,7 @@ public:
   InputMultiCreatorCandidate();
   ~InputMultiCreatorCandidate() override = default;
 
-  std::pair<snap::Tensor, ViewChangers>
+  std::pair<poplar::Tensor, ViewChangers>
   createInput(const poplar::DebugNameAndId &dnai) override;
   DnfTensorIds mustExistBeforeCreate() override;
 
@@ -199,7 +202,7 @@ public:
   // Returns the unwind path from the tensor to the creator
   std::vector<std::vector<OpxInAndOutIndex>> getPathsFromInput() final;
 
-  std::pair<snap::Tensor, ViewChangers> unwind(snap::Tensor) override;
+  std::pair<poplar::Tensor, ViewChangers> unwind(poplar::Tensor) override;
   std::vector<popart::view::Region> unwind(popart::view::Region) override;
   std::vector<popart::view::Region> unwind() override;
 

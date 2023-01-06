@@ -5,13 +5,13 @@
 #include <popart/names.hpp>
 #include <popart/popx/op/elementwisex.hpp>
 
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -22,7 +22,7 @@ class Devicex;
 class DropoutOpx : public ElementWiseUnaryOpx {
 public:
   DropoutOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override;
+  void grow(poplar::program::Sequence &) const override;
   InputCreatorType getInputCreatorType(InIndex) const override;
 };
 

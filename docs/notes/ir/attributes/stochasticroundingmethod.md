@@ -83,8 +83,8 @@ The `IrLowering` class has a member of type `RngStateLowering` that is
 responsible for lowering code related to stochastic rounding. It has references
 to two Poplar tensors which maintain the two RNG states:
 ```
-  snap::Tensor differingSeedsRngStateTensor;
-  snap::Tensor identicalSeedsRngStateTensor;
+  poplar::Tensor differingSeedsRngStateTensor;
+  poplar::Tensor identicalSeedsRngStateTensor;
 ```
 
 The `RngStateLowering` has functions to lower the following:

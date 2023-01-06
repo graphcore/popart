@@ -1,12 +1,10 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <numeric>
 #include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <utility>
 #include <vector>
+#include <poplar/Graph.hpp>
+#include <poplar/Tensor.hpp>
 #include <popops/Sort.hpp>
 #include <poputil/TileMapping.hpp>
 #include <popart/op/basesort.hpp>
@@ -16,21 +14,28 @@
 
 #include "popart/names.hpp"
 #include "popart/op.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorinfo.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 namespace popx {
 
-BaseSortOpx::BaseSortOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+BaseSortOpx::BaseSortOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<BaseSortOp>(op);
   auto baseSort = dynamic_cast<BaseSortOp *>(op);
   axis          = static_cast<unsigned>(baseSort->getAxis());
 }
 
 FullSortResult
-BaseSortOpx::growFullSortResult(snap::program::Sequence &prog) const {
+BaseSortOpx::growFullSortResult(poplar::program::Sequence &prog) const {
 
   auto input   = getInTensor(BaseSortOp::getInIndex());
   auto values  = cloneNcopy(prog, input);
@@ -38,31 +43,23 @@ BaseSortOpx::growFullSortResult(snap::program::Sequence &prog) const {
       graph(), input, axis, prog, getDebugNameAndId("iotaTensor"));
 
   // sort indices and values, using values as the "keys" to sort on
-  popops::sortKeyValueInPlace(graph().getPoplarGraph(),
-                              values.getPoplarTensor(),
-                              indices.getPoplarTensor(),
-                              axis,
-                              prog.getPoplarSequence(),
-                              debugContext("sort"));
+  popops::sortKeyValueInPlace(
+      graph(), values, indices, axis, prog, debugContext("sort"));
   return FullSortResult(indices, values, axis);
 }
 
-snap::Tensor BaseSortOpx::growIndicesSort(snap::program::Sequence &prog) const {
+poplar::Tensor
+BaseSortOpx::growIndicesSort(poplar::program::Sequence &prog) const {
   auto input   = getInTensor(BaseSortOp::getInIndex());
   auto indices = sortutilx::getIotaTensor(
       graph(), input, axis, prog, getDebugNameAndId("iotaTensor"));
-  return snap::Tensor{popops::sortKeyValue(graph().getPoplarGraph(),
-                                           input.getPoplarTensor(),
-                                           indices.getPoplarTensor(),
-                                           axis,
-                                           prog.getPoplarSequence(),
-                                           debugContext("sort")),
-                      graph()};
+  return popops::sortKeyValue(
+      graph(), input, indices, axis, prog, debugContext("sort"));
 }
 
-snap::Tensor
-BaseSortOpx::createInputTensor(InIndex inIndex,
-                               const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+BaseSortOpx::createInput(InIndex inIndex,
+                         const poplar::DebugNameAndId &dnai) const {
 
   if (inIndex == BaseSortOp::getInIndex()) {
     // Create an input that will minimise the amount of exchange in sort. This
@@ -76,7 +73,7 @@ BaseSortOpx::createInputTensor(InIndex inIndex,
 
     // Create a new variable of the modified shape
     auto t = graph().addVariable(popType(info), shape, dnai);
-    poputil::mapTensorLinearly(graph().getPoplarGraph(), t.getPoplarTensor());
+    poputil::mapTensorLinearly(graph(), t);
 
     // DimShuffle back to the desired shape
     std::vector<unsigned> permutation(t.rank());
@@ -84,7 +81,7 @@ BaseSortOpx::createInputTensor(InIndex inIndex,
     std::swap(permutation[axis], permutation.back());
     return t.dimShuffle(permutation);
   } else {
-    return PopOpx::createInputTensor(inIndex, dnai);
+    return Opx::createInput(inIndex, dnai);
   }
 }
 
@@ -92,7 +89,7 @@ InputCreatorType BaseSortOpx::getInputCreatorType(InIndex inIndex) const {
   if (inIndex == BaseSortOp::getInIndex()) {
     return InputCreatorType::CanCreate;
   } else {
-    return PopOpx::getInputCreatorType(inIndex);
+    return Opx::getInputCreatorType(inIndex);
   }
 }
 

@@ -1,13 +1,12 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <cstddef>
 #include <cstdint>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
+#include <ext/new_allocator.h>
 #include <string>
 #include <poplar/ArrayRef.hpp>
 #include <poplar/Graph.hpp>
+#include <poplar/Program.hpp>
+#include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <popops/DynamicSlice.hpp>
 #include <popops/ElementWise.hpp>
@@ -18,17 +17,17 @@
 #include <popart/popx/opxmanager.hpp>
 
 #include "popart/graphcoreoperators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
 namespace popart {
 class Op;
 
 namespace popx {
 
-void StashOpx::growStaticStashUpdate(snap::program::Sequence &prog,
-                                     const snap::Tensor &stashIndex,
-                                     const snap::Tensor &inTensor,
-                                     const snap::Tensor &outTensor) const {
+void StashOpx::growStaticStashUpdate(poplar::program::Sequence &prog,
+                                     const poplar::Tensor &stashIndex,
+                                     const poplar::Tensor &inTensor,
+                                     const poplar::Tensor &outTensor) const {
   /*
     We cannot do a dynamic update based on tensor stashIndex, but we can do a
     dynamic switch-case on stashIndex. There are hStashSize cases, with each
@@ -49,34 +48,33 @@ void StashOpx::growStaticStashUpdate(snap::program::Sequence &prog,
                                                       std::to_string(i))));
   }
 
-  prog.getPoplarSequence().add(switchCase);
+  prog.add(switchCase);
 }
 
-void StashOpx::growDynamicStashUpdate(snap::program::Sequence &prog,
-                                      const snap::Tensor &stashIndex,
-                                      const snap::Tensor &inTensor,
-                                      const snap::Tensor &outTensor) const {
+void StashOpx::growDynamicStashUpdate(poplar::program::Sequence &prog,
+                                      const poplar::Tensor &stashIndex,
+                                      const poplar::Tensor &inTensor,
+                                      const poplar::Tensor &outTensor) const {
   // Update the stash.
-  popops::dynamicUpdate(graph().getPoplarGraph(),
-                        outTensor.getPoplarTensor(),
-                        inTensor.expand({0}).getPoplarTensor(),
-                        stashIndex.getPoplarTensor(),
+  popops::dynamicUpdate(graph(),
+                        outTensor,
+                        inTensor.expand({0}),
+                        stashIndex,
                         {0},
                         {1},
-                        prog.getPoplarSequence(),
+                        prog,
                         debugContext("stash"));
 }
 
-void StashOpx::grow(snap::program::Sequence &prog) const {
+void StashOpx::grow(poplar::program::Sequence &prog) const {
   // Create the stash size tensor.
   const auto stashSize =
       getConst(poplar::UNSIGNED_INT, {}, hStashSize, "stash_size");
 
   // Create the stash index tensor.
-  const snap::Tensor stashIndex =
+  const poplar::Tensor stashIndex =
       getScalarVariable(poplar::UNSIGNED_INT, "stash_index").reshape({1});
-  graph().getPoplarGraph().setInitialValue(stashIndex.getPoplarTensor(),
-                                           poplar::ArrayRef<uint32_t>({0}));
+  graph().setInitialValue(stashIndex, poplar::ArrayRef<uint32_t>({0}));
   dv_p->lowering().addPipelineIndexTensor(stashIndex);
 
   // Retrieve the input tensor.
@@ -84,13 +82,11 @@ void StashOpx::grow(snap::program::Sequence &prog) const {
 
   // Create the output tensor.
   const auto outTensor =
-      snap::Tensor{popops::createSliceableTensorFromSlice(
-                       graph().getPoplarGraph(),
-                       inTensor.expand({0}).getPoplarTensor(),
-                       {0},
-                       {hStashSize},
-                       outId(StashOp::getOutIndex())),
-                   graph()};
+      popops::createSliceableTensorFromSlice(graph(),
+                                             inTensor.expand({0}),
+                                             {0},
+                                             {hStashSize},
+                                             outId(StashOp::getOutIndex()));
 
   // Create the stash tensor (the output) and grow the program to update it.
   if (canDynamicUpdateStash) {
@@ -102,15 +98,11 @@ void StashOpx::grow(snap::program::Sequence &prog) const {
 
   // Create a "1" tensor and grow program to increment stash index by 1.
   const auto one = getConst(poplar::UNSIGNED_INT, {}, 1.0, "one");
-  snap::popops::addInPlace(graph(), stashIndex, one, prog, debugContext());
-  popops::remInPlace(graph().getPoplarGraph(),
-                     stashIndex.getPoplarTensor(),
-                     stashSize.getPoplarTensor(),
-                     prog.getPoplarSequence(),
-                     debugContext());
+  popops::addInPlace(graph(), stashIndex, one, prog, debugContext());
+  popops::remInPlace(graph(), stashIndex, stashSize, prog, debugContext());
 }
 
-StashOpx::StashOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+StashOpx::StashOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<StashOp>(op);
   hStashSize = static_cast<size_t>(getOp<StashOp>().getStashSize());
   // INT8/UINT8 now supported. Leaving the fallbacks until stashx/restorex

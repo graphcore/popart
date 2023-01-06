@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 
-#include <snap/Graph.hpp>
+#include <poplar/Graph.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
 #include <popart/popx/exchangebundle.hpp>
 
@@ -39,15 +39,15 @@ bool ExchangeBundle::hasRemoteBuffer(RemoteBufferId id) const {
   return remoteBuffers.find(id) != remoteBuffers.end();
 }
 
-const std::pair<snap::RemoteBuffer, std::vector<snap::Tensor>> &
+const std::pair<poplar::RemoteBuffer, std::vector<poplar::Tensor>> &
 ExchangeBundle::getRemoteBuffer(RemoteBufferId id) const {
   return remoteBuffers.at(id);
 }
 
 void ExchangeBundle::createRemoteBuffer(
-    snap::Graph &graph,
+    poplar::Graph &graph,
     RemoteBufferId id,
-    const std::vector<snap::Tensor> &tensors) {
+    const std::vector<poplar::Tensor> &tensors) {
   auto info    = ir.getRemoteBufferInfo(id);
   auto name    = getRemoteBufferName(id);
   auto type    = tensors.front().elementType();
@@ -71,10 +71,10 @@ bool ExchangeBundle::hasStreamTensor(TensorId tid) const {
   return streamTensors.find(tid) != streamTensors.end();
 }
 
-snap::Tensor ExchangeBundle::getStreamTensor(TensorId tid) const {
+poplar::Tensor ExchangeBundle::getStreamTensor(TensorId tid) const {
   return streamTensors.at(tid);
 }
-void ExchangeBundle::setStreamTensor(TensorId tid, snap::Tensor tensors) {
+void ExchangeBundle::setStreamTensor(TensorId tid, poplar::Tensor tensors) {
   streamTensors[tid] = tensors;
 }
 

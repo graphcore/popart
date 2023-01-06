@@ -1,13 +1,9 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <ext/new_allocator.h>
 #include <numeric>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <vector>
 #include <poplar/ArrayRef.hpp>
 #include <poplar/Graph.hpp>
@@ -21,8 +17,14 @@
 #include <popart/popx/op/sliceplanx.hpp>
 
 #include "popart/names.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/tensorinfo.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/opx.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 namespace popx {
@@ -30,25 +32,26 @@ namespace scatterutilx {
 
 namespace {
 
-snap::Tensor
-concat(const std::vector<snap::Tensor> &ts, unsigned d, snap::Graph &graph) {
+poplar::Tensor concat(const std::vector<poplar::Tensor> &ts,
+                      unsigned d,
+                      poplar::Graph &graph) {
   std::vector<poplar::Tensor> tsP;
   tsP.reserve(ts.size());
   for (auto t : ts) {
-    tsP.push_back(t.getPoplarTensor());
+    tsP.push_back(t);
   }
 
-  return snap::Tensor{poplar::concat(tsP, d), graph};
+  return poplar::concat(tsP, d);
 }
 
 } // unnamed namespace
 
-snap::Tensor linspace(snap::Graph &graph,
-                      int left,
-                      int right,
-                      const poplar::DebugNameAndId &dnai,
-                      int increment,
-                      const poplar::Type &type) {
+poplar::Tensor linspace(poplar::Graph &graph,
+                        int left,
+                        int right,
+                        const poplar::DebugNameAndId &dnai,
+                        int increment,
+                        const poplar::Type &type) {
   std::size_t count = right - left;
 
   std::vector<int> values(count);
@@ -58,11 +61,13 @@ snap::Tensor linspace(snap::Graph &graph,
                  values.begin(),
                  [left, increment](int v) { return left + v * increment; });
 
-  return graph.addConstant(
+  auto result = graph.addConstant(
       type, {count}, poplar::ArrayRef<int>(values), {dnai, "count"});
+  graph.setTileMapping(result, 0);
+  return result;
 }
 
-snap::Tensor matchRank(snap::Tensor a, snap::Tensor b, unsigned dim) {
+poplar::Tensor matchRank(poplar::Tensor a, poplar::Tensor b, unsigned dim) {
   std::vector<std::size_t> shape(a.rank(), 1);
   const auto b_shape = b.shape();
 
@@ -71,22 +76,21 @@ snap::Tensor matchRank(snap::Tensor a, snap::Tensor b, unsigned dim) {
   return b.reshape(shape);
 }
 
-snap::Tensor broadcastShape(snap::Tensor a, snap::Tensor b_) {
-  auto b = b_.getPoplarTensor();
+poplar::Tensor broadcastShape(poplar::Tensor a, poplar::Tensor b) {
   for (int k = 0; k < a.rank(); ++k) {
     if (b.dim(k) == 1 && a.dim(k) != b.dim(k)) {
       b = b.broadcast(static_cast<unsigned>(a.dim(k)), k);
     }
   }
 
-  return snap::Tensor{b, b_};
+  return b;
 }
 
-snap::Tensor linearizeIndices(const PopOpx &opx,
-                              snap::program::Sequence &prog,
-                              snap::Tensor indices,
-                              int numDataCols,
-                              unsigned group_size) {
+poplar::Tensor linearizeIndices(const Opx &opx,
+                                poplar::program::Sequence &prog,
+                                poplar::Tensor indices,
+                                int numDataCols,
+                                unsigned group_size) {
   // Linearize the indices: map from 2-d indices to 1-d
   const bool isGrouped        = group_size > 1;
   const unsigned startAxisDim = isGrouped ? 1 : 0;
@@ -103,17 +107,18 @@ snap::Tensor linearizeIndices(const PopOpx &opx,
   result                = opx.cloneNcopy(prog, result, "copyIndices");
   auto numDataColsConst = opx.graph().addConstant(
       result.elementType(), {}, numDataCols, opx.getDebugNameAndId("numCols"));
+  opx.graph().setTileMapping(numDataColsConst, 0);
 
-  popops::mulInPlace(opx.graph().getPoplarGraph(),
-                     result.getPoplarTensor(),
-                     numDataColsConst.getPoplarTensor(),
-                     prog.getPoplarSequence(),
+  popops::mulInPlace(opx.graph(),
+                     result,
+                     numDataColsConst,
+                     prog,
                      opx.getDebugNameAndId("numColsMulIndices"));
-  snap::popops::addInPlace(opx.graph(),
-                           result,
-                           colIndices,
-                           prog,
-                           opx.getDebugNameAndId("indicesAddColIds"));
+  popops::addInPlace(opx.graph(),
+                     result,
+                     colIndices,
+                     prog,
+                     opx.getDebugNameAndId("indicesAddColIds"));
 
   std::size_t isGroupedSzt = static_cast<std::size_t>(isGrouped);
   result                   = result.flatten(isGroupedSzt, result.rank());
@@ -121,18 +126,18 @@ snap::Tensor linearizeIndices(const PopOpx &opx,
   return result;
 }
 
-void growScatter(snap::program::Sequence &prog,
-                 snap::Graph &graph,
-                 const snap::Tensor &indices,
-                 const snap::Tensor &replacementValues,
-                 const snap::Tensor &dataToUpdateInPlace,
+void growScatter(poplar::program::Sequence &prog,
+                 poplar::Graph &graph,
+                 const poplar::Tensor &indices,
+                 const poplar::Tensor &replacementValues,
+                 const poplar::Tensor &dataToUpdateInPlace,
                  int64_t axis,
                  const poplar::DebugNameAndId &dnai) {
   // Build the implicit index coordinates
   //
   // popops::scatter requires the indices to be complete coordinates into the
   // data tensor, but ONNX scatter only provides an axis and a scalar index.
-  std::vector<snap::Tensor> indices_mapped(indices.rank());
+  std::vector<poplar::Tensor> indices_mapped(indices.rank());
   for (int i = 0; i < indices_mapped.size(); ++i) {
     auto t = linspace(graph,
                       0,
@@ -167,27 +172,27 @@ void growScatter(snap::program::Sequence &prog,
 
   auto vectorizedIndices = concat(indices_mapped, indices_mapped.size(), graph);
 
-  popops::scatter(graph.getPoplarGraph(),
-                  dataToUpdateInPlace.getPoplarTensor(),
-                  vectorizedIndices.getPoplarTensor(),
-                  replacementValues.getPoplarTensor(),
+  popops::scatter(graph,
+                  dataToUpdateInPlace,
+                  vectorizedIndices,
+                  replacementValues,
                   indices.rank(),
                   update_window_dims,
                   inserted_window_dims,
                   scatter_dims_to_op,
-                  prog.getPoplarSequence(),
+                  prog,
                   dnai);
 }
 
-snap::Tensor growScatterUpdateGrad(const PopOpx &opx,
-                                   snap::program::Sequence &prog,
-                                   snap::Graph &graph,
-                                   const snap::Tensor &gradIn,
-                                   const snap::Tensor &indicesIn,
-                                   const popart::Shape &gradOutShape,
-                                   int64_t axis,
-                                   const popops::SlicePlan &plan,
-                                   const poplar::DebugNameAndId &dnai) {
+poplar::Tensor growScatterUpdateGrad(const Opx &opx,
+                                     poplar::program::Sequence &prog,
+                                     poplar::Graph &graph,
+                                     const poplar::Tensor &gradIn,
+                                     const poplar::Tensor &indicesIn,
+                                     const popart::Shape &gradOutShape,
+                                     int64_t axis,
+                                     const popops::SlicePlan &plan,
+                                     const poplar::DebugNameAndId &dnai) {
   // Place the gather axis at the front.
   auto grad    = gradIn.dimRoll(axis);
   auto indices = indicesIn.dimRoll(axis);
@@ -205,17 +210,10 @@ snap::Tensor growScatterUpdateGrad(const PopOpx &opx,
   // Assume indices are non-negative
   indices = indices.reinterpret(poplar::UNSIGNED_INT);
 
-  auto result = popops::multiSlice(graph.getPoplarGraph(),
-                                   grad.getPoplarTensor(),
-                                   indices.getPoplarTensor(),
-                                   {0},
-                                   {1},
-                                   prog.getPoplarSequence(),
-                                   plan,
-                                   poplar::OptionFlags(),
-                                   dnai);
+  auto result = popops::multiSlice(
+      graph, grad, indices, {0}, {1}, prog, plan, poplar::OptionFlags(), dnai);
 
-  return alignToAxis(snap::Tensor(result, graph), gradOutShape, axis, 1U);
+  return alignToAxis(poplar::Tensor(result), gradOutShape, axis, 1U);
 }
 
 } // namespace scatterutilx

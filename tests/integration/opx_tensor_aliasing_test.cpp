@@ -9,12 +9,10 @@
 #include <filereader.hpp>
 #include <map>
 #include <memory>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <testdevice.hpp>
 #include <vector>
+#include <poplar/Graph.hpp>
 #include <poplar/exceptions.hpp>
 #include <popops/ElementWise.hpp>
 #include <popart/builder.hpp>
@@ -23,8 +21,8 @@
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op.hpp>
 #include <popart/opmanager.hpp>
+#include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/popx/popopx.hpp>
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 
@@ -72,24 +70,19 @@ public:
   float getSubgraphValue() const override { return getLowSubgraphValue(); }
 };
 
-class OpxTensorAliasingTestOpx : public popx::PopOpx {
+class OpxTensorAliasingTestOpx : public popx::Opx {
 public:
   OpxTensorAliasingTestOpx(popart::Op *op, popart::popx::Devicex *devicex)
-      : popart::popx::PopOpx(op, devicex) {
+      : popart::popx::Opx(op, devicex) {
     verifyOp<OpxTensorAliasingTestOp>(op,
                                       CustomOperators::OpxTensorAliasingTest);
   }
 
-  void grow(snap::program::Sequence &prog) const final {
-    auto inTensor =
-        getInTensor(OpxTensorAliasingTestOp::inIndex()).getPoplarTensor();
-    popops::mulInPlace(graph().getPoplarGraph(),
-                       inTensor,
-                       inTensor,
-                       prog.getPoplarSequence(),
-                       debugContext("mulInPlace"));
-    setOutTensor(OpxTensorAliasingTestOp::outIndex(),
-                 snap::Tensor{inTensor, graph()});
+  void grow(poplar::program::Sequence &prog) const final {
+    auto inTensor = getInTensor(OpxTensorAliasingTestOp::inIndex());
+    popops::mulInPlace(
+        graph(), inTensor, inTensor, prog, debugContext("mulInPlace"));
+    setOutTensor(OpxTensorAliasingTestOp::outIndex(), inTensor);
   }
 };
 

@@ -5,16 +5,15 @@
 #include "popart/popx/debugcontextx.hpp"
 #include <cstddef>
 #include <set>
-#include <snap/Tensor.hpp>
 #include <popops/DynamicSlice.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -23,13 +22,12 @@ namespace popx {
 class Devicex;
 class ReductionStrategy;
 
-class ScatterReduceOpx : public PopOpx {
+class ScatterReduceOpx : public Opx {
 public:
   ScatterReduceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const final;
+  void grow(poplar::program::Sequence &) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const final;
 
   InputCreatorType getInputCreatorType(InIndex index) const final;
 
@@ -42,14 +40,13 @@ private:
   size_t group_size;
 };
 
-class ScatterReduceGradOpx : public PopOpx {
+class ScatterReduceGradOpx : public Opx {
 public:
   ScatterReduceGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const final;
 
   InputCreatorType getInputCreatorType(InIndex index) const final;
 

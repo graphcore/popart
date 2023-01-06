@@ -2,17 +2,14 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_RNNX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_RNNX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
 #include <set>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
+#include <poplar/Program.hpp>
+#include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace poplar {
-class Tensor;
-} // namespace poplar
+#include "popart/popx/debugcontextx.hpp"
 
 namespace popart {
 class Op;
@@ -20,14 +17,13 @@ class Op;
 namespace popx {
 class Devicex;
 
-class RNNOpx : public PopOpx {
+class RNNOpx : public Opx {
 public:
   RNNOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex) const;
 
 private:
@@ -37,26 +33,25 @@ private:
   // take up 16 bytes in total for performance reasons
   unsigned getMinGrainSize() const;
   // Return sum of bias tensors, or 0 if bias tensors not provided by user
-  snap::Tensor getBias(snap::program::Sequence &) const;
+  poplar::Tensor getBias(poplar::program::Sequence &) const;
   // Return initialH, or 0 if initialH is not provided by user
-  snap::Tensor getInitialH(snap::program::Sequence &) const;
+  poplar::Tensor getInitialH(poplar::program::Sequence &) const;
   // Return program for a single step of the forward pass
-  snap::program::Sequence getFwdStepProg(snap::Tensor &bias,
-                                         snap::Tensor &initialH,
-                                         snap::Tensor &output,
-                                         snap::Tensor &H_prev,
-                                         poplar::Tensor &index) const;
+  poplar::program::Sequence getFwdStepProg(poplar::Tensor &bias,
+                                           poplar::Tensor &initialH,
+                                           poplar::Tensor &output,
+                                           poplar::Tensor &H_prev,
+                                           poplar::Tensor &index) const;
 };
 
-class RNNGradOpx : public PopOpx {
+class RNNGradOpx : public Opx {
 public:
   RNNGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   InputCreatorType getInputCreatorType(InIndex) const final;
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const final;
 
   std::set<TensorId> mustExistBeforeCreate(InIndex) const;
 
@@ -68,16 +63,16 @@ private:
   // take up 16 bytes in total for performance reasons
   unsigned getMinGrainSize() const;
   // Return last_output_grad, or 0 if the input does not exist
-  snap::Tensor getLastOutputGrad() const;
+  poplar::Tensor getLastOutputGrad() const;
   // Return full_output_grad, or 0 if the input does not exist
-  snap::Tensor getFullOutputGrad() const;
+  poplar::Tensor getFullOutputGrad() const;
   // Return program for a single step of the backwards pass
-  snap::program::Sequence getBwdStepProg(snap::Tensor &dh_prev,
-                                         snap::Tensor &full_output_grad,
-                                         snap::Tensor &forward_output_prev,
-                                         snap::Tensor &forward_output,
-                                         snap::Tensor &da,
-                                         poplar::Tensor &index) const;
+  poplar::program::Sequence getBwdStepProg(poplar::Tensor &dh_prev,
+                                           poplar::Tensor &full_output_grad,
+                                           poplar::Tensor &forward_output_prev,
+                                           poplar::Tensor &forward_output,
+                                           poplar::Tensor &da,
+                                           poplar::Tensor &index) const;
 };
 
 } // namespace popx

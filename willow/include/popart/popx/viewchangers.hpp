@@ -2,11 +2,10 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_VIEWCHANGERS_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_VIEWCHANGERS_HPP_
 
+#include "poplar/Tensor.hpp"
 #include <memory>
-#include <snap/Tensor.hpp>
 #include <typeinfo>
 #include <vector>
-
 namespace popart {
 namespace popx {
 
@@ -14,7 +13,7 @@ namespace popx {
 class ViewChanger {
 public:
   virtual ~ViewChanger() {}
-  virtual snap::Tensor apply(snap::Tensor tensor) const { return tensor; }
+  virtual poplar::Tensor apply(poplar::Tensor tensor) const { return tensor; }
   virtual bool containsAllDataRegions() const { return true; }
   virtual bool operator==(const ViewChanger &rhs) const {
     return typeid(&rhs) == typeid(ViewChanger);
@@ -29,7 +28,7 @@ class ViewChangers {
 public:
   ViewChangers();
   ViewChangers(std::vector<std::shared_ptr<ViewChanger>> viewChangers_);
-  snap::Tensor apply(snap::Tensor tensor) const;
+  poplar::Tensor apply(poplar::Tensor tensor) const;
   bool empty() const { return viewChangers.empty(); }
 
   bool operator==(const ViewChangers &rhs) const;

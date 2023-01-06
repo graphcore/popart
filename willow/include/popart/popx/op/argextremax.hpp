@@ -2,14 +2,14 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_ARGEXTREMAX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_ARGEXTREMAX_HPP_
 
-#include <snap/Tensor.hpp>
-#include <popart/popx/popopx.hpp>
+#include <poplar/Tensor.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -17,14 +17,14 @@ class Op;
 namespace popx {
 class Devicex;
 
-class ArgExtremaOpx : public PopOpx {
+class ArgExtremaOpx : public Opx {
 public:
   ArgExtremaOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override;
+  void grow(poplar::program::Sequence &) const override;
 
 private:
-  virtual snap::Tensor extremaOp(snap::program::Sequence &,
-                                 const snap::Tensor &) const = 0;
+  virtual poplar::Tensor extremaOp(poplar::program::Sequence &,
+                                   const poplar::Tensor &) const = 0;
 };
 
 } // namespace popx

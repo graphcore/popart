@@ -6,21 +6,21 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <vector>
+#include <poplar/Tensor.hpp>
 #include <popart/popx/op/elementwisex.hpp>
 
 #include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -34,15 +34,15 @@ public:
   SoftmaxComputex(int64_t ax, bool ens, const std::vector<size_t> &os)
       : axis(ax), enableNonStable(ens), outShape(os) {}
 
-  snap::Tensor outplace(snap::program::Sequence &,
-                        snap::Graph &,
-                        const snap::Tensor &,
-                        const poplar::DebugNameAndId &,
-                        const std::string &) const final;
+  poplar::Tensor outplace(poplar::program::Sequence &,
+                          poplar::Graph &,
+                          const poplar::Tensor &,
+                          const poplar::DebugNameAndId &,
+                          const std::string &) const final;
 
-  void inplace(snap::program::Sequence &,
-               snap::Graph &,
-               const snap::Tensor &,
+  void inplace(poplar::program::Sequence &,
+               poplar::Graph &,
+               const poplar::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
 
@@ -51,7 +51,7 @@ public:
     return std::unique_ptr<EwuComputex>(new SoftmaxComputex(axis, ens, os));
   }
 
-  snap::Tensor reshape(const snap::Tensor &) const final;
+  poplar::Tensor reshape(const poplar::Tensor &) const final;
 
   void setAxis(int64_t a) { axis = a; }
 
@@ -75,27 +75,27 @@ public:
 class SoftmaxGradOpx : public ElementWiseUnaryOpx {
 public:
   SoftmaxGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 // compute dL/dv from lab and p, where p = softmax(v), L = nll(p, lab)
-class SoftmaxGradDirectOpx : public PopOpx {
+class SoftmaxGradDirectOpx : public Opx {
 public:
   SoftmaxGradDirectOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 // As above, but combines the loss calculation to reduce redundancy
-class NlllWithSoftmaxGradDirectOpx : public PopOpx {
+class NlllWithSoftmaxGradDirectOpx : public Opx {
 public:
   NlllWithSoftmaxGradDirectOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
-  void handleLossOutNotReducedToScalar(snap::Tensor &reduction,
-                                       const snap::Tensor &label,
-                                       snap::Tensor &label1D,
-                                       snap::program::Sequence &prog) const;
+  void handleLossOutNotReducedToScalar(poplar::Tensor &reduction,
+                                       const poplar::Tensor &label,
+                                       poplar::Tensor &label1D,
+                                       poplar::program::Sequence &prog) const;
 };
 
 } // namespace popx

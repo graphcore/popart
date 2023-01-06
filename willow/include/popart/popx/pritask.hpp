@@ -8,16 +8,16 @@
 #include <map>
 #include <queue>
 #include <set>
-#include <snap/Program.hpp>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <poplar/Program.hpp>
 #include <popart/taskid.hpp>
 
-namespace snap {
+namespace poplar {
 class Graph;
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 
@@ -43,13 +43,11 @@ namespace popart {
 class SequenceMap {
 public:
   // Shorthand.
-  using Sequence         = snap::program::Sequence;
+  using Sequence         = poplar::program::Sequence;
   using Sequences        = std::vector<Sequence>;
   using SequenceIterator = typename std::vector<Sequence>::iterator;
   using SequenceInterval =
       typename std::pair<SequenceIterator, SequenceIterator>;
-
-  SequenceMap(snap::Graph &);
 
   // Add a local sequence mapping for a single Poplar sequence. Note that the
   // Poplar sequence must exist for the whole lifetime of the SequenceMap. Note,
@@ -91,8 +89,6 @@ private:
   std::map<Sequence *, std::tuple<size_t, size_t>> indexMap;
   // Counter for debug context ids.
   static int debugCtxNo;
-
-  snap::Graph &graph;
 };
 
 enum class DependencyType {

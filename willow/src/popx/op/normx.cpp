@@ -1,27 +1,31 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <cstddef>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
+#include <ext/new_allocator.h>
 #include <vector>
+#include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/popx/op/normx.hpp>
 
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
 namespace popart {
 class Op;
+
 namespace popx {
 class Devicex;
 } // namespace popx
 } // namespace popart
 
 namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+
 using Shape = std::vector<std::size_t>;
-}
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -29,36 +33,26 @@ namespace popart {
 namespace popx {
 
 // convert inverse standard deviation to variance
-snap::Tensor NormOpx::convertInvSdToVar(snap::program::Sequence &prog,
-                                        const snap::Tensor &invSd,
-                                        float epsilon,
-                                        const poplar::Type dstType) const {
+poplar::Tensor NormOpx::convertInvSdToVar(poplar::program::Sequence &prog,
+                                          const poplar::Tensor &invSd,
+                                          float epsilon,
+                                          const poplar::Type dstType) const {
 
-  return snap::Tensor{popops::invStdDevToVariance(graph().getPoplarGraph(),
-                                                  invSd.getPoplarTensor(),
-                                                  epsilon,
-                                                  prog.getPoplarSequence(),
-                                                  dstType,
-                                                  debugContext("invSdToVar")),
-                      graph()};
+  return popops::invStdDevToVariance(
+      graph(), invSd, epsilon, prog, dstType, debugContext("invSdToVar"));
 }
 
 // convert variant to inverse standard deviation
-snap::Tensor NormOpx::convertVarToInvSd(snap::program::Sequence &prog,
-                                        const snap::Tensor &var,
-                                        float epsilon,
-                                        const poplar::Type dstType) const {
+poplar::Tensor NormOpx::convertVarToInvSd(poplar::program::Sequence &prog,
+                                          const poplar::Tensor &var,
+                                          float epsilon,
+                                          const poplar::Type dstType) const {
 
-  return snap::Tensor{popops::varianceToInvStdDev(graph().getPoplarGraph(),
-                                                  var.getPoplarTensor(),
-                                                  epsilon,
-                                                  prog.getPoplarSequence(),
-                                                  dstType,
-                                                  debugContext("varToInvSd")),
-                      graph()};
+  return popops::varianceToInvStdDev(
+      graph(), var, epsilon, prog, dstType, debugContext("varToInvSd"));
 }
 
-NormOpx::NormOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
+NormOpx::NormOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 
 } // namespace popx
 } // namespace popart

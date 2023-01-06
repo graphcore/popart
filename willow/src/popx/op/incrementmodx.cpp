@@ -1,9 +1,9 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <cstdint>
 #include <memory>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <string>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popart/error.hpp>
 #include <popart/op/incrementmod.hpp>
@@ -17,13 +17,13 @@
 #include "popart/popx/op/elementwisex.hpp"
 #include "popart/tensorinfo.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 namespace popx {
@@ -81,10 +81,10 @@ IncrementModComputex<T>::IncrementModComputex(const Op *op_) : op(op_) {
 }
 
 template <typename T>
-snap::Tensor
-IncrementModComputex<T>::outplace(snap::program::Sequence &p,
-                                  snap::Graph &g,
-                                  const snap::Tensor &t,
+poplar::Tensor
+IncrementModComputex<T>::outplace(poplar::program::Sequence &p,
+                                  poplar::Graph &g,
+                                  const poplar::Tensor &t,
                                   const poplar::DebugNameAndId &dnai,
                                   const std::string &s) const {
 
@@ -92,20 +92,20 @@ IncrementModComputex<T>::outplace(snap::program::Sequence &p,
       popops::expr::Add(popops::expr::_1, popops::expr::Const(increment)),
       popops::expr::Const(modulus));
 
-  return snap::popops::map(g, expr, {t}, p, {dnai, s});
+  return popops::map(g, expr, {t}, p, {dnai, s});
 }
 
 template <typename T>
-void IncrementModComputex<T>::inplace(snap::program::Sequence &p,
-                                      snap::Graph &g,
-                                      const snap::Tensor &t,
+void IncrementModComputex<T>::inplace(poplar::program::Sequence &p,
+                                      poplar::Graph &g,
+                                      const poplar::Tensor &t,
                                       const poplar::DebugNameAndId &dnai,
                                       const std::string &s) const {
   popops::expr::Any expr = popops::expr::Rem(
       popops::expr::Add(popops::expr::_1, popops::expr::Const(increment)),
       popops::expr::Const(modulus));
 
-  snap::popops::mapInPlace(g, expr, {t}, p, {dnai, s});
+  popops::mapInPlace(g, expr, {t}, p, {dnai, s});
 }
 
 IncrementModOpx::IncrementModOpx(Op *op, Devicex *devicex)

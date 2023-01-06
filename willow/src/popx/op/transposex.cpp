@@ -1,7 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <iterator>
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <poplar/Tensor.hpp>
 #include <popart/op/transpose.hpp>
@@ -11,24 +10,24 @@
 #include "popart/names.hpp"
 #include "popart/op.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/region.hpp" // IWYU pragma: keep
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 namespace popx {
 class Devicex;
 
-TransposeOpx::TransposeOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+TransposeOpx::TransposeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<TransposeOp>(op);
 }
 
-void TransposeOpx::grow(snap::program::Sequence &prog) const {
+void TransposeOpx::grow(poplar::program::Sequence &prog) const {
   auto perm = getOp<TransposeOp>().getPerm();
   std::vector<unsigned> unsigned_perm;
   for (auto i : perm) {
@@ -36,17 +35,18 @@ void TransposeOpx::grow(snap::program::Sequence &prog) const {
   }
 
   auto input      = getInTensor(TransposeOp::getInIndex());
-  auto input_copy = cloneNcopy(prog, input).getPoplarTensor();
+  auto input_copy = cloneNcopy(prog, input);
   auto output     = input_copy.dimShuffle(unsigned_perm);
-  setOutTensor(TransposeOp::getOutIndex(), snap::Tensor{output, graph()});
+  setOutTensor(TransposeOp::getOutIndex(), output);
 }
 
 InputCreatorType TransposeOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-snap::Tensor
-TransposeOpx::unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const {
+poplar::Tensor TransposeOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                InIndex,
+                                                OutIndex) const {
   auto perm = getOp<TransposeOp>().getPerm();
   std::vector<unsigned> reverse_perm;
 
@@ -67,7 +67,7 @@ view::RegMap TransposeOpx::unwindRegion(InIndex inIndex,
 }
 
 TransposeInplaceOpx::TransposeInplaceOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<TransposeInplaceOp>(op);
 }
 
@@ -75,9 +75,9 @@ InputCreatorType TransposeInplaceOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-snap::Tensor TransposeInplaceOpx::unwindTensorLayout(snap::Tensor tensor,
-                                                     InIndex,
-                                                     OutIndex) const {
+poplar::Tensor TransposeInplaceOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                       InIndex,
+                                                       OutIndex) const {
   auto perm = getOp<TransposeInplaceOp>().getPerm();
   std::vector<unsigned> reverse_perm;
 
@@ -97,7 +97,7 @@ view::RegMap TransposeInplaceOpx::unwindRegion(InIndex inIndex,
   return op->bwdRegMap(inIndex, outIndex);
 }
 
-void TransposeInplaceOpx::grow(snap::program::Sequence &) const {
+void TransposeInplaceOpx::grow(poplar::program::Sequence &) const {
   auto perm = getOp<TransposeInplaceOp>().getPerm();
   std::vector<unsigned> unsigned_perm;
   for (auto i : perm) {
@@ -105,10 +105,9 @@ void TransposeInplaceOpx::grow(snap::program::Sequence &) const {
   }
 
   setOutTensor(TransposeOp::getOutIndex(),
-               snap::Tensor{getInTensor(TransposeOp::getInIndex())
-                                .getPoplarTensor()
-                                .dimShuffle(unsigned_perm),
-                            graph()});
+               getInTensor(TransposeOp::getInIndex())
+
+                   .dimShuffle(unsigned_perm));
 }
 
 TransposeGradOpx::TransposeGradOpx(Op *op, Devicex *devicex)

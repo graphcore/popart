@@ -3,13 +3,13 @@
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_INITX_HPP_
 
 #include <popart/names.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -17,10 +17,10 @@ class Op;
 namespace popx {
 class Devicex;
 
-class InitOpx : public PopOpx {
+class InitOpx : public Opx {
 public:
   InitOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   bool outputCreatedExternally(OutIndex) const final { return true; }
 };
 

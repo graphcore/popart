@@ -4,13 +4,13 @@
 
 #include <memory>
 
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popnn {
 namespace ctc {
@@ -24,12 +24,12 @@ class Op;
 namespace popx {
 class Devicex;
 
-class CtcBeamSearchDecoderOpx : public PopOpx {
+class CtcBeamSearchDecoderOpx : public Opx {
 public:
   CtcBeamSearchDecoderOpx(Op *op, Devicex *device);
   ~CtcBeamSearchDecoderOpx();
 
-  void grow(snap::program::Sequence &prog) const final;
+  void grow(poplar::program::Sequence &prog) const final;
 
 private:
   // Unique pointer so we can forward-declare to avoid including poplar headers.

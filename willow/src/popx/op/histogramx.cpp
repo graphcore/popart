@@ -1,9 +1,8 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <poplar/ArrayRef.hpp>
+#include <poplar/Graph.hpp>
+#include <poplar/Tensor.hpp>
 #include <popops/GatherStatistics.hpp>
 #include <poputil/TileMapping.hpp>
 #include <popart/op/histogram.hpp>
@@ -11,7 +10,13 @@
 #include <popart/popx/opxmanager.hpp>
 
 #include "popart/graphcoreoperators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -19,7 +24,7 @@ class Op;
 namespace popx {
 class Devicex;
 
-void HistogramOpx::grow(snap::program::Sequence &prog) const {
+void HistogramOpx::grow(poplar::program::Sequence &prog) const {
   auto &op    = getOp<HistogramOp>();
   auto levels = op.getLevels();
 
@@ -27,21 +32,19 @@ void HistogramOpx::grow(snap::program::Sequence &prog) const {
                                      {levels.size()},
                                      poplar::ArrayRef<float>(levels),
                                      debugContext("levels"));
-  poputil::mapTensorLinearly(graph().getPoplarGraph(),
-                             levelsT.getPoplarTensor());
+  poputil::mapTensorLinearly(graph(), levelsT);
 
-  auto out = popops::histogram(
-      graph().getPoplarGraph(),
-      getInTensor(op.getInIndex()).flatten().getPoplarTensor(),
-      levelsT.getPoplarTensor(),
-      op.getAbsoluteOfInput(),
-      prog.getPoplarSequence(),
-      debugContext());
+  auto out = popops::histogram(graph(),
+                               getInTensor(op.getInIndex()).flatten(),
+                               levelsT,
+                               op.getAbsoluteOfInput(),
+                               prog,
+                               debugContext());
 
-  setOutTensor(op.getOutIndex(), snap::Tensor{out, graph()});
+  setOutTensor(op.getOutIndex(), out);
 }
 
-HistogramOpx::HistogramOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+HistogramOpx::HistogramOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<HistogramOp>(op);
 }
 

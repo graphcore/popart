@@ -1,9 +1,16 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <gcl/CollectiveBalancedReorder.hpp>
 #include <gcl/Collectives.hpp>
+#include <map>
 #include <memory>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
+#include <set>
+#include <stddef.h>
+#include <string>
+#include <utility>
+#include <vector>
+#include <poplar/Graph.hpp>
+#include <poplar/Program.hpp>
 #include <poplar/Tensor.hpp>
 #include <popops/Zero.hpp>
 #include <popart/op/collectives/multi_replicatedreducescatter.hpp>
@@ -13,14 +20,22 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 
-#include "popart/commgroup.hpp"
+#include "popart/error.hpp"
 #include "popart/graphcoreoperators.hpp"
+#include "popart/ir.hpp"
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
+#include "popart/op.hpp"
 #include "popart/op/collectives/collectives.hpp"
+#include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/collectives/collectivesx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
+#include "popart/popx/viewchangers.hpp"
 #include "popart/region.hpp" // IWYU pragma: keep
+#include "popart/replicatedtensorsharding.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
 #include "popart/util.hpp"
 
 namespace popart {
@@ -38,7 +53,7 @@ InputCreatorType
 MultiReplicatedReduceScatterOpx::getInputCreatorType(InIndex index) const {
   const auto &rrsOp = getOp<MultiReplicatedReduceScatterOp>();
   if (rrsOp.isCollectiveLinkedIndexTensor(index)) {
-    return PopOpx::getInputCreatorType(index);
+    return Opx::getInputCreatorType(index);
   }
 
   bool canCreate = false;
@@ -64,10 +79,10 @@ MultiReplicatedReduceScatterOpx::getInputCreatorType(InIndex index) const {
   }
   // inequality targets input tensors (other inputs are indices)
   return canCreate ? InputCreatorType::CanCreate
-                   : PopOpx::getInputCreatorType(index);
+                   : Opx::getInputCreatorType(index);
 }
 
-snap::Tensor MultiReplicatedReduceScatterOpx::createInputTensor(
+poplar::Tensor MultiReplicatedReduceScatterOpx::createInput(
     InIndex idx,
     const poplar::DebugNameAndId &dnai) const {
   const auto &rrsOp = getOp<MultiReplicatedReduceScatterOp>();
@@ -86,7 +101,7 @@ snap::Tensor MultiReplicatedReduceScatterOpx::createInputTensor(
 
   const auto &type = popType(rrsOp.inTensor(idx)->info);
   auto input       = cbr->createCollectivesTensor(type, dnai.getPathName());
-  return snap::Tensor{input, inGraph(idx)};
+  return input;
 }
 
 // Prepare the output tensors
@@ -95,9 +110,9 @@ void MultiReplicatedReduceScatterOpx::growPart(OpxGrowPartId id) const {
       getOp<MultiReplicatedReduceScatterOp>();
   MultiCollectivesOpxState *state =
       dv_p->lowering().getOpxState<MultiCollectivesOpxState>(myOp.id);
-  snap::Tensor toReduceScatter = getInTensor(id);
-  InIndex inputIndex           = (InIndex)id;
-  InIndex outputIndex          = (OutIndex)id;
+  poplar::Tensor toReduceScatter = getInTensor(id);
+  InIndex inputIndex             = (InIndex)id;
+  InIndex outputIndex            = (OutIndex)id;
   ReplicatedTensorShardingIndicesIndex groupIndex =
       (ReplicatedTensorShardingIndicesIndex)id;
 
@@ -119,17 +134,10 @@ void MultiReplicatedReduceScatterOpx::growPart(OpxGrowPartId id) const {
 
       // Tensor not rearranged for reduceScatter yet, do it now
       auto cbr = createCollectiveBalancedReorder(toReduceScatter, groupIndex);
-      snap::Tensor cbrTensor{
-          cbr->createCollectivesTensor(toReduceScatter.elementType(),
-                                       inId(inputIndex)),
-          inGraph(inputIndex)};
-      popops::zero(inGraph(inputIndex).getPoplarGraph(),
-                   cbrTensor.getPoplarTensor(),
-                   progs,
-                   debugContext());
-      snap::Tensor ref{
-          cbr->undoRearrangeForCollective(cbrTensor.getPoplarTensor()),
-          inGraph(inputIndex)};
+      auto cbrTensor = cbr->createCollectivesTensor(
+          toReduceScatter.elementType(), inId(inputIndex));
+      popops::zero(inGraph(inputIndex), cbrTensor, progs, debugContext());
+      auto ref = cbr->undoRearrangeForCollective(cbrTensor);
       if (hasInViewChangers(inputIndex)) {
         progs.add(poplar::program::Copy(
             getInViewChangers(inputIndex).apply(toReduceScatter).flatten(),
@@ -144,7 +152,7 @@ void MultiReplicatedReduceScatterOpx::growPart(OpxGrowPartId id) const {
     }
   }
 
-  state->configuredInputs[id] = toReduceScatter.getPoplarTensor();
+  state->configuredInputs[id] = toReduceScatter;
 
   // The output tensor should follow the layout of the input tensor
   size_t groupSize     = myOp.getCommSize();
@@ -152,12 +160,12 @@ void MultiReplicatedReduceScatterOpx::growPart(OpxGrowPartId id) const {
   size_t numOutElems   = numInElements / groupSize;
   auto outputTensor    = toReduceScatter.flatten().slice(0, numOutElems, 0);
   outputTensor         = outGraph(outputIndex).clone(outputTensor);
-  state->configuredOutputs[id] = outputTensor.getPoplarTensor();
+  state->configuredOutputs[id] = outputTensor;
   setOutTensor(outputIndex, outputTensor);
 }
 
 void MultiReplicatedReduceScatterOpx::grow(
-    snap::program::Sequence &prog) const {
+    poplar::program::Sequence &prog) const {
   MultiReplicatedReduceScatterOp &myOp =
       getOp<MultiReplicatedReduceScatterOp>();
   logging::opx::debug("[MultiReplicatedReduceScatterOpx] Growing  {}",
@@ -199,7 +207,7 @@ void MultiReplicatedReduceScatterOpx::grow(
 
   // There may be additional programs required to configure each one of these
   // inputs.
-  prog.getPoplarSequence().add(state->inputConfiguringPrograms);
+  prog.add(state->inputConfiguringPrograms);
 
   std::vector<poplar::Tensor> toReduceScatterTensor{
       poplar::concat(toReduceScatter, 1).flatten()};
@@ -207,11 +215,11 @@ void MultiReplicatedReduceScatterOpx::grow(
       poplar::concat(destinations, 0)};
 
   gcl::reduceScatterToDestinationCrossReplica(
-      dv_p->lowering().graph().getPoplarGraph(),
+      dv_p->lowering().graph(),
       toReduceScatterTensor,
       destinationTensor,
       getPoplarCollectiveOperator(myOp.getCollectiveOp()),
-      prog.getPoplarSequence(),
+      prog,
       toGclCommGroup(myOp.getReplicaGrouping()),
       "MultiReplicatedReduceScatter",
       dv_p->lowering().gclOptions);

@@ -84,7 +84,6 @@ set(POPART_ONLY_DEPS_LIBS
     libpvti
     pva
     gcl
-    snap
     gccs
 )
 
@@ -358,3 +357,5 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/popart-config.cmake"
               "${CMAKE_CURRENT_BINARY_DIR}/popart-config-version.cmake"
         DESTINATION ${POPART_CMAKE_INSTALL_CONFIGDIR}
 )
+
+target_compile_options(popart-only PRIVATE -Wno-deprecated-declarations)

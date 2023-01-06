@@ -3,13 +3,13 @@
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_PRINTTENSORX_HPP_
 
 #include <string>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -17,10 +17,10 @@ class Op;
 namespace popx {
 class Devicex;
 
-class PrintTensorOpx : public PopOpx {
+class PrintTensorOpx : public Opx {
 public:
   PrintTensorOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   std::string getTitle() const;

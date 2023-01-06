@@ -4,22 +4,23 @@
 
 #include <memory>
 #include <set>
-#include <snap/Tensor.hpp>
 #include <utility>
 #include <vector>
+#include <poplar/Tensor.hpp>
 #include <popart/op/exchange/exchange.hpp>
 
 #include "popart/names.hpp"
 #include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
+#include "popart/tensorlocation.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace poplar {
 enum class FunctionBufferMappingType;
@@ -37,21 +38,22 @@ public:
   ExchangeDescriptorx(Devicex *dv_p_, ExchangeDescriptor descriptor_);
   virtual ~ExchangeDescriptorx() {}
 
-  void setInTensors(std::vector<std::pair<TensorId, snap::Tensor>> inTensors_) {
+  void
+  setInTensors(std::vector<std::pair<TensorId, poplar::Tensor>> inTensors_) {
     inTensors = inTensors_;
   }
 
-  virtual void pre(snap::Graph &graph,
-                   snap::program::Sequence &prog,
+  virtual void pre(poplar::Graph &graph,
+                   poplar::program::Sequence &prog,
                    poplar::DebugContext context)      = 0;
-  virtual void exchange(snap::Graph &graph,
-                        snap::program::Sequence &prog,
+  virtual void exchange(poplar::Graph &graph,
+                        poplar::program::Sequence &prog,
                         poplar::DebugContext context) = 0;
-  virtual void post(snap::Graph &graph,
-                    snap::program::Sequence &prog,
+  virtual void post(poplar::Graph &graph,
+                    poplar::program::Sequence &prog,
                     poplar::DebugContext context)     = 0;
 
-  virtual snap::Tensor unwind(snap::Graph &, snap::Tensor) const;
+  virtual poplar::Tensor unwind(poplar::Graph &, poplar::Tensor) const;
 
   /**
    * Create an input tensor that is compatible with host and remote exchange
@@ -61,17 +63,20 @@ public:
    * \return      Tensor laid out optimally for exchanges with
    *              createHostTransferableTensor
    */
-  virtual snap::Tensor create(snap::Graph &graph, const TensorInfo &info) const;
+  virtual poplar::Tensor create(poplar::Graph &graph,
+                                const TensorInfo &info) const;
 
-  virtual std::vector<snap::Tensor> getOutTensors() const { return outTensors; }
+  virtual std::vector<poplar::Tensor> getOutTensors() const {
+    return outTensors;
+  }
 
   virtual bool rearrangeOnHost() const { return true; }
 
 protected:
   Devicex *dv_p;
 
-  std::vector<std::pair<TensorId, snap::Tensor>> inTensors;
-  std::vector<snap::Tensor> outTensors;
+  std::vector<std::pair<TensorId, poplar::Tensor>> inTensors;
+  std::vector<poplar::Tensor> outTensors;
 
   ExchangeDescriptor descriptor;
 };
@@ -79,30 +84,30 @@ protected:
 class HostLoadDescriptorx : public ExchangeDescriptorx {
 public:
   HostLoadDescriptorx(Devicex *dv_p_, ExchangeDescriptor descriptor);
-  void pre(snap::Graph &graph,
-           snap::program::Sequence &prog,
+  void pre(poplar::Graph &graph,
+           poplar::program::Sequence &prog,
            poplar::DebugContext context) override;
-  void exchange(snap::Graph &graph,
-                snap::program::Sequence &prog,
+  void exchange(poplar::Graph &graph,
+                poplar::program::Sequence &prog,
                 poplar::DebugContext context) override;
-  void post(snap::Graph &graph,
-            snap::program::Sequence &prog,
+  void post(poplar::Graph &graph,
+            poplar::program::Sequence &prog,
             poplar::DebugContext context) override;
-  snap::Tensor unwind(snap::Graph &, snap::Tensor) const override;
+  poplar::Tensor unwind(poplar::Graph &, poplar::Tensor) const override;
   bool rearrangeOnHost() const override;
 };
 
 class HostStoreDescriptorx : public ExchangeDescriptorx {
 public:
   HostStoreDescriptorx(Devicex *dv_p_, ExchangeDescriptor descriptor_);
-  void pre(snap::Graph &graph,
-           snap::program::Sequence &prog,
+  void pre(poplar::Graph &graph,
+           poplar::program::Sequence &prog,
            poplar::DebugContext context) override;
-  void exchange(snap::Graph &graph,
-                snap::program::Sequence &prog,
+  void exchange(poplar::Graph &graph,
+                poplar::program::Sequence &prog,
                 poplar::DebugContext context) override;
-  void post(snap::Graph &graph,
-            snap::program::Sequence &prog,
+  void post(poplar::Graph &graph,
+            poplar::program::Sequence &prog,
             poplar::DebugContext context) override;
   bool rearrangeOnHost() const override;
 };
@@ -110,43 +115,43 @@ public:
 class RemoteLoadDescriptorx : public ExchangeDescriptorx {
 public:
   RemoteLoadDescriptorx(Devicex *dv_p_, ExchangeDescriptor descriptor_);
-  void pre(snap::Graph &graph,
-           snap::program::Sequence &prog,
+  void pre(poplar::Graph &graph,
+           poplar::program::Sequence &prog,
            poplar::DebugContext context) override;
-  void exchange(snap::Graph &graph,
-                snap::program::Sequence &prog,
+  void exchange(poplar::Graph &graph,
+                poplar::program::Sequence &prog,
                 poplar::DebugContext context) override;
-  void post(snap::Graph &graph,
-            snap::program::Sequence &prog,
+  void post(poplar::Graph &graph,
+            poplar::program::Sequence &prog,
             poplar::DebugContext context) override;
-  snap::Tensor unwind(snap::Graph &, snap::Tensor) const override;
+  poplar::Tensor unwind(poplar::Graph &, poplar::Tensor) const override;
 };
 
 class RemoteStoreDescriptorx : public ExchangeDescriptorx {
 public:
   RemoteStoreDescriptorx(Devicex *dv_p_, ExchangeDescriptor descriptor);
-  void pre(snap::Graph &graph,
-           snap::program::Sequence &prog,
+  void pre(poplar::Graph &graph,
+           poplar::program::Sequence &prog,
            poplar::DebugContext context) override;
-  void exchange(snap::Graph &graph,
-                snap::program::Sequence &prog,
+  void exchange(poplar::Graph &graph,
+                poplar::program::Sequence &prog,
                 poplar::DebugContext context) override;
-  void post(snap::Graph &graph,
-            snap::program::Sequence &prog,
+  void post(poplar::Graph &graph,
+            poplar::program::Sequence &prog,
             poplar::DebugContext context) override;
 };
 
 class RemoteCodeLoadOpDescriptorx : public ExchangeDescriptorx {
 public:
   RemoteCodeLoadOpDescriptorx(Devicex *dv_p_, ExchangeDescriptor descriptor);
-  void pre(snap::Graph &graph,
-           snap::program::Sequence &prog,
+  void pre(poplar::Graph &graph,
+           poplar::program::Sequence &prog,
            poplar::DebugContext context) override;
-  void exchange(snap::Graph &graph,
-                snap::program::Sequence &prog,
+  void exchange(poplar::Graph &graph,
+                poplar::program::Sequence &prog,
                 poplar::DebugContext context) override;
-  void post(snap::Graph &graph,
-            snap::program::Sequence &prog,
+  void post(poplar::Graph &graph,
+            poplar::program::Sequence &prog,
             poplar::DebugContext context) override;
 
   /**
@@ -163,7 +168,7 @@ public:
 std::unique_ptr<ExchangeDescriptorx>
 getExchangeDescriptorx(Devicex *dv_p, ExchangeDescriptor descriptor);
 
-class ExchangeBaseOpx : public PopOpx {
+class ExchangeBaseOpx : public Opx {
 public:
   ExchangeBaseOpx(Op *, Devicex *);
   std::set<TensorId> mustExistBeforeCreate(int) const override { return {}; }

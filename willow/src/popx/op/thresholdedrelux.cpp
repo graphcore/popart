@@ -1,7 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <string>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/error.hpp>
@@ -14,15 +14,15 @@
 #include "popart/operators.hpp"
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -49,9 +49,9 @@ ThresholdedReluOpx::ThresholdedReluOpx(Op *op, Devicex *devicex)
   verifyOp<ThresholdedReluOp>(op, {Onnx::Operators::ThresholdedRelu_10});
 }
 
-void ThresholdedReluComputex::inplace(snap::program::Sequence &prog,
-                                      snap::Graph &graph,
-                                      const snap::Tensor &tensor,
+void ThresholdedReluComputex::inplace(poplar::program::Sequence &prog,
+                                      poplar::Graph &graph,
+                                      const poplar::Tensor &tensor,
                                       const poplar::DebugNameAndId &dnai,
                                       const std::string &debug_prefix) const {
 
@@ -59,8 +59,7 @@ void ThresholdedReluComputex::inplace(snap::program::Sequence &prog,
   auto expression = pe::Select(
       pe::Const(0.0f), pe::_1, pe::Lte(pe::_1, pe::Const(getAlpha())));
 
-  snap::popops::mapInPlace(
-      graph, expression, {tensor}, prog, {dnai, debug_prefix});
+  popops::mapInPlace(graph, expression, {tensor}, prog, {dnai, debug_prefix});
 }
 
 ThresholdedReluInplaceOpx::ThresholdedReluInplaceOpx(Op *op, Devicex *devicex)
@@ -74,11 +73,11 @@ ThresholdedReluInplaceOpx::ThresholdedReluInplaceOpx(Op *op, Devicex *devicex)
 }
 
 ThresholdedReluGradOpx::ThresholdedReluGradOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<ThresholdedReluGradOp>(op, Onnx::GradOperators::ThresholdedReluGrad);
 }
 
-void ThresholdedReluGradOpx::grow(snap::program::Sequence &prog) const {
+void ThresholdedReluGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op       = getOp<ThresholdedReluGradOp>();
   const auto input     = getInTensor(ThresholdedReluGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(ThresholdedReluGradOp::getFwdArgInIndex());
@@ -90,11 +89,11 @@ void ThresholdedReluGradOpx::grow(snap::program::Sequence &prog) const {
                          pe::Lte(pe::_2, pe::Const(op.getAlpha()))),
               pe::_1);
 
-  auto output = snap::popops::map(graph(),
-                                  expression,
-                                  {input, fwd_input},
-                                  prog,
-                                  debugContext("thresholdedrelu_grad"));
+  auto output = popops::map(graph(),
+                            expression,
+                            {input, fwd_input},
+                            prog,
+                            debugContext("thresholdedrelu_grad"));
 
   setOutTensor(ThresholdedReluGradOp::getOutIndex(), output);
 }

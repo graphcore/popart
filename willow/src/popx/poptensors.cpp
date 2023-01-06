@@ -4,7 +4,6 @@
 #include <map>
 #include <memory>
 #include <ostream>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <utility>
 #include <vector>
@@ -27,18 +26,17 @@ namespace popart {
 namespace popx {
 
 PopTensors::PopTensors(const Ir &ir_) : ir(ir_) {}
-
-void PopTensors::verify(TensorId id, const snap::Tensor &pt) {
+void PopTensors::verify(TensorId id, const poplar::Tensor &pt) {
   auto found             = tensors_.find(id);
   auto foundViewChangers = viewChangers_.find(id);
 
   if (found != tensors_.end()) {
-    throw internal_error("snap::Tensor " + id + " already in map");
+    throw internal_error("poplar::Tensor " + id + " already in map");
   }
 
   if (!ir.containsTensor(id)) {
     throw internal_error(
-        "no tensor named {} in ir, is this a valid snap::Tensor?", id);
+        "no tensor named {} in ir, is this a valid poplar::Tensor?", id);
   }
 
   // confirm shapes agree (up to squeezing out the leading 1s)
@@ -65,7 +63,7 @@ void PopTensors::verify(TensorId id, const snap::Tensor &pt) {
 
     if (ptShape != irShape) {
       std::stringstream ss;
-      ss << "snap::Tensor " << id << " of unexpected shape. ";
+      ss << "poplar::Tensor " << id << " of unexpected shape. ";
       if (foundViewChangers != viewChangers_.end()) {
         ss << "Poplar tensor shape: " << pt.shape() << "->" << ptShapeUnsqueezed
            << " (view changed)";
@@ -89,7 +87,7 @@ void PopTensors::verify(TensorId id, const snap::Tensor &pt) {
 
   if (pt.elementType() != expectedType) {
     std::stringstream ss;
-    ss << "snap::Tensor " << id << " of unexpected Type. "
+    ss << "poplar::Tensor " << id << " of unexpected Type. "
        << "Poplar tensor type : " << pt.elementType();
     ss << ". Expected (Ir) tensor type : " << expectedType;
     ss << ". This for tensor " << irTensor->str();
@@ -97,15 +95,15 @@ void PopTensors::verify(TensorId id, const snap::Tensor &pt) {
   }
 }
 
-void PopTensors::insert(TensorId id, const snap::Tensor &pt) {
-  verify(id, pt);
+void PopTensors::insert(TensorId id, const poplar::Tensor &st) {
+  verify(id, st);
 
-  tensors_[id] = std::make_shared<snap::Tensor>(pt);
+  tensors_[id] = std::make_shared<poplar::Tensor>(st);
 
   auto foundViewChangers = viewChangers_.find(id);
   if (foundViewChangers != viewChangers_.end()) {
-    views_[id] =
-        std::make_shared<snap::Tensor>(foundViewChangers->second->apply(pt));
+    auto pt    = foundViewChangers->second->apply(st);
+    views_[id] = std::make_shared<poplar::Tensor>(pt);
   }
 }
 
@@ -117,8 +115,8 @@ bool PopTensors::canAlias(
 }
 
 void PopTensors::insertAliased(TensorId to, TensorId from) {
-  std::shared_ptr<snap::Tensor> pt = tensors_.at(from);
-  auto foundView                   = views_.find(from);
+  std::shared_ptr<poplar::Tensor> pt = tensors_.at(from);
+  auto foundView                     = views_.find(from);
   if (foundView != views_.end()) {
     views_[to]        = foundView->second;
     viewChangers_[to] = viewChangers_[from];
@@ -127,31 +125,31 @@ void PopTensors::insertAliased(TensorId to, TensorId from) {
   tensors_[to] = tensors_.at(from);
 }
 
-void PopTensors::insertUnsafe(TensorId id, const snap::Tensor &pt) {
+void PopTensors::insertUnsafe(TensorId id, const poplar::Tensor &pt) {
   auto found = tensors_.find(id);
   if (found != tensors_.end()) {
-    throw internal_error("snap::Tensor " + id + " already in map");
+    throw internal_error("poplar::Tensor " + id + " already in map");
   }
 
-  tensors_[id] = std::make_shared<snap::Tensor>(pt);
+  tensors_[id] = std::make_shared<poplar::Tensor>(pt);
 }
 
 bool PopTensors::contains(TensorId id) const {
   return tensors_.find(id) != tensors_.end();
 }
 
-const snap::Tensor &PopTensors::get(TensorId id) const {
+const poplar::Tensor &PopTensors::get(TensorId id) const {
   auto found = tensors_.find(id);
   if (found == tensors_.end()) {
-    throw error("no snap::Tensor " + id);
+    throw error("no poplar::Tensor " + id);
   }
   return *found->second;
 }
 
-const snap::Tensor &PopTensors::getView(TensorId id) const {
+const poplar::Tensor &PopTensors::getView(TensorId id) const {
   auto found = tensors_.find(id);
   if (found == tensors_.end()) {
-    throw error("no snap::Tensor " + id);
+    throw error("no poplar::Tensor " + id);
   }
   auto foundView = views_.find(id);
   if (foundView == views_.end()) {
@@ -180,7 +178,7 @@ void PopTensors::setViewChangers(TensorId id,
   viewChangers_[id] = std::make_shared<ViewChangers>(viewChangers);
 }
 
-const std::map<TensorId, std::shared_ptr<snap::Tensor>> &
+const std::map<TensorId, std::shared_ptr<poplar::Tensor>> &
 PopTensors::getTensors() const {
   return tensors_;
 }

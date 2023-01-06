@@ -4,11 +4,11 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <utility>
 #include <vector>
+#include <poplar/Program.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
@@ -23,7 +23,7 @@
 #include "popart/op.hpp"
 #include "popart/op/exchange/exchange.hpp"
 #include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/region.hpp" // IWYU pragma: keep
 #include "popart/tensor.hpp"
 #include "popart/tensordebuginfo.hpp"
@@ -31,10 +31,10 @@
 #include "popart/tensorlocation.hpp"
 #include "popart/util.hpp"
 
-namespace snap {
+namespace poplar {
 
 class Graph;
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 
@@ -42,11 +42,12 @@ namespace popx {
 
 namespace {
 
-snap::program::Sequence &
-get(std::map<int, snap::program::Sequence> &xs, int index, snap::Graph &graph) {
+poplar::program::Sequence &get(std::map<int, poplar::program::Sequence> &xs,
+                               int index,
+                               poplar::Graph &graph) {
   auto found = xs.find(index);
   if (found == xs.end()) {
-    xs.insert({index, graph});
+    xs.insert({index, {}});
   }
   return xs.at(index);
 }
@@ -95,7 +96,7 @@ InputCreatorType MultiExchangeOpx::getInputCreatorType(InIndex index) const {
     }
   }
 
-  return PopOpx::getInputCreatorType(index);
+  return Opx::getInputCreatorType(index);
 }
 
 bool MultiExchangeOpx::canUnwind(InIndex in, OutIndex out) const {
@@ -107,15 +108,15 @@ bool MultiExchangeOpx::canUnwind(InIndex in, OutIndex out) const {
   return inIndices.first == outIndices.first && inIndices.second == 0;
 }
 
-snap::Tensor MultiExchangeOpx::unwindTensorLayout(snap::Tensor tensor,
-                                                  InIndex in,
-                                                  OutIndex) const {
+poplar::Tensor MultiExchangeOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                    InIndex in,
+                                                    OutIndex) const {
   auto &multiExchangeOp = getOp<MultiExchangeOp>();
   auto inIndices        = multiExchangeOp.inIndexToDescriptorIndex(in);
   auto descriptor  = multiExchangeOp.getExchangeDescriptor(inIndices.first);
   auto descriptorx = getExchangeDescriptorx(dv_p, descriptor);
 
-  return descriptorx->unwind(srcVirtualGraph(in), tensor);
+  return descriptorx->unwind(srcGraph(in), tensor);
 }
 
 view::RegMap MultiExchangeOpx::unwindRegion(InIndex, OutIndex) const {
@@ -197,7 +198,7 @@ void MultiExchangeOpx::growPart(OpxGrowPartId id) const {
   auto descriptor  = multiExchangeOp.getExchangeDescriptor(id);
   auto descriptorx = getExchangeDescriptorx(dv_p, descriptor);
 
-  std::vector<std::pair<TensorId, snap::Tensor>> inTensors;
+  std::vector<std::pair<TensorId, poplar::Tensor>> inTensors;
 
   // Get tensors
   for (auto input : multiExchangeOp.input->tensorIdMap()) {
@@ -218,14 +219,14 @@ void MultiExchangeOpx::growPart(OpxGrowPartId id) const {
   logging::opx::debug("[MultiExchangeOpx] Growing pre-exchange for {}",
                       descriptor);
   descriptorx->pre(
-      srcVirtualGraph(multiExchangeOp.descriptorIndexToInIndices(id).front()),
+      srcGraph(multiExchangeOp.descriptorIndexToInIndices(id).front()),
       popart::popx::get(state->preSeqs, id, graph()),
       debugContext());
 
   // Exchange
   logging::opx::debug("[MultiExchangeOpx] Growing exchange for {}", descriptor);
   descriptorx->exchange(
-      srcVirtualGraph(multiExchangeOp.descriptorIndexToInIndices(id).front()),
+      srcGraph(multiExchangeOp.descriptorIndexToInIndices(id).front()),
       popart::popx::get(state->exchangeSeqs, id, graph()),
       debugContext());
 
@@ -233,7 +234,7 @@ void MultiExchangeOpx::growPart(OpxGrowPartId id) const {
   logging::opx::debug("[MultiExchangeOpx] Growing post-exchange for {}",
                       descriptor);
   descriptorx->post(
-      srcVirtualGraph(multiExchangeOp.descriptorIndexToInIndices(id).front()),
+      srcGraph(multiExchangeOp.descriptorIndexToInIndices(id).front()),
       popart::popx::get(state->postSeqs, id, graph()),
       debugContext());
 
@@ -261,7 +262,7 @@ void MultiExchangeOpx::growPart(OpxGrowPartId id) const {
   }
 }
 
-void MultiExchangeOpx::grow(snap::program::Sequence &prog) const {
+void MultiExchangeOpx::grow(poplar::program::Sequence &prog) const {
   auto &multiExchangeOp = getOp<MultiExchangeOp>();
 
   MultiExchangeOpxState *state =
@@ -274,27 +275,24 @@ void MultiExchangeOpx::grow(snap::program::Sequence &prog) const {
   for (int j = 0; j < segments.size(); ++j) {
     // Prepare for the exchange
     for (int i = segments.at(j).first; i < segments.at(j).second; ++i) {
-      prog.getPoplarSequence().add(
-          popart::popx::get(state->preSeqs, i, graph()));
+      prog.add(popart::popx::get(state->preSeqs, i, graph()));
     }
 
     // Exchange
     for (int i = segments.at(j).first; i < segments.at(j).second; ++i) {
-      prog.getPoplarSequence().add(
-          popart::popx::get(state->exchangeSeqs, i, graph()));
+      prog.add(popart::popx::get(state->exchangeSeqs, i, graph()));
     }
 
     // Post process the exchange
     for (int i = segments.at(j).first; i < segments.at(j).second; ++i) {
-      prog.getPoplarSequence().add(
-          popart::popx::get(state->postSeqs, i, graph()));
+      prog.add(popart::popx::get(state->postSeqs, i, graph()));
     }
   }
 }
 
-snap::Tensor
-MultiExchangeOpx::createInputTensor(InIndex index,
-                                    const poplar::DebugNameAndId &dnai) const {
+poplar::Tensor
+MultiExchangeOpx::createInput(InIndex index,
+                              const poplar::DebugNameAndId &dnai) const {
   auto &multiExchangeOp                            = getOp<MultiExchangeOp>();
   std::shared_ptr<ExchangeDescriptorx> descriptorx = getExchangeDescriptorx(
       dv_p,

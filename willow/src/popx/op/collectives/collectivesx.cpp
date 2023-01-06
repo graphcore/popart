@@ -6,14 +6,10 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <snap/Graph.hpp>
-#include <snap/Tensor.hpp>
+#include <stdint.h>
 #include <utility>
 #include <vector>
-#include <poplar/Graph.hpp>
-#include <poplar/Target.hpp>
 #include <poplar/Tensor.hpp>
-#include <poplar/Type.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/collectives/collectives.hpp>
@@ -24,11 +20,10 @@
 #include <popart/popx/replicatedtensorshardingbundle.hpp>
 #include <popart/replicatedtensorsharding.hpp>
 
-#include "popart/commgroup.hpp"
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
 #include "popart/op.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/replicagrouping.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorindex.hpp"
@@ -64,7 +59,7 @@ gcl::CollectiveOperator getPoplarCollectiveOperator(CollectiveOperator op) {
 }
 
 CollectivesBaseOpx::CollectivesBaseOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {}
+    : Opx(op, devicex) {}
 
 ReplicatedTensorShardingGroup CollectivesBaseOpx::getCollectiveLinkedGroup(
     ReplicatedTensorShardingIndicesIndex groupIndex) const {
@@ -151,7 +146,7 @@ unsigned numGrainElements(const poplar::Target &target,
 
 gcl::CollectiveBalancedReorder *
 CollectivesBaseOpx::createCollectiveBalancedReorder(
-    snap::Tensor tensor,
+    poplar::Tensor tensor,
     ReplicatedTensorShardingIndicesIndex groupIndex) const {
   auto globalReplicationFactor = dv_p->lowering().getGlobalReplicationFactor();
   auto group                   = getCollectiveLinkedGroup(groupIndex);
@@ -205,10 +200,11 @@ CollectivesBaseOpx::createCollectiveBalancedReorder(
     auto rtsIndices = op_p->getReplicatedTensorShardingIndices();
     ReplicatedTensorShardingIndices::iterator rtsIterator = rtsIndices.begin();
     std::advance(rtsIterator, groupIndex);
-    auto p                         = *rtsIterator;
+    auto p = *rtsIterator;
+
     std::set<InIndex> &inIndices   = p.first;
     std::set<OutIndex> &outIndices = p.second;
-    snap::Graph *cbrGraph;
+    poplar::Graph *cbrGraph;
     if (inIndices.size() > 0) {
       cbrGraph = &inGraph(*inIndices.begin());
     } else if (outIndices.size() > 0) {
@@ -220,13 +216,12 @@ CollectivesBaseOpx::createCollectiveBalancedReorder(
     }
 
     auto cbr = std::make_shared<gcl::CollectiveBalancedReorder>(
-        cbrGraph->getPoplarGraph(),
-        tensor.getPoplarTensor(),
+        *cbrGraph,
+        tensor,
         replicationFactor,
         getDebugNameAndId(),
         false,
-        numGrainElements(cbrGraph->getPoplarGraph().getTarget(),
-                         tensor.getPoplarTensor().elementType()));
+        numGrainElements(cbrGraph->getTarget(), tensor.elementType()));
     auto cbrId = dv_p->lowering()
                      .getReplicatedTensorShardingBundle()
                      .registerCollectiveBalancedReorder(cbr);

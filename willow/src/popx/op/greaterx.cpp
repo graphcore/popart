@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/popops/ElementWise.hpp>
 #include <vector>
+#include <popops/ElementWise.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/op/greater.hpp>
 #include <popart/popx/op/greaterx.hpp>
@@ -10,11 +10,11 @@
 #include "popart/operators.hpp"
 #include "popart/popx/op/elementwisex.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -28,15 +28,15 @@ GreaterOpx::GreaterOpx(Op *op, Devicex *devicex)
                       {Onnx::Operators::Greater_7, Onnx::Operators::Greater_9});
 }
 
-void GreaterOpx::grow(snap::program::Sequence &prog) const {
+void GreaterOpx::grow(poplar::program::Sequence &prog) const {
 
   insert(outId(GreaterOp::getOutIndex()),
-         snap::popops::map(graph(),
-                           popops::expr::BinaryOpType::GREATER_THAN,
-                           get(inId(GreaterOp::getArg0InIndex())),
-                           get(inId(GreaterOp::getArg1InIndex())),
-                           prog,
-                           debugContext()));
+         popops::map(graph(),
+                     popops::expr::BinaryOpType::GREATER_THAN,
+                     get(inId(GreaterOp::getArg0InIndex())),
+                     get(inId(GreaterOp::getArg1InIndex())),
+                     prog,
+                     debugContext()));
 }
 
 namespace {

@@ -2,21 +2,22 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_CLIPX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_CLIPX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
 #include <memory>
-#include <snap/Tensor.hpp>
 #include <string>
+#include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <popart/popx/op/elementwisex.hpp>
 
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
+
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class ClipInplaceOp;
@@ -30,15 +31,15 @@ class ClipComputex : public EwuComputex {
 public:
   ClipComputex(float min_, float max_) : min(min_), max(max_) {}
 
-  snap::Tensor outplace(snap::program::Sequence &,
-                        snap::Graph &,
-                        const snap::Tensor &tensor,
-                        const poplar::DebugNameAndId &,
-                        const std::string &) const final;
+  poplar::Tensor outplace(poplar::program::Sequence &,
+                          poplar::Graph &,
+                          const poplar::Tensor &tensor,
+                          const poplar::DebugNameAndId &,
+                          const std::string &) const final;
 
-  void inplace(snap::program::Sequence &,
-               snap::Graph &,
-               const snap::Tensor &,
+  void inplace(poplar::program::Sequence &,
+               poplar::Graph &,
+               const poplar::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
 
@@ -46,12 +47,12 @@ public:
     return std::unique_ptr<EwuComputex>(new ClipComputex(min, max));
   }
 
-  static snap::Tensor getClipTensor(float val,
-                                    const poplar::Type &type,
-                                    snap::Graph &graph,
-                                    const poplar::DebugNameAndId &);
-  static snap::Tensor broadcastClipTensor(snap::Tensor clipT,
-                                          const snap::Tensor &refT);
+  static poplar::Tensor getClipTensor(float val,
+                                      const poplar::Type &type,
+                                      poplar::Graph &graph,
+                                      const poplar::DebugNameAndId &);
+  static poplar::Tensor broadcastClipTensor(poplar::Tensor clipT,
+                                            const poplar::Tensor &refT);
 
   static float getMinFromClipOp(Op *op);
   static float getMaxFromClipOp(Op *op);
@@ -75,10 +76,10 @@ public:
   ClipInplaceOpx(Op *, Devicex *);
 };
 
-class ClipGradOpx : public PopOpx {
+class ClipGradOpx : public Opx {
 public:
   ClipGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

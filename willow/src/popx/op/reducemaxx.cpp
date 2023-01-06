@@ -2,12 +2,10 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
+#include <ext/new_allocator.h>
 #include <vector>
 #include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popops/OperationDef.hpp>
@@ -19,8 +17,14 @@
 
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/tensorinfo.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -30,34 +34,32 @@ class Op;
 namespace popx {
 class Devicex;
 
-ReduceMaxOpx::ReduceMaxOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+ReduceMaxOpx::ReduceMaxOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ReduceMaxOp>(op);
 }
 
-void ReduceMaxOpx::grow(snap::program::Sequence &prog) const {
+void ReduceMaxOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceMaxOp>();
-  const auto input = getInTensor(ReduceMaxOp::getInIndex()).getPoplarTensor();
+  const auto input = getInTensor(ReduceMaxOp::getInIndex());
 
-  auto output_tensor = popops::reduce(graph().getPoplarGraph(),
+  auto output_tensor = popops::reduce(graph(),
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::MAX},
-                                      prog.getPoplarSequence(),
+                                      prog,
                                       debugContext("max"));
 
   setOutTensor(
       ReduceMaxOp::getOutIndex(),
-      snap::Tensor{output_tensor.reshape(
-                       outInfo(ReduceMaxOp::getOutIndex()).shape_szt()),
-                   graph()});
+      output_tensor.reshape(outInfo(ReduceMaxOp::getOutIndex()).shape_szt()));
 }
 
 ReduceMaxGradOpx::ReduceMaxGradOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<ReduceMaxGradOp>(op, Onnx::GradOperators::ReduceMaxGrad);
 }
 
-void ReduceMaxGradOpx::grow(snap::program::Sequence &prog) const {
+void ReduceMaxGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op = getOp<ReduceMaxGradOp>();
   auto output    = cloneNcopy(prog, getInTensor(ReduceMaxGradOp::getInIndex()));
   auto mask =
@@ -77,7 +79,7 @@ void ReduceMaxGradOpx::grow(snap::program::Sequence &prog) const {
     }
   }
 
-  output = snap::popops::map(
+  output = popops::map(
       graph(),
       pe::Mul(pe::Add(pe::Signum(pe::Sub(pe::_2, pe::_1)), pe::Const(1)),
               pe::_3),

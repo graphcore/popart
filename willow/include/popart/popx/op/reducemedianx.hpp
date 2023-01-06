@@ -4,15 +4,15 @@
 
 #include <cstdint>
 #include <vector>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
 #include "popart/names.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -20,16 +20,16 @@ class Op;
 namespace popx {
 class Devicex;
 
-class ReduceMedianOpx : public PopOpx {
+class ReduceMedianOpx : public Opx {
 public:
   ReduceMedianOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override;
+  void grow(poplar::program::Sequence &) const override;
 };
 
-class ReduceMedianGradOpx : public PopOpx {
+class ReduceMedianGradOpx : public Opx {
 public:
   ReduceMedianGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override;
+  void grow(poplar::program::Sequence &) const override;
 };
 
 namespace reducemedianinternal {

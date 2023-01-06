@@ -2,14 +2,17 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_CASTTHENPOW2SCALEX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_CASTTHENPOW2SCALEX_HPP_
 
-#include "popart/names.hpp"
+#include <set>
+#include <poplar/Quarter.hpp>
 #include <popart/popx/opx.hpp>
 
-namespace snap {
+#include "popart/names.hpp"
+
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 
@@ -25,7 +28,7 @@ class Devicex;
 class CastThenPow2ScaleOpx : public Opx {
 public:
   CastThenPow2ScaleOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   /**
    * Note to create the input tensor at index 0, the metadata tensor must

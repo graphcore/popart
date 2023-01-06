@@ -3,31 +3,33 @@
 #define POPART_WILLOW_INCLUDE_POPART_POPX_VIRTUALGRAPH_HPP_
 
 #include <memory>
-#include <snap/Graph.hpp>
 #include <utility>
+#include <poplar/Graph.hpp>
 
 namespace popart {
 namespace popx {
 
 class VirtualGraph {
 public:
-  VirtualGraph(snap::Graph &&computeTilesGraph_)
+  VirtualGraph(poplar::Graph &&computeTilesGraph_)
       : computeTilesGraph(
-            std::make_shared<snap::Graph>(std::move(computeTilesGraph_))) {}
-  VirtualGraph(snap::Graph &&computeTilesGraph_, snap::Graph &&ioTilesGraph_)
+            std::make_shared<poplar::Graph>(std::move(computeTilesGraph_))) {}
+  VirtualGraph(poplar::Graph &&computeTilesGraph_,
+               poplar::Graph &&ioTilesGraph_)
       : computeTilesGraph(
-            std::make_shared<snap::Graph>(std::move(computeTilesGraph_))),
-        ioTilesGraph(std::make_shared<snap::Graph>(std::move(ioTilesGraph_))) {}
+            std::make_shared<poplar::Graph>(std::move(computeTilesGraph_))),
+        ioTilesGraph(
+            std::make_shared<poplar::Graph>(std::move(ioTilesGraph_))) {}
 
   bool hasComputeTilesGraph() { return computeTilesGraph.get() != nullptr; }
   bool hasIoTilesGraph() { return ioTilesGraph.get() != nullptr; }
 
-  snap::Graph &getComputeTilesGraph() { return *computeTilesGraph; }
-  snap::Graph &getIoTilesGraph() { return *ioTilesGraph; }
+  poplar::Graph &getComputeTilesGraph() { return *computeTilesGraph; }
+  poplar::Graph &getIoTilesGraph() { return *ioTilesGraph; }
 
 private:
-  std::shared_ptr<snap::Graph> computeTilesGraph;
-  std::shared_ptr<snap::Graph> ioTilesGraph;
+  std::shared_ptr<poplar::Graph> computeTilesGraph;
+  std::shared_ptr<poplar::Graph> ioTilesGraph;
 };
 
 } // namespace popx

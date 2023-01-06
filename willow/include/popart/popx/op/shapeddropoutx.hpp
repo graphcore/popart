@@ -2,14 +2,14 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SHAPEDDROPOUTX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SHAPEDDROPOUTX_HPP_
 
-#include <snap/Tensor.hpp>
-#include <popart/popx/popopx.hpp>
+#include <poplar/Tensor.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -17,13 +17,13 @@ class Op;
 namespace popx {
 class Devicex;
 
-class ShapedDropoutOpx : public PopOpx {
+class ShapedDropoutOpx : public Opx {
 public:
   ShapedDropoutOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override;
+  void grow(poplar::program::Sequence &) const override;
 
 private:
-  snap::Tensor getReferenceTensor() const;
+  poplar::Tensor getReferenceTensor() const;
 };
 
 } // namespace popx

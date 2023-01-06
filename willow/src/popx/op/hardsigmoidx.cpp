@@ -1,10 +1,10 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <memory>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <string>
 #include <vector>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/error.hpp>
@@ -18,15 +18,15 @@
 #include "popart/operators.hpp"
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -54,9 +54,9 @@ HardSigmoidOpx::HardSigmoidOpx(Op *op, Devicex *devicex)
       op, {Onnx::Operators::HardSigmoid_1, Onnx::Operators::HardSigmoid_6});
 }
 
-void HardSigmoidComputex::inplace(snap::program::Sequence &prog,
-                                  snap::Graph &graph,
-                                  const snap::Tensor &tensor,
+void HardSigmoidComputex::inplace(poplar::program::Sequence &prog,
+                                  poplar::Graph &graph,
+                                  const poplar::Tensor &tensor,
                                   const poplar::DebugNameAndId &dnai,
                                   const std::string &debug_prefix) const {
   //   Hardsigmoid definition: max(0, min(1, alpha*x+beta))
@@ -71,7 +71,7 @@ void HardSigmoidComputex::inplace(snap::program::Sequence &prog,
   exprs.push_back(std::make_unique<pe::Min>(pe::Const(1.0f), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Max>(pe::Const(0.0f), *exprs.back()));
 
-  snap::popops::mapInPlace(
+  popops::mapInPlace(
       graph, *exprs.back(), {tensor}, prog, {dnai, debug_prefix});
 }
 
@@ -86,11 +86,11 @@ HardSigmoidInplaceOpx::HardSigmoidInplaceOpx(Op *op, Devicex *devicex)
 }
 
 HardSigmoidGradOpx::HardSigmoidGradOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<HardSigmoidGradOp>(op, Onnx::GradOperators::HardSigmoidGrad);
 }
 
-void HardSigmoidGradOpx::grow(snap::program::Sequence &prog) const {
+void HardSigmoidGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op       = getOp<HardSigmoidGradOp>();
   const auto input     = getInTensor(HardSigmoidGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(HardSigmoidGradOp::getFwdArgInIndex());
@@ -127,11 +127,11 @@ void HardSigmoidGradOpx::grow(snap::program::Sequence &prog) const {
       pe::Mul(*theta_plus.back(), *theta_minus.back())));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
-  auto output = snap::popops::map(graph(),
-                                  *exprs.back(),
-                                  {input, fwd_input},
-                                  prog,
-                                  debugContext("hardsigmoid_grad"));
+  auto output = popops::map(graph(),
+                            *exprs.back(),
+                            {input, fwd_input},
+                            prog,
+                            debugContext("hardsigmoid_grad"));
 
   setOutTensor(HardSigmoidGradOp::getOutIndex(), output);
 }

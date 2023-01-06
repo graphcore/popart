@@ -2,10 +2,8 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <ext/new_allocator.h>
 #include <ostream>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <poplar/Tensor.hpp>
 #include <popops/OperationDef.hpp>
@@ -19,16 +17,22 @@
 #include "popart/names.hpp"
 #include "popart/op.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/region.hpp" // IWYU pragma: keep
 #include "popart/util.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 namespace popx {
 class Devicex;
 
 BaseExpandOpx::BaseExpandOpx(Op *op_, Devicex *devicex)
-    : PopOpx(op_, devicex), op(static_cast<ExpandOp *>(op_)) {}
+    : Opx(op_, devicex), op(static_cast<ExpandOp *>(op_)) {}
 
 ExpandOpx::ExpandOpx(Op *op_, Devicex *devicex) : BaseExpandOpx(op_, devicex) {
   verifyOp<ExpandOp>(op_, {Onnx::Operators::Expand_8});
@@ -38,9 +42,9 @@ InputCreatorType BaseExpandOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-snap::Tensor BaseExpandOpx::unwindTensorLayout(snap::Tensor t,
-                                               InIndex inIndex,
-                                               OutIndex) const {
+poplar::Tensor BaseExpandOpx::unwindTensorLayout(poplar::Tensor t,
+                                                 InIndex inIndex,
+                                                 OutIndex) const {
 
   // Numpy broadcasting, some valid examples:
   //
@@ -60,7 +64,7 @@ snap::Tensor BaseExpandOpx::unwindTensorLayout(snap::Tensor t,
   // an 'input' tensor of a reduced size. We arbitrarily choose the slice in
   // each dimension to start at index 0.
 
-  poplar::Tensor tensor = t.getPoplarTensor();
+  poplar::Tensor tensor = t;
   if (inIndex == ExpandOp::getInTensorIndex()) {
     auto output_shape = op->getOutShape();
     auto input_shape  = inShape(inIndex);
@@ -92,7 +96,7 @@ snap::Tensor BaseExpandOpx::unwindTensorLayout(snap::Tensor t,
     }
   }
 
-  return snap::Tensor{tensor, graph()};
+  return tensor;
 }
 
 view::RegMap BaseExpandOpx::unwindRegion(InIndex inIndex,
@@ -101,14 +105,14 @@ view::RegMap BaseExpandOpx::unwindRegion(InIndex inIndex,
   return cop->bwdRegMap(inIndex, outIndex);
 }
 
-snap::Tensor BaseExpandOpx::expand_broadcast(const Shape output_shape,
-                                             const snap::Tensor &t) const {
+poplar::Tensor BaseExpandOpx::expand_broadcast(const Shape output_shape,
+                                               const poplar::Tensor &t) const {
   /* Make the rank of the tensor to be expanded and the output the same by
      adding 1 as the higher dimensions example: where a Tensor of shape (3,1) is
      expanded to shape (3,2,6), the tensor to be expanded is reshaped from (3,1)
      to (3,1,1)
   */
-  auto expand = t.getPoplarTensor();
+  auto expand = t;
   for (int64_t rank_diff = output_shape.size() - expand.shape().size();
        rank_diff > 0;
        --rank_diff) {
@@ -124,10 +128,10 @@ snap::Tensor BaseExpandOpx::expand_broadcast(const Shape output_shape,
   }
 
   auto tx = t;
-  return snap::Tensor{expand, tx};
+  return expand;
 }
 
-void ExpandOpx::grow(snap::program::Sequence &prog) const {
+void ExpandOpx::grow(poplar::program::Sequence &prog) const {
 
   auto output_shape = outShape(ExpandOp::getOutIndex());
   auto expand = cloneNcopy(prog, getInTensor(ExpandOp::getInTensorIndex()));
@@ -140,14 +144,14 @@ ExpandInplaceOpx::ExpandInplaceOpx(Op *op_, Devicex *devicex)
   verifyOp<ExpandOp>(op_);
 }
 
-void ExpandInplaceOpx::grow(snap::program::Sequence &) const {
+void ExpandInplaceOpx::grow(poplar::program::Sequence &) const {
   auto output_shape = outShape(ExpandOp::getOutIndex());
   auto expand       = getInTensor(ExpandOp::getInTensorIndex());
   expand            = expand_broadcast(output_shape, expand);
   setOutTensor(ExpandOp::getOutIndex(), expand);
 }
 
-ExpandGradOpx::ExpandGradOpx(Op *op_, Devicex *devicex) : PopOpx(op_, devicex) {
+ExpandGradOpx::ExpandGradOpx(Op *op_, Devicex *devicex) : Opx(op_, devicex) {
   verifyOp<ExpandGradOp>(op_, Onnx::GradOperators::ExpandGrad);
   auto expand_grad_op = dynamic_cast<ExpandGradOp *>(op_);
   if (expand_grad_op) {
@@ -157,8 +161,8 @@ ExpandGradOpx::ExpandGradOpx(Op *op_, Devicex *devicex) : PopOpx(op_, devicex) {
   }
 }
 
-void ExpandGradOpx::grow(snap::program::Sequence &prog) const {
-  const auto dY = getInTensor(ExpandGradOp::getDYIndex()).getPoplarTensor();
+void ExpandGradOpx::grow(poplar::program::Sequence &prog) const {
+  const auto dY = getInTensor(ExpandGradOp::getDYIndex());
 
   std::vector<size_t> axes;
   const int64_t offset = dY.rank() - xShape.size();
@@ -168,15 +172,10 @@ void ExpandGradOpx::grow(snap::program::Sequence &prog) const {
     }
   }
 
-  auto dX = popops::reduce(graph().getPoplarGraph(),
-                           dY,
-                           axes,
-                           {popops::Operation::ADD},
-                           prog.getPoplarSequence(),
-                           debugContext("add"));
-  dX      = dX.reshape(xShape);
-  setOutTensor(ExpandGradOp::getOutIndex(),
-               cloneNcopy(prog, snap::Tensor{dX, graph()}));
+  auto dX = popops::reduce(
+      graph(), dY, axes, {popops::Operation::ADD}, prog, debugContext("add"));
+  dX = dX.reshape(xShape);
+  setOutTensor(ExpandGradOp::getOutIndex(), cloneNcopy(prog, dX));
 }
 
 namespace {

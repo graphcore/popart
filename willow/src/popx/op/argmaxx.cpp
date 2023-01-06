@@ -1,8 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <vector>
+#include <poplar/Tensor.hpp>
 #include <popnn/Loss.hpp>
 #include <popart/popx/op/argmaxx.hpp>
 #include <popart/popx/opxmanager.hpp>
@@ -10,16 +8,18 @@
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
 
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
+
 namespace popart {
 namespace popx {
 
-snap::Tensor ArgMaxOpx::extremaOp(snap::program::Sequence &prog,
-                                  const snap::Tensor &input) const {
-  return snap::Tensor{popnn::argMax(graph().getPoplarGraph(),
-                                    input.getPoplarTensor(),
-                                    prog.getPoplarSequence(),
-                                    debugContext("argmax")),
-                      graph()};
+poplar::Tensor ArgMaxOpx::extremaOp(poplar::program::Sequence &prog,
+                                    const poplar::Tensor &input) const {
+  return popnn::argMax(graph(), input, prog, debugContext("argmax"));
 }
 
 namespace {

@@ -3,16 +3,16 @@
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_EXPANDX_HPP_
 
 #include <cstddef>
-#include <snap/Tensor.hpp>
 #include <vector>
+#include <poplar/Tensor.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class ExpandOp;
@@ -21,16 +21,17 @@ class Op;
 namespace popx {
 class Devicex;
 
-class BaseExpandOpx : public PopOpx {
+class BaseExpandOpx : public Opx {
 protected:
-  snap::Tensor expand_broadcast(const Shape output_shape,
-                                const snap::Tensor &expand) const;
+  poplar::Tensor expand_broadcast(const Shape output_shape,
+                                  const poplar::Tensor &expand) const;
 
 public:
   BaseExpandOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const final;
 
-  snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
+  poplar::Tensor
+      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
 
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 
@@ -41,19 +42,19 @@ protected:
 class ExpandOpx : public BaseExpandOpx {
 public:
   ExpandOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class ExpandInplaceOpx : public BaseExpandOpx {
 public:
   ExpandInplaceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
-class ExpandGradOpx : public PopOpx {
+class ExpandGradOpx : public Opx {
 public:
   ExpandGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   std::vector<size_t> xShape;

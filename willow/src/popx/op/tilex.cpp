@@ -1,10 +1,9 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <cstddef>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <string>
 #include <vector>
 #include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/op/tile.hpp>
 #include <popart/popx/op/tilex.hpp>
@@ -13,13 +12,13 @@
 #include "popart/names.hpp"
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -27,24 +26,23 @@ class Op;
 namespace popx {
 class Devicex;
 
-void TileOpx::grow(snap::program::Sequence &prog) const {
+void TileOpx::grow(poplar::program::Sequence &prog) const {
   // not in-place, so cloning input
-  auto outTensor =
-      cloneNcopy(prog, getInTensor(TileOp::getInIndex())).getPoplarTensor();
+  auto outTensor = cloneNcopy(prog, getInTensor(TileOp::getInIndex()));
 
   auto repeats = getOp<TileOp>().getRepeats();
   for (unsigned i = 0; i < repeats.size(); i++) {
     outTensor = outTensor.broadcast(static_cast<unsigned>(repeats[i]), i);
   }
 
-  setOutTensor(TileOp::getOutIndex(), snap::Tensor{outTensor, graph()});
+  setOutTensor(TileOp::getOutIndex(), outTensor);
 }
 
-TileOpx::TileOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+TileOpx::TileOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<TileOp>(op);
 }
 
-TileGradOpx::TileGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+TileGradOpx::TileGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<TileGradOp>(op, Onnx::GradOperators::TileGrad);
 }
 
@@ -55,10 +53,10 @@ TileGradOpx::TileGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 // GradIn [2, 6, 4, 7]
 // Repeats [2]
 // GradOut = Sum([2, 4], [6, 7]) = [8, 11]
-void TileGradOpx::grow(snap::program::Sequence &prog) const {
+void TileGradOpx::grow(poplar::program::Sequence &prog) const {
   auto inTensor           = getInTensor(TileGradOp::getInIndex());
   auto intermediateTensor = inTensor;
-  snap::Tensor outTensor;
+  poplar::Tensor outTensor;
 
   auto repeats = getOp<TileGradOp>().getRepeats();
   for (unsigned i = 0; i < repeats.size(); i++) {
@@ -73,14 +71,14 @@ void TileGradOpx::grow(snap::program::Sequence &prog) const {
       if (start == 0) {
         outTensor = cloneNcopy(prog, t);
       } else {
-        snap::popops::mapInPlace(graph(),
-                                 popops::expr::BinaryOpType::ADD,
-                                 outTensor,
-                                 t,
-                                 prog,
-                                 debugContext(std::string("reduceAdd") +
-                                              sNameDelimiter +
-                                              std::to_string(start)));
+        popops::mapInPlace(graph(),
+                           popops::expr::BinaryOpType::ADD,
+                           outTensor,
+                           t,
+                           prog,
+                           debugContext(std::string("reduceAdd") +
+                                        sNameDelimiter +
+                                        std::to_string(start)));
       }
     }
     intermediateTensor = outTensor;

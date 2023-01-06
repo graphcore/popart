@@ -1,10 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <string>
 #include <vector>
+#include <poplar/Tensor.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/popx/op/floorx.hpp>
@@ -15,6 +12,13 @@
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/elementwisex.hpp"
 
+namespace poplar {
+class Graph;
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
+
 namespace popart {
 class FloorInplaceOp;
 class FloorOp;
@@ -23,27 +27,23 @@ class Op;
 namespace popx {
 class Devicex;
 
-snap::Tensor FloorComputex::outplace(snap::program::Sequence &prog,
-                                     snap::Graph &graph,
-                                     const snap::Tensor &tensor,
-                                     const poplar::DebugNameAndId &dnai,
-                                     const std::string &s) const {
+poplar::Tensor FloorComputex::outplace(poplar::program::Sequence &prog,
+                                       poplar::Graph &graph,
+                                       const poplar::Tensor &tensor,
+                                       const poplar::DebugNameAndId &dnai,
+                                       const std::string &s) const {
 
-  return snap::Tensor{popops::map(graph.getPoplarGraph(),
-                                  popops::expr::UnaryOpType::FLOOR,
-                                  tensor.getPoplarTensor(),
-                                  prog.getPoplarSequence(),
-                                  {dnai, s}),
-                      graph};
+  return popops::map(
+      graph, popops::expr::UnaryOpType::FLOOR, tensor, prog, {dnai, s});
 }
 
-void FloorComputex::inplace(snap::program::Sequence &prog,
-                            snap::Graph &graph,
-                            const snap::Tensor &tensor,
+void FloorComputex::inplace(poplar::program::Sequence &prog,
+                            poplar::Graph &graph,
+                            const poplar::Tensor &tensor,
                             const poplar::DebugNameAndId &dnai,
                             const std::string &s) const {
 
-  snap::popops::mapInPlace(
+  popops::mapInPlace(
       graph, popops::expr::UnaryOpType::FLOOR, tensor, prog, {dnai, s});
 }
 

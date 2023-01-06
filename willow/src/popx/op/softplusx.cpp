@@ -1,8 +1,8 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <string>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/op/softplus.hpp>
@@ -12,15 +12,15 @@
 #include "popart/operators.hpp"
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -38,9 +38,9 @@ SoftPlusOpx::SoftPlusOpx(Op *op, Devicex *devicex)
   verifyOp<SoftPlusOp>(op, {Onnx::Operators::Softplus_1});
 }
 
-void SoftPlusComputex::inplace(snap::program::Sequence &prog,
-                               snap::Graph &graph,
-                               const snap::Tensor &tensor,
+void SoftPlusComputex::inplace(poplar::program::Sequence &prog,
+                               poplar::Graph &graph,
+                               const poplar::Tensor &tensor,
                                const poplar::DebugNameAndId &dnai,
                                const std::string &debug_prefix) const {
   // Softplus definition: ln(exp(x)+1)
@@ -50,7 +50,7 @@ void SoftPlusComputex::inplace(snap::program::Sequence &prog,
       pe::Max(pe::_1, pe::Const(0.0f)),
       pe::Log(pe::Add(pe::Const(1.0f), pe::Exp(pe::Neg(pe::Abs(pe::_1))))));
 
-  snap::popops::mapInPlace(graph, expr, {tensor}, prog, {dnai, debug_prefix});
+  popops::mapInPlace(graph, expr, {tensor}, prog, {dnai, debug_prefix});
 }
 
 SoftPlusInplaceOpx::SoftPlusInplaceOpx(Op *op, Devicex *devicex)
@@ -61,12 +61,11 @@ SoftPlusInplaceOpx::SoftPlusInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<SoftPlusInplaceOp>(op, Onnx::CustomOperators::SoftPlusInplace);
 }
 
-SoftPlusGradOpx::SoftPlusGradOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+SoftPlusGradOpx::SoftPlusGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<SoftPlusGradOp>(op, Onnx::GradOperators::SoftPlusGrad);
 }
 
-void SoftPlusGradOpx::grow(snap::program::Sequence &prog) const {
+void SoftPlusGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto grad_in   = getInTensor(SoftPlusGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(SoftPlusGradOp::getFwdArgInIndex());
 
@@ -77,11 +76,11 @@ void SoftPlusGradOpx::grow(snap::program::Sequence &prog) const {
   // Applying the elementwise chain rule gives:
   //
   // grad_out = grad_in * sigmoid(x)
-  auto output = snap::popops::map(graph(),
-                                  pe::_1 * pe::Sigmoid(pe::_2),
-                                  {grad_in, fwd_input},
-                                  prog,
-                                  debugContext("softplus_grad"));
+  auto output = popops::map(graph(),
+                            pe::_1 * pe::Sigmoid(pe::_2),
+                            {grad_in, fwd_input},
+                            prog,
+                            debugContext("softplus_grad"));
 
   setOutTensor(SoftPlusGradOp::getOutIndex(), output);
 }

@@ -49,8 +49,8 @@ class TestPythonDocExamples(ExamplesTester):
         self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
 
-class TestPopartCustomOperatorCube(ExamplesTester):
-    """Tests for example of Popart cube custom operator"""
+class TestPopartCustomOperatorLeaklyRelu(ExamplesTester):
+    """Tests for example of Popart leaky relu custom operator"""
 
     def setup(self):
         custom_op_dir = os.path.join(working_dir, "custom_op")

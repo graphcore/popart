@@ -2,17 +2,17 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_COLLECTIVES_REPLICATEDALLREDUCEX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_COLLECTIVES_REPLICATEDALLREDUCEX_HPP_
 
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
 
 #include "popart/names.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -23,16 +23,17 @@ class Devicex;
 class ReplicatedAllReduceOpx : public CollectivesBaseOpx {
 public:
   ReplicatedAllReduceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override;
+  void grow(poplar::program::Sequence &) const override;
   InputCreatorType getInputCreatorType(InIndex index) const final;
-  snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
+  poplar::Tensor
+      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 
 class ReplicatedAllReduceInplaceOpx : public ReplicatedAllReduceOpx {
 public:
   ReplicatedAllReduceInplaceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

@@ -1,8 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <cstddef>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
+#include <ext/new_allocator.h>
+#include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <popops/OperationDef.hpp>
 #include <popops/Reduce.hpp>
@@ -11,7 +10,13 @@
 #include <popart/popx/opxmanager.hpp>
 
 #include "popart/graphcoreoperators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -19,21 +24,20 @@ class Op;
 namespace popx {
 class Devicex;
 
-LambSquareOpx::LambSquareOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+LambSquareOpx::LambSquareOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<LambSquareOp>(op, Onnx::CustomOperators::LambSquare);
 }
 
-void LambSquareOpx::grow(snap::program::Sequence &prog) const {
-  auto rsq = popops::reduce(
-      graph().getPoplarGraph(),
-      getInTensor(LambSquareOp::getInIndex()).flatten().getPoplarTensor(),
-      poplar::FLOAT,
-      {0},
-      {popops::Operation::SQUARE_ADD},
-      prog.getPoplarSequence(),
-      debugContext("LambSquaredReducedFP32"));
+void LambSquareOpx::grow(poplar::program::Sequence &prog) const {
+  auto rsq = popops::reduce(graph(),
+                            getInTensor(LambSquareOp::getInIndex()).flatten(),
+                            poplar::FLOAT,
+                            {0},
+                            {popops::Operation::SQUARE_ADD},
+                            prog,
+                            debugContext("LambSquaredReducedFP32"));
 
-  setOutTensor(LambSquareOp::getOutIndex(), snap::Tensor{rsq, graph()});
+  setOutTensor(LambSquareOp::getOutIndex(), rsq);
 }
 
 namespace {

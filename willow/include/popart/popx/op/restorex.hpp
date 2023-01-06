@@ -3,14 +3,14 @@
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_RESTOREX_HPP_
 
 #include <cstdint>
-#include <snap/Tensor.hpp>
-#include <popart/popx/popopx.hpp>
+#include <poplar/Tensor.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 
@@ -27,32 +27,32 @@ class Devicex;
  * \tparam Opx is subclass of RestoreBaseOpx. Must have type alias `OpType`
  * defined as the Op that it corresponds to.
  */
-template <typename Derived> class RestoreBaseOpx : public PopOpx {
+template <typename Derived> class RestoreBaseOpx : public Opx {
 public:
   RestoreBaseOpx(Op *op, Devicex *devicex);
 
-  void grow(snap::program::Sequence &) const = 0;
+  void grow(poplar::program::Sequence &) const = 0;
 
 protected:
   bool canDynamicSliceRestore;
 
-  snap::Tensor growRestore(snap::program::Sequence &prog,
-                           const snap::Tensor &stash) const;
+  poplar::Tensor growRestore(poplar::program::Sequence &prog,
+                             const poplar::Tensor &stash) const;
 
 private:
-  snap::Tensor growStaticSliceRestore(snap::program::Sequence &prog,
-                                      int64_t stashSize,
-                                      const snap::Tensor &stashIndex,
-                                      const snap::Tensor &stash) const;
-  snap::Tensor growDynamicSliceRestore(snap::program::Sequence &prog,
-                                       const snap::Tensor &stashIndex,
-                                       const snap::Tensor &stash) const;
+  poplar::Tensor growStaticSliceRestore(poplar::program::Sequence &prog,
+                                        int64_t stashSize,
+                                        const poplar::Tensor &stashIndex,
+                                        const poplar::Tensor &stash) const;
+  poplar::Tensor growDynamicSliceRestore(poplar::program::Sequence &prog,
+                                         const poplar::Tensor &stashIndex,
+                                         const poplar::Tensor &stash) const;
 };
 
 class RestoreOpx final : public RestoreBaseOpx<RestoreOpx> {
 public:
   RestoreOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   using OpType = RestoreOp;
 };
@@ -60,7 +60,7 @@ public:
 class RestoreInplaceOpx final : public RestoreBaseOpx<RestoreInplaceOpx> {
 public:
   RestoreInplaceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   using OpType = RestoreInplaceOp;
 };

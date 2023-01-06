@@ -1,13 +1,11 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <cstddef>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
+#include <ext/new_allocator.h>
 #include <vector>
+#include <poplar/Program.hpp>
 #include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popops/OperationDef.hpp>
@@ -22,8 +20,9 @@
 #include "popart/names.hpp"
 #include "popart/op.hpp"
 #include "popart/operators.hpp"
+#include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
 namespace pe = popops::expr;
 
@@ -40,16 +39,16 @@ IdentityOpx::IdentityOpx(Op *op, Devicex *devicex)
   verifyOp<IdentityOp>(op, Onnx::Operators::Identity_1);
 }
 
-void IdentityOpx::grow(snap::program::Sequence &prog) const {
-  setOutTensor(0, PopOpx::cloneNcopy(prog, getInTensor(0)));
+void IdentityOpx::grow(poplar::program::Sequence &prog) const {
+  setOutTensor(0, Opx::cloneNcopy(prog, getInTensor(0)));
 }
 
 IdentityInplaceOpx::IdentityInplaceOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<IdentityInplaceOp>(op);
 }
 
-void IdentityInplaceOpx::grow(snap::program::Sequence &) const {
+void IdentityInplaceOpx::grow(poplar::program::Sequence &) const {
   setOutTensor(0, getInTensor(0));
 }
 
@@ -58,47 +57,46 @@ IdentityGradOpx::IdentityGradOpx(Op *op, Devicex *devicex)
   verifyOp<IdentityGradOp>(op, Onnx::GradOperators::IdentityGrad);
 }
 
-void IdentityGradOpx::grow(snap::program::Sequence &prog) const {
-  setOutTensor(0, PopOpx::cloneNcopy(prog, getInTensor(0)));
+void IdentityGradOpx::grow(poplar::program::Sequence &prog) const {
+  setOutTensor(0, Opx::cloneNcopy(prog, getInTensor(0)));
 }
 
-IdentityLossOpx::IdentityLossOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+IdentityLossOpx::IdentityLossOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<IdentityLossOp>(op, Onnx::CustomOperators::IdentityLoss);
 }
 
-void IdentityLossGradOpx::grow(snap::program::Sequence &prog) const {
+void IdentityLossGradOpx::grow(poplar::program::Sequence &prog) const {
   IdentityLossGradOp &identitylossop = getOp<IdentityLossGradOp>();
   auto output                        = getInTensor(0);
   auto reference                     = getOutTensor(0);
   if (identitylossop.getReductionType() == ReductionType::NoReduction) {
     // Same as IdentityGradOpx
-    prog.getPoplarSequence().add(poplar::program::Copy(
+    prog.add(poplar::program::Copy(
         output, reference, false, debugContext("copy_identity")));
   } else {
     if (identitylossop.getReductionType() == ReductionType::Mean) {
       // Divide broadcasted tensor by total number of samples
       float scale = static_cast<float>(reference.numElements());
 
-      output = snap::popops::map(graph(),
-                                 pe::Divide(pe::_1, pe::Const(scale)),
-                                 {getInTensor(0)},
-                                 prog,
-                                 debugContext("div"));
+      output = popops::map(graph(),
+                           pe::Divide(pe::_1, pe::Const(scale)),
+                           {getInTensor(0)},
+                           prog,
+                           debugContext("div"));
     } else if (identitylossop.getReductionType() != ReductionType::Sum) {
       // Only mean and sum are supported.
       throw error("Unsupported reduction type for Loss {}",
                   debugContext().getPathName());
     }
-    popops::zero(graph().getPoplarGraph(),
-                 reference.getPoplarTensor(),
-                 prog.getPoplarSequence(),
+    popops::zero(graph(),
+                 reference,
+                 prog,
                  debugContext("zero_identity_reference_tensor"));
-    snap::popops::addInPlace(graph(),
-                             reference,
-                             output,
-                             prog,
-                             debugContext("add_gradient_to_reference"));
+    popops::addInPlace(graph(),
+                       reference,
+                       output,
+                       prog,
+                       debugContext("add_gradient_to_reference"));
   }
 }
 
@@ -115,21 +113,21 @@ view::RegMap IdentityLossOpx::unwindRegion(InIndex, OutIndex) const {
   return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
-snap::Tensor IdentityLossOpx::unwindTensorLayout(snap::Tensor tensor,
-                                                 InIndex,
-                                                 OutIndex) const {
+poplar::Tensor IdentityLossOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                   InIndex,
+                                                   OutIndex) const {
   return tensor;
 }
 
-void IdentityLossOpx::grow(snap::program::Sequence &prog) const {
+void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
   const IdentityLossOp &op = getOp<IdentityLossOp>();
   const auto &inTensor(getInTensor(0));
 
   if (op.getReductionType() == ReductionType::NoReduction) {
-    setOutTensor(0, PopOpx::cloneNcopy(prog, inTensor));
+    setOutTensor(0, Opx::cloneNcopy(prog, inTensor));
   } else {
 
-    auto inTensor1D = inTensor.flatten().getPoplarTensor();
+    auto inTensor1D = inTensor.flatten();
 
     double scale;
     switch (op.getReductionType()) {
@@ -153,22 +151,21 @@ void IdentityLossOpx::grow(snap::program::Sequence &prog) const {
 
     // t_scale is always expected to be FLOAT, regardless of the input type
     // to the reduction
-    auto t_scale =
-        getConst(poplar::FLOAT, {}, scale, "scale").getPoplarTensor();
+    auto t_scale = getConst(poplar::FLOAT, {}, scale, "scale");
 
-    auto reduction = popops::reduce(graph().getPoplarGraph(),
+    auto reduction = popops::reduce(graph(),
                                     inTensor1D,
                                     {0},
                                     {popops::Operation::ADD, false, t_scale},
-                                    prog.getPoplarSequence(),
+                                    prog,
                                     debugContext("add"));
 
-    setOutTensor(0, snap::Tensor{reduction, graph()});
+    setOutTensor(0, reduction);
   }
 }
 
 IdentityLossGradOpx::IdentityLossGradOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<IdentityLossGradOp>(op, Onnx::GradOperators::IdentityLossGrad);
 }
 

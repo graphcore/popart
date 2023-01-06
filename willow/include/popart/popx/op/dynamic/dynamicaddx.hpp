@@ -2,14 +2,14 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_DYNAMIC_DYNAMICADDX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_DYNAMIC_DYNAMICADDX_HPP_
 
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/popx/op/dynamic/dynamicupdatex.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -20,14 +20,14 @@ class Devicex;
 class DynamicAddOpx : public DynamicUpdateOpx {
 public:
   DynamicAddOpx(Op *op, Devicex *devicex) : DynamicUpdateOpx(op, devicex) {}
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class DynamicAddInplaceOpx : public DynamicAddOpx {
 public:
   DynamicAddInplaceOpx(Op *op, Devicex *devicex) : DynamicAddOpx(op, devicex) {}
-  snap::Tensor cloneNcopyOpt(snap::program::Sequence &,
-                             const snap::Tensor &) const override;
+  poplar::Tensor cloneNcopyOpt(poplar::program::Sequence &,
+                               const poplar::Tensor &) const override;
 };
 
 } // namespace popx

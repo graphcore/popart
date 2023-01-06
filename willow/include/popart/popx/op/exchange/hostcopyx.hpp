@@ -2,18 +2,18 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_EXCHANGE_HOSTCOPYX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_EXCHANGE_HOSTCOPYX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/popx/op/exchange/exchangex.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
 #include "popart/names.hpp"
+#include "popart/popx/debugcontextx.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -29,13 +29,13 @@ public:
 class HostLoadOpx : public HostBaseOpx {
 public:
   HostLoadOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   InputCreatorType getInputCreatorType(InIndex) const final;
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const final;
-  snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const final;
+  poplar::Tensor
+      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 
@@ -47,10 +47,9 @@ public:
 class HostStoreOpx : public HostBaseOpx {
 public:
   HostStoreOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const final;
+  void grow(poplar::program::Sequence &) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
 };
 

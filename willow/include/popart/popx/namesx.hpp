@@ -6,14 +6,14 @@
 #include <utility>
 #include <popart/names.hpp>
 
-namespace snap {
+namespace poplar {
 class Tensor;
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 namespace popx {
 // Pair of copy {source, target} tensor
-using PreparedCopyTensor = std::pair<snap::Tensor, snap::Tensor>;
+using PreparedCopyTensor = std::pair<poplar::Tensor, poplar::Tensor>;
 // IpuCopy input index to source and target tensor pair
 using PreparedCopyTensors = std::map<InIndex, PreparedCopyTensor>;
 

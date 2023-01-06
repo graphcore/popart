@@ -1,9 +1,9 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <snap/Tensor.hpp>
 #include <string>
 #include <utility>
 #include <vector>
+#include <poplar/Tensor.hpp>
 #include <popart/op/exchange/remote.hpp>
 #include <popart/popx/op/exchange/remotex.hpp>
 #include <popart/popx/opxmanager.hpp>
@@ -12,17 +12,17 @@
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
 #include "popart/popx/op/exchange/exchangex.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/region.hpp" // IWYU pragma: keep
 #include "popart/tensor.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorindex.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -40,7 +40,7 @@ RemoteStoreOpx::RemoteStoreOpx(Op *op, Devicex *devicex)
 }
 
 // RemoteStoreOpx
-void RemoteStoreOpx::grow(snap::program::Sequence &prog) const {
+void RemoteStoreOpx::grow(poplar::program::Sequence &prog) const {
   auto &remoteStoreOp = getOp<RemoteStoreOp>();
 
   TensorId inTensorId =
@@ -51,10 +51,10 @@ void RemoteStoreOpx::grow(snap::program::Sequence &prog) const {
                       inTensorId,
                       remoteStoreOp.getRemoteBufferId());
 
-  snap::Tensor inTensor = getInTensor(RemoteStoreOp::getLocalTensorInIndex());
+  poplar::Tensor inTensor = getInTensor(RemoteStoreOp::getLocalTensorInIndex());
 
   TensorId offsetId;
-  snap::Tensor offset;
+  poplar::Tensor offset;
 
   if (remoteStoreOp.input->hasIndex(
           RemoteStoreOp::getRemoteBufferOffsetInIndex())) {
@@ -79,14 +79,14 @@ RemoteLoadOpx::RemoteLoadOpx(Op *op, Devicex *devicex)
   verifyOp<RemoteLoadOp>(op);
 }
 
-void RemoteLoadOpx::grow(snap::program::Sequence &prog) const {
+void RemoteLoadOpx::grow(poplar::program::Sequence &prog) const {
   // Obtain the operator
   auto &remoteLoadOp = getOp<RemoteLoadOp>();
 
   // Obtain the input/output
   TensorId inTensorId =
       remoteLoadOp.input->tensor(RemoteLoadOp::getLocalTensorInIndex())->id;
-  snap::Tensor inTensor = getInTensor(RemoteLoadOp::getLocalTensorInIndex());
+  poplar::Tensor inTensor = getInTensor(RemoteLoadOp::getLocalTensorInIndex());
   TensorId outTensorId =
       remoteLoadOp.output->tensor(RemoteLoadOp::getLocalTensorOutIndex())->id;
 
@@ -98,7 +98,7 @@ void RemoteLoadOpx::grow(snap::program::Sequence &prog) const {
 
   // Set the offset tensor (if set)
   TensorId offsetId;
-  snap::Tensor offset;
+  poplar::Tensor offset;
   if (remoteLoadOp.input->hasIndex(
           RemoteLoadOp::getRemoteBufferOffsetInIndex())) {
     offsetId =
@@ -132,16 +132,16 @@ void RemoteLoadOpx::grow(snap::program::Sequence &prog) const {
 InputCreatorType RemoteLoadOpx::getInputCreatorType(InIndex index) const {
   return index == RemoteLoadOp::getLocalTensorInIndex()
              ? InputCreatorType::CanUnwind
-             : PopOpx::getInputCreatorType(index);
+             : Opx::getInputCreatorType(index);
 }
 
-snap::Tensor RemoteLoadOpx::unwindTensorLayout(snap::Tensor tensor,
-                                               InIndex in,
-                                               OutIndex out) const {
+poplar::Tensor RemoteLoadOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                 InIndex in,
+                                                 OutIndex out) const {
   auto &remoteLoadOp = getOp<RemoteLoadOp>();
   std::shared_ptr<ExchangeDescriptorx> descriptorx =
       getExchangeDescriptorx(dv_p, remoteLoadOp.getExchangeDescriptor(0));
-  return descriptorx->unwind(srcVirtualGraph(in), tensor);
+  return descriptorx->unwind(srcGraph(in), tensor);
 }
 
 view::RegMap RemoteLoadOpx::unwindRegion(InIndex, OutIndex) const {

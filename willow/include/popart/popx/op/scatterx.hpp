@@ -2,19 +2,20 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SCATTERX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SCATTERX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
 #include <cstdint>
 #include <set>
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popops/DynamicSlice.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+#include "popart/popx/debugcontextx.hpp"
+
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -22,13 +23,12 @@ class Op;
 namespace popx {
 class Devicex;
 
-class ScatterOpx : public PopOpx {
+class ScatterOpx : public Opx {
 public:
   ScatterOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const final;
+  void grow(poplar::program::Sequence &) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const final;
 
   InputCreatorType getInputCreatorType(InIndex index) const final;
 
@@ -39,13 +39,12 @@ private:
   int64_t axis;
 };
 
-class ScatterDataGradOpx : public PopOpx {
+class ScatterDataGradOpx : public Opx {
 public:
   ScatterDataGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const final;
+  void grow(poplar::program::Sequence &) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const final;
 
   InputCreatorType getInputCreatorType(InIndex index) const final;
 
@@ -56,13 +55,12 @@ private:
   int64_t axis;
 };
 
-class ScatterUpdateGradOpx : public PopOpx {
+class ScatterUpdateGradOpx : public Opx {
 public:
   ScatterUpdateGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const final;
+  void grow(poplar::program::Sequence &) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const final;
 
   InputCreatorType getInputCreatorType(InIndex index) const final;
 

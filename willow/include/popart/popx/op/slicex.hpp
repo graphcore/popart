@@ -2,16 +2,16 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SLICEX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SLICEX_HPP_
 
-#include <snap/Tensor.hpp>
-#include <popart/popx/popopx.hpp>
+#include <poplar/Tensor.hpp>
+#include <popart/popx/opx.hpp>
 
 #include "popart/names.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 
@@ -22,13 +22,14 @@ class Op;
 namespace popx {
 class Devicex;
 
-class BaseSliceOpx : public PopOpx {
+class BaseSliceOpx : public Opx {
 public:
   BaseSliceOpx(Op *, Devicex *);
 
   InputCreatorType getInputCreatorType(InIndex) const final;
 
-  snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
+  poplar::Tensor
+      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
 
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
@@ -36,7 +37,7 @@ public:
 class SliceOpx : public BaseSliceOpx {
 public:
   SliceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   SliceOp *getSliceOp() const;
@@ -45,7 +46,7 @@ private:
 class SliceInplaceOpx : public BaseSliceOpx {
 public:
   SliceInplaceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   SliceInplaceOp *getSliceInplaceOp() const;

@@ -1,10 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <cstdint>
 #include <limits>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
+#include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
@@ -16,7 +13,13 @@
 
 #include "popart/graphcoreoperators.hpp"
 #include "popart/op.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -25,11 +28,11 @@ namespace popx {
 class Devicex;
 
 ModifyRandomSeedOpx::ModifyRandomSeedOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<ModifyRandomSeedOp>(op);
 }
 
-void ModifyRandomSeedOpx::grow(snap::program::Sequence &prog) const {
+void ModifyRandomSeedOpx::grow(poplar::program::Sequence &prog) const {
   auto inSeed   = getInTensor(op_p->getSeedInIndex());
   auto modifier = getInTensor(ModifyRandomSeedOp::getSeedModifierInIndex());
 
@@ -45,34 +48,28 @@ void ModifyRandomSeedOpx::grow(snap::program::Sequence &prog) const {
   auto inSeedR = inSeed.slice(1, 2);
 
   // Calculate R + modifier.
-  auto rPlusMod = snap::Tensor{popops::add(graph().getPoplarGraph(),
-                                           inSeedR.getPoplarTensor(),
-                                           modifier.getPoplarTensor(),
-                                           prog.getPoplarSequence(),
-                                           debugContext("preSeed")),
-                               graph()};
-  auto metaSeed = snap::concat({inSeedL, rPlusMod});
+  auto rPlusMod =
+      popops::add(graph(), inSeedR, modifier, prog, debugContext("preSeed"));
+  auto metaSeed = poplar::concat({inSeedL, rPlusMod});
   // Calculate randint(R + modifier).
-  auto outSeedRAsInt = snap::Tensor{
-      poprand::uniform(
-          graph().getPoplarGraph(),
-          &metaSeed.getPoplarTensor(),
-          0u,
-          inSeedR.getPoplarTensor(),
-          poplar::INT, // unsigned int not supported.
-          static_cast<double>(std::numeric_limits<std::int32_t>::min()),
-          static_cast<double>(std::numeric_limits<std::int32_t>::max()),
-          prog.getPoplarSequence(),
-          debugContext("pickSeed")),
-      graph()};
+  auto outSeedRAsInt = poprand::uniform(
+      graph(),
+      &metaSeed,
+      0u,
+      inSeedR,
+      poplar::INT, // unsigned int not supported.
+      static_cast<double>(std::numeric_limits<std::int32_t>::min()),
+      static_cast<double>(std::numeric_limits<std::int32_t>::max()),
+      prog,
+      debugContext("pickSeed"));
   // Map randint(R + modifier) to UNSIGNED INT.
-  auto outSeedR = snap::popops::map(graph(),
-                                    pe::Cast(pe::_1, poplar::UNSIGNED_INT),
-                                    {outSeedRAsInt},
-                                    prog,
-                                    debugContext("castToUint"));
+  auto outSeedR = popops::map(graph(),
+                              pe::Cast(pe::_1, poplar::UNSIGNED_INT),
+                              {outSeedRAsInt},
+                              prog,
+                              debugContext("castToUint"));
   // Concatenate outSeed.
-  auto outSeedUncopied = snap::concat({inSeedL, outSeedR});
+  auto outSeedUncopied = poplar::concat({inSeedL, outSeedR});
   // Copy.
   auto outSeed = cloneNcopy(prog, outSeedUncopied);
 

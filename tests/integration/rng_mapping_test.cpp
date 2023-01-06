@@ -2,8 +2,6 @@
 #define BOOST_TEST_MODULE RngMappingTest
 
 #include <boost/test/unit_test.hpp>
-#include <snap/Graph.hpp>
-#include <snap/Tensor.hpp>
 #include <poplar/Graph.hpp>
 #include <poplar/Target.hpp>
 
@@ -15,14 +13,14 @@
 
 // This is the function that was previously in rngstatelowering, for setting the
 // layout of the RNG state tensors.
-void testLayoutRNGStateTensor(snap::Graph &graph, snap::Tensor &tensor) {
+void testLayoutRNGStateTensor(poplar::Graph &graph, poplar::Tensor &tensor) {
 
   auto numTiles = graph.getTarget().getNumTiles();
   if (tensor.rank() >= 1 && tensor.dim(0) == numTiles) {
 
     for (auto tile = 0U; tile != numTiles; ++tile) {
       auto slice = tensor.slice({tile, tile + 1}, 0);
-      graph.getPoplarGraph().setTileMapping(slice.getPoplarTensor(), tile);
+      graph.setTileMapping(slice, tile);
     }
 
   } else {
@@ -38,7 +36,7 @@ void testLayoutRNGStateTensor(snap::Graph &graph, snap::Tensor &tensor) {
 // createRNGStateTensor and layoutRNGStateTensor.
 class RngStateLoweringLayoutTester : public popart::popx::RngStateLowering {
 public:
-  static snap::Tensor createStateTensor(snap::Graph &graph) {
+  static poplar::Tensor createStateTensor(poplar::Graph &graph) {
     return createRNGStateTensor(graph, "");
   }
 };
@@ -48,19 +46,17 @@ public:
 // test will give us a warning if the poplibs implementation changes at all.
 BOOST_AUTO_TEST_CASE(TestRngMapping) {
   auto target = poplar::Target::createIPUTarget(1, "ipu2");
-  snap::Graph graph(target);
+  poplar::Graph graph(target);
 
   auto t = RngStateLoweringLayoutTester::createStateTensor(graph);
 
   // This is the actual layout that is used in popart.
-  auto actualLayout =
-      graph.getPoplarGraph().getTileMapping(t.getPoplarTensor());
+  auto actualLayout = graph.getTileMapping(t);
 
   testLayoutRNGStateTensor(graph, t);
 
   // This is the layout we want to have.
-  auto expectedLayout =
-      graph.getPoplarGraph().getTileMapping(t.getPoplarTensor());
+  auto expectedLayout = graph.getTileMapping(t);
 
   BOOST_REQUIRE_EQUAL(actualLayout, expectedLayout);
 }
@@ -71,7 +67,7 @@ BOOST_AUTO_TEST_CASE(RngStateTensorSizeAndShapeConsistencyTest) {
 
   const auto target =
       poplar::Target::createIPUTarget(numIpus * repFactor, "ipu2");
-  const snap::Graph graph(target, poplar::replication_factor(repFactor));
+  const poplar::Graph graph(target, poplar::replication_factor(repFactor));
 
   BOOST_CHECK_EQUAL(numIpus * repFactor, target.getNumIPUs());
   BOOST_CHECK_EQUAL(numIpus, graph.getTarget().getNumIPUs());

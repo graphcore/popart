@@ -2,15 +2,15 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SUMX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SUMX_HPP_
 
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -18,21 +18,21 @@ class Op;
 namespace popx {
 class Devicex;
 
-class SumOpx : public PopOpx {
+class SumOpx : public Opx {
 public:
   SumOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
-  snap::Tensor unwindTensorLayout(snap::Tensor tensor,
-                                  InIndex inIndex,
-                                  OutIndex outIndex) const final;
+  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
+                                    InIndex inIndex,
+                                    OutIndex outIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 
-class SumArgGradOpx : public PopOpx {
+class SumArgGradOpx : public Opx {
 public:
   SumArgGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

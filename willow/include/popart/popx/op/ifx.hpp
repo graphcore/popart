@@ -3,15 +3,15 @@
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_IFX_HPP_
 
 #include <vector>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 #include <popart/popx/preparedtensor.hpp>
 
-namespace snap {
+namespace poplar {
 class Tensor;
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Graph;
@@ -20,22 +20,22 @@ class Op;
 namespace popx {
 class Devicex;
 
-class IfOpx : public PopOpx {
+class IfOpx : public Opx {
 public:
   IfOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
-  void copyInputs(snap::program::Sequence &thenProg,
-                  snap::program::Sequence &elseProg) const;
+  void copyInputs(poplar::program::Sequence &thenProg,
+                  poplar::program::Sequence &elseProg) const;
 
-  void callBranch(snap::program::Sequence &prog, const Graph &graph) const;
+  void callBranch(poplar::program::Sequence &prog, const Graph &graph) const;
 
-  void copyOutputs(snap::program::Sequence &thenProg,
-                   snap::program::Sequence &elseProg,
-                   const std::vector<snap::Tensor> &outputs) const;
+  void copyOutputs(poplar::program::Sequence &thenProg,
+                   poplar::program::Sequence &elseProg,
+                   const std::vector<poplar::Tensor> &outputs) const;
 
-  std::vector<snap::Tensor> prepareOutputs() const;
+  std::vector<poplar::Tensor> prepareOutputs() const;
 
   PreparedTensorInfos getInputsToPrepare() const override;
 };

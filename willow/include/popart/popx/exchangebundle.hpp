@@ -2,8 +2,9 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_EXCHANGEBUNDLE_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_EXCHANGEBUNDLE_HPP_
 
-#include <snap/RemoteBuffer.hpp>
-#include <snap/Tensor.hpp>
+#include <poplar/DataStream.hpp>
+#include <poplar/Graph.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/ir.hpp>
 
 namespace popart {
@@ -34,7 +35,7 @@ public:
    * \param id ID of the remote buffer
    * \return   Pair of remote buffer and landing pad tensors
    */
-  const std::pair<snap::RemoteBuffer, std::vector<snap::Tensor>> &
+  const std::pair<poplar::RemoteBuffer, std::vector<poplar::Tensor>> &
   getRemoteBuffer(RemoteBufferId id) const;
 
   /**
@@ -54,9 +55,9 @@ public:
    * \param id      ID of the remote buffer
    * \param tensors Landing pad tensors to register
    */
-  void createRemoteBuffer(snap::Graph &graph,
+  void createRemoteBuffer(poplar::Graph &graph,
                           RemoteBufferId id,
-                          const std::vector<snap::Tensor> &tensors);
+                          const std::vector<poplar::Tensor> &tensors);
 
   /**
    * Check if a stream landing pad tensor exists for \p TensorId id
@@ -68,16 +69,16 @@ public:
   /**
    * Get the stream landing pad tensor for \p TensorId id
    * \param tid \p TensorId to fetch
-   * \return    Returns the \p snap::Tensor
+   * \return    Returns the \p poplar::Tensor
    */
-  snap::Tensor getStreamTensor(TensorId tid) const;
+  poplar::Tensor getStreamTensor(TensorId tid) const;
 
   /**
    * Set a new stream landing pad tensor for \p TensorId id
    * \param tid \p TensorId to set
-   * \param t   \p snap::Tensor to set
+   * \param t   \p poplar::Tensor to set
    */
-  void setStreamTensor(TensorId tid, snap::Tensor t);
+  void setStreamTensor(TensorId tid, poplar::Tensor t);
 
 private:
   /**
@@ -95,7 +96,7 @@ private:
    * Remote buffers
    */
   std::map<RemoteBufferId,
-           std::pair<snap::RemoteBuffer, std::vector<snap::Tensor>>>
+           std::pair<poplar::RemoteBuffer, std::vector<poplar::Tensor>>>
       remoteBuffers;
 
   /**
@@ -104,7 +105,7 @@ private:
    * IO by avoiding internal exchanges following a host exchange.
    * They are not exposed to the IR.
    */
-  std::map<TensorId, snap::Tensor> streamTensors;
+  std::map<TensorId, poplar::Tensor> streamTensors;
 };
 
 } // namespace popx

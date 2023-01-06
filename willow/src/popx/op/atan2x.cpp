@@ -1,22 +1,24 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <memory>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <string>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
+#include <popops/ExprOp.hpp>
 #include <popart/op/atan2.hpp>
 #include <popart/popx/op/atan2x.hpp>
 #include <popart/popx/opxmanager.hpp>
 
 #include "popart/graphcoreoperators.hpp"
+#include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/elementwisex.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
+
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -26,23 +28,29 @@ class Devicex;
 
 Atan2Computex::Atan2Computex(EwbComputex::InplacePolicy ip) : EwbComputex(ip) {}
 
-snap::Tensor Atan2Computex::outplace(snap::program::Sequence &prog,
-                                     snap::Graph &graph,
-                                     const snap::Tensor &a,
-                                     const snap::Tensor &b,
-                                     const poplar::DebugNameAndId &dnai,
-                                     const std::string &debugStr) const {
-  return snap::popops::atan2(graph, a, b, prog, {dnai, debugStr});
+poplar::Tensor Atan2Computex::outplace(poplar::program::Sequence &prog,
+                                       poplar::Graph &graph,
+                                       const poplar::Tensor &a,
+                                       const poplar::Tensor &b,
+                                       const poplar::DebugNameAndId &dnai,
+                                       const std::string &debugStr) const {
+  return popops::atan2(graph, a, b, prog, {dnai, debugStr});
 }
 
-snap::Tensor Atan2Computex::maybeInplace(snap::program::Sequence &prog,
-                                         snap::Graph &graph,
-                                         const snap::Tensor &tInOut,
-                                         const snap::Tensor &tIn,
-                                         const poplar::DebugNameAndId &dnai,
-                                         const std::string &debugStr) const {
-  return snap::popops::atan2MaybeInPlace(
-      graph, tInOut, tIn, prog, {dnai, debugStr});
+poplar::Tensor Atan2Computex::maybeInplace(poplar::program::Sequence &prog,
+                                           poplar::Graph &graph,
+                                           poplar::Tensor &tInOut,
+                                           poplar::Tensor &tIn,
+                                           const poplar::DebugNameAndId &dnai,
+                                           const std::string &name) const {
+  return mapMaybeInPlace(graph,
+                         popops::expr::BinaryOpType::ATAN2,
+                         tInOut,
+                         tIn,
+                         prog,
+                         {dnai, name},
+                         {},
+                         name);
 }
 
 Atan2Opx::Atan2Opx(Op *op, Devicex *devicex)

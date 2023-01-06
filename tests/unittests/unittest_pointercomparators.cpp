@@ -312,7 +312,7 @@ public:
 
   int64_t getScheduleIndex() const override { return schedule_index_; }
 
-  std::pair<snap::Tensor, popx::ViewChangers>
+  std::pair<poplar::Tensor, popx::ViewChangers>
   createInput(const poplar::DebugNameAndId &dnai) override {
     throw error(std::string(BOOST_CURRENT_FUNCTION) + "is unimplemented.");
   }
@@ -330,7 +330,8 @@ public:
     throw error(std::string(BOOST_CURRENT_FUNCTION) + "is unimplemented.");
   }
 
-  std::pair<snap::Tensor, popx::ViewChangers> unwind(snap::Tensor) override {
+  std::pair<poplar::Tensor, popx::ViewChangers>
+  unwind(poplar::Tensor) override {
     throw error(std::string(BOOST_CURRENT_FUNCTION) + "is unimplemented.");
   }
 

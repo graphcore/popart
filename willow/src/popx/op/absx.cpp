@@ -1,7 +1,4 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/op/abs.hpp>
@@ -10,6 +7,12 @@
 
 #include "popart/operators.hpp"
 #include "popart/popx/op/elementwisex.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace pe = popops::expr;
 
@@ -23,17 +26,14 @@ AbsOpx::AbsOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<AbsOp>(op, {Onnx::Operators::Abs_6});
 }
 
-void AbsOpx::grow(snap::program::Sequence &prog) const {
+void AbsOpx::grow(poplar::program::Sequence &prog) const {
 
-  setOutTensor(
-      AbsOp::getOutIndex(),
-      snap::Tensor{
-          popops::map(graph().getPoplarGraph(),
-                      popops::expr::UnaryOpType::ABSOLUTE,
-                      getInTensor(AbsOp::getInIndex()).getPoplarTensor(),
-                      prog.getPoplarSequence(),
-                      debugContext()),
-          graph()});
+  setOutTensor(AbsOp::getOutIndex(),
+               popops::map(graph(),
+                           popops::expr::UnaryOpType::ABSOLUTE,
+                           getInTensor(AbsOp::getInIndex()),
+                           prog,
+                           debugContext()));
 }
 
 namespace {

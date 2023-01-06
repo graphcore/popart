@@ -1,8 +1,8 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
 #include <string>
 #include <vector>
+#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/error.hpp>
@@ -16,15 +16,15 @@
 #include "popart/operators.hpp"
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 
-namespace snap {
+namespace poplar {
 class Graph;
 
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 namespace popx {
@@ -32,10 +32,10 @@ class Devicex;
 
 namespace pe = popops::expr;
 
-snap::Tensor
-LeakyReluComputex::outplace(snap::program::Sequence &prog,
-                            snap::Graph &graph,
-                            const snap::Tensor &tensor,
+poplar::Tensor
+LeakyReluComputex::outplace(poplar::program::Sequence &prog,
+                            poplar::Graph &graph,
+                            const poplar::Tensor &tensor,
                             const poplar::DebugNameAndId &dnai,
                             const std::string &debug_prefix) const {
   auto out_tensor = cloneNcopy(prog, graph, tensor, dnai);
@@ -43,9 +43,9 @@ LeakyReluComputex::outplace(snap::program::Sequence &prog,
   return out_tensor;
 }
 
-void LeakyReluComputex::inplace(snap::program::Sequence &prog,
-                                snap::Graph &graph,
-                                const snap::Tensor &tensor,
+void LeakyReluComputex::inplace(poplar::program::Sequence &prog,
+                                poplar::Graph &graph,
+                                const poplar::Tensor &tensor,
                                 const poplar::DebugNameAndId &dnai,
                                 const std::string &debug_prefix) const {
   // x < 0.0f ? alpha * x : x
@@ -53,8 +53,7 @@ void LeakyReluComputex::inplace(snap::program::Sequence &prog,
                                pe::_1,
                                pe::Lt(pe::_1, pe::Const(0.0f)));
 
-  snap::popops::mapInPlace(
-      graph, expression, {tensor}, prog, {dnai, debug_prefix});
+  popops::mapInPlace(graph, expression, {tensor}, prog, {dnai, debug_prefix});
 }
 
 float LeakyReluComputex::getAlphaFromLReluOp(Op *op) {
@@ -92,11 +91,11 @@ LeakyReluInplaceOpx::LeakyReluInplaceOpx(Op *op, Devicex *devicex)
 }
 
 LeakyReluGradOpx::LeakyReluGradOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<LeakyReluGradOp>(op, Onnx::GradOperators::LeakyReluGrad);
 }
 
-void LeakyReluGradOpx::grow(snap::program::Sequence &prog) const {
+void LeakyReluGradOpx::grow(poplar::program::Sequence &prog) const {
   auto &op = getOp<LeakyReluGradOp>();
 
   auto grad  = getInTensor(LeakyReluGradOp::getGradLeakyReluInIndex());
@@ -111,7 +110,7 @@ void LeakyReluGradOpx::grow(snap::program::Sequence &prog) const {
                                pe::_1,
                                pe::Lt(pe::_2, pe::Const(0.0f)));
 
-  auto output = snap::popops::map(
+  auto output = popops::map(
       graph(), expression, {grad, input}, prog, debugContext("leakyrelu_grad"));
 
   setOutTensor(0, output);

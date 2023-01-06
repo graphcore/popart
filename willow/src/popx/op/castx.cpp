@@ -1,7 +1,4 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <vector>
 #include <popops/Cast.hpp>
 #include <popart/op/cast.hpp>
@@ -12,20 +9,26 @@
 #include "popart/op.hpp"
 #include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
 namespace popx {
 
-CastOpx::CastOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+CastOpx::CastOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<CastOp>(op);
 }
 
-void CastOpx::grow(snap::program::Sequence &prog) const {
-  auto out = popops::cast(graph().getPoplarGraph(),
-                          getInTensor(CastOp::getInIndex()).getPoplarTensor(),
+void CastOpx::grow(poplar::program::Sequence &prog) const {
+  auto out = popops::cast(graph(),
+                          getInTensor(CastOp::getInIndex()),
                           popType(op_p->outInfo(CastOp::getOutIndex())),
-                          prog.getPoplarSequence(),
+                          prog,
                           debugContext());
 
   if (hasInViewChangers(CastOp::getInIndex())) {
@@ -33,7 +36,7 @@ void CastOpx::grow(snap::program::Sequence &prog) const {
                        getInViewChangers(CastOp::getInIndex()));
   }
 
-  setOutTensor(CastOp::getOutIndex(), snap::Tensor{out, graph()});
+  setOutTensor(CastOp::getOutIndex(), out);
 }
 
 CastGradOpx::CastGradOpx(Op *op, Devicex *devicex) : CastOpx(op, devicex) {

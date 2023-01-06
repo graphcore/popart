@@ -2,15 +2,15 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_DYNAMIC_DYNAMICZEROX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_DYNAMIC_DYNAMICZEROX_HPP_
 
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -18,23 +18,24 @@ class Op;
 namespace popx {
 class Devicex;
 
-class DynamicZeroOpx : public PopOpx {
+class DynamicZeroOpx : public Opx {
 public:
-  DynamicZeroOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
-  void grow(snap::program::Sequence &) const override;
+  DynamicZeroOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
+  void grow(poplar::program::Sequence &) const override;
   InputCreatorType getInputCreatorType(InIndex index) const final;
-  snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
+  poplar::Tensor
+      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
-  virtual snap::Tensor cloneNcopyOpt(snap::program::Sequence &,
-                                     const snap::Tensor &) const;
+  virtual poplar::Tensor cloneNcopyOpt(poplar::program::Sequence &,
+                                       const poplar::Tensor &) const;
 };
 
 class DynamicZeroInplaceOpx : public DynamicZeroOpx {
 public:
   DynamicZeroInplaceOpx(Op *op, Devicex *devicex)
       : DynamicZeroOpx(op, devicex) {}
-  snap::Tensor cloneNcopyOpt(snap::program::Sequence &,
-                             const snap::Tensor &) const override;
+  poplar::Tensor cloneNcopyOpt(poplar::program::Sequence &,
+                               const poplar::Tensor &) const override;
 };
 
 } // namespace popx

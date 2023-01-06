@@ -1,5 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/popops/ElementWise.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/ExprOp.hpp>
 #include <popart/op/isnan.hpp>
 #include <popart/popx/op/isnanx.hpp>
@@ -8,11 +8,11 @@
 #include "popart/operators.hpp"
 #include "popart/popx/op/elementwisex.hpp"
 
-namespace snap {
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -24,14 +24,14 @@ IsNaNx::IsNaNx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<IsNaN>(op, Onnx::Operators::IsNaN_9);
 }
 
-void IsNaNx::grow(snap::program::Sequence &prog) const {
+void IsNaNx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(IsNaN::getOutIndex(),
-               snap::popops::map(graph(),
-                                 popops::expr::BinaryOpType::NOT_EQUAL,
-                                 getInTensor(IsNaN::getInIndex()),
-                                 getInTensor(IsNaN::getInIndex()),
-                                 prog,
-                                 debugContext()));
+               popops::map(graph(),
+                           popops::expr::BinaryOpType::NOT_EQUAL,
+                           getInTensor(IsNaN::getInIndex()),
+                           getInTensor(IsNaN::getInIndex()),
+                           prog,
+                           debugContext()));
 }
 
 namespace {

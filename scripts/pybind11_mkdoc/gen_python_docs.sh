@@ -34,8 +34,7 @@ else
         -I $1/install/libpva/include \
         -I $1/install/poplar/include \
         -I $1/install/poplibs/include \
-        -I $1/install/poprithms/include" \
-        -I $1/install/snap/include
+        -I $1/install/poprithms/include"
         # If LLVM_DIR_PATH is not set, give it a default value inside the POPLARVIEW build directory
         # LIBCLANG_PATH in this case should be automatically found inside $LLVM_DIR_PATH
         if [ -z "$LLVM_DIR_PATH" ]

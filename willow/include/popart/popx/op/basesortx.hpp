@@ -2,17 +2,18 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_BASESORTX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_BASESORTX_HPP_
 
-#include "popart/popx/debugcontextx.hpp"
 #include <set>
-#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+#include "popart/popx/debugcontextx.hpp"
+
+namespace poplar {
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -22,30 +23,29 @@ class Devicex;
 
 struct FullSortResult {
 
-  FullSortResult(snap::Tensor indices_, snap::Tensor values_, int axis_)
+  FullSortResult(poplar::Tensor indices_, poplar::Tensor values_, int axis_)
       : indices(indices_), values(values_), axis(axis_) {}
 
-  snap::Tensor indices;
-  snap::Tensor values;
+  poplar::Tensor indices;
+  poplar::Tensor values;
   int axis;
 };
 
-class BaseSortOpx : public PopOpx {
+class BaseSortOpx : public Opx {
 public:
   BaseSortOpx(Op *, Devicex *);
 
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const final;
   InputCreatorType getInputCreatorType(InIndex index) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex index0) const final;
 
 protected:
   // sorted values, and indices of sorted values
-  FullSortResult growFullSortResult(snap::program::Sequence &prog) const;
+  FullSortResult growFullSortResult(poplar::program::Sequence &prog) const;
 
   // indices of sorted values
-  snap::Tensor growIndicesSort(snap::program::Sequence &prog) const;
+  poplar::Tensor growIndicesSort(poplar::program::Sequence &prog) const;
 
   // axis to sort on
   unsigned axis;

@@ -2,7 +2,7 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SUBGRAPHX_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SUBGRAPHX_HPP_
 
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 #include <popart/popx/preparedtensor.hpp>
 
 #include "popart/names.hpp"
@@ -13,7 +13,7 @@ class Op;
 namespace popx {
 class Devicex;
 
-class SubgraphOpx : public PopOpx {
+class SubgraphOpx : public Opx {
 public:
   SubgraphOpx(Op *, Devicex *);
   bool outputCreatedExternally(OutIndex) const final { return true; }

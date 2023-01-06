@@ -3,14 +3,14 @@
 #define POPART_WILLOW_INCLUDE_POPART_POPX_OP_STASHX_HPP_
 
 #include <cstddef>
-#include <popart/popx/popopx.hpp>
+#include <popart/popx/opx.hpp>
 
-namespace snap {
+namespace poplar {
 class Tensor;
 namespace program {
 class Sequence;
 } // namespace program
-} // namespace snap
+} // namespace poplar
 
 namespace popart {
 class Op;
@@ -18,23 +18,23 @@ class Op;
 namespace popx {
 class Devicex;
 
-class StashOpx : public PopOpx {
+class StashOpx : public Opx {
 public:
   StashOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   size_t hStashSize;
   bool canDynamicUpdateStash;
 
-  void growDynamicStashUpdate(snap::program::Sequence &prog,
-                              const snap::Tensor &stashIndex,
-                              const snap::Tensor &inTensor,
-                              const snap::Tensor &outTensor) const;
-  void growStaticStashUpdate(snap::program::Sequence &prog,
-                             const snap::Tensor &stashIndex,
-                             const snap::Tensor &inTensor,
-                             const snap::Tensor &outTensor) const;
+  void growDynamicStashUpdate(poplar::program::Sequence &prog,
+                              const poplar::Tensor &stashIndex,
+                              const poplar::Tensor &inTensor,
+                              const poplar::Tensor &outTensor) const;
+  void growStaticStashUpdate(poplar::program::Sequence &prog,
+                             const poplar::Tensor &stashIndex,
+                             const poplar::Tensor &inTensor,
+                             const poplar::Tensor &outTensor) const;
 };
 
 } // namespace popx

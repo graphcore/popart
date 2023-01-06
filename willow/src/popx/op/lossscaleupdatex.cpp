@@ -1,9 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
+#include <poplar/Program.hpp>
+#include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <popops/Cast.hpp>
 #include <popops/ElementWise.hpp>
@@ -18,14 +16,14 @@
 #include "popart/ir.hpp"
 #include "popart/logging.hpp"
 #include "popart/op.hpp"
-#include "popart/popx/popopx.hpp"
+#include "popart/popx/opx.hpp"
 #include "popart/sessionoptions.hpp"
 #include "popart/tensorindex.hpp"
 
 namespace popart {
 namespace popx {
 
-void LossScaleUpdateOpx::grow(snap::program::Sequence &prog) const {
+void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto &op = getOp<LossScaleUpdateOp>();
   auto &ir = op_p->getIr();
 
@@ -68,56 +66,41 @@ void LossScaleUpdateOpx::grow(snap::program::Sequence &prog) const {
   auto lowerBinCount = gradStats.slice(0, 1, 0).reshape({});
   auto upperBinCount = gradStats.slice(1, 2, 0).reshape({});
 
-  lowerBinCount = snap::Tensor{popops::cast(graph().getPoplarGraph(),
-                                            lowerBinCount.getPoplarTensor(),
-                                            poplar::FLOAT,
-                                            prog.getPoplarSequence(),
-                                            debugContext()),
-                               graph()};
-  upperBinCount = snap::Tensor{popops::cast(graph().getPoplarGraph(),
-                                            upperBinCount.getPoplarTensor(),
-                                            poplar::FLOAT,
-                                            prog.getPoplarSequence(),
-                                            debugContext()),
-                               graph()};
-  popops::mulInPlace(graph().getPoplarGraph(),
-                     lowerBinCount.getPoplarTensor(),
-                     f,
-                     prog.getPoplarSequence(),
-                     debugContext("scaleSumLowerBinCounts"));
+  lowerBinCount =
+      popops::cast(graph(), lowerBinCount, poplar::FLOAT, prog, debugContext());
+  upperBinCount =
+      popops::cast(graph(), upperBinCount, poplar::FLOAT, prog, debugContext());
+  popops::mulInPlace(
+      graph(), lowerBinCount, f, prog, debugContext("scaleSumLowerBinCounts"));
 
-  auto shouldScaleDown =
-      snap::popops::map(graph(),
-                        popops::expr::BinaryOpType::GREATER_THAN,
-                        upperBinCount,
-                        lowerBinCount,
-                        prog,
-                        debugContext());
+  auto shouldScaleDown = popops::map(graph(),
+                                     popops::expr::BinaryOpType::GREATER_THAN,
+                                     upperBinCount,
+                                     lowerBinCount,
+                                     prog,
+                                     debugContext());
 
   auto lossScaleUpdateFactor =
-      getInTensor(op.getLossScaleUpdateFactorInIndex()).getPoplarTensor();
+      getInTensor(op.getLossScaleUpdateFactorInIndex());
   auto updateFactorDType = popType(op.getUpdateFactorDType());
-  snap::program::Sequence scaleUp(graph()), scaleDown(graph());
-  popops::mulInPlace(graph().getPoplarGraph(),
-                     lossScaleUpdateFactor,
-                     2.0,
-                     scaleUp.getPoplarSequence(),
-                     debugContext("scaleUp"));
-  popops::mulInPlace(graph().getPoplarGraph(),
+  poplar::program::Sequence scaleUp, scaleDown;
+  popops::mulInPlace(
+      graph(), lossScaleUpdateFactor, 2.0, scaleUp, debugContext("scaleUp"));
+  popops::mulInPlace(graph(),
                      lossScaleUpdateFactor,
                      0.5,
-                     scaleDown.getPoplarSequence(),
+                     scaleDown,
                      debugContext("scaleDown"));
 
-  prog.getPoplarSequence().add(poplar::program::If(
+  prog.add(poplar::program::If(
       shouldScaleDown, scaleDown, scaleUp, debugContext("lossScaleUpdate")));
 
   setOutTensor(op.getUpdatedLossScaleUpdateFactorOutIndex(),
-               snap::Tensor{lossScaleUpdateFactor, graph()});
+               lossScaleUpdateFactor);
 }
 
 LossScaleUpdateOpx::LossScaleUpdateOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<LossScaleUpdateOp>(op);
 }
 
