@@ -16,7 +16,7 @@ namespace popart {
 class OpSerialiserBase;
 struct OperatorIdentifier;
 
-enum class ScatterReduction { Sum = 0, Max, Min, None };
+enum class ScatterReduction { Sum = 0, Max, Min, Mul, None };
 
 class ScatterReduceOp : public Op {
 public:

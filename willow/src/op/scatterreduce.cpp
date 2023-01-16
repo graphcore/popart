@@ -34,6 +34,9 @@ std::string ScatterReduceOp::reductionToString(ScatterReduction reduction) {
   if (reduction == ScatterReduction::Min) {
     return "min";
   }
+  if (reduction == ScatterReduction::Mul) {
+    return "mul";
+  }
   if (reduction == ScatterReduction::None) {
     return "none";
   }
@@ -52,6 +55,9 @@ ScatterReduceOp::reductionFromString(const std::string &reduction) {
   }
   if (lower_arg == "min") {
     return ScatterReduction::Min;
+  }
+  if (lower_arg == "mul") {
+    return ScatterReduction::Mul;
   }
   if (lower_arg == "none") {
     return ScatterReduction::None;
@@ -217,7 +223,8 @@ ScatterReduceGradOp::ScatterReduceGradOp(const ScatterReduceOp &op)
 
   // min/max reduction needs to know the data source for masking the gradient
   if (reduction == ScatterReduction::Max ||
-      reduction == ScatterReduction::Min) {
+      reduction == ScatterReduction::Min ||
+      reduction == ScatterReduction::Mul) {
     mapper.emplace_back(
         dataInIndex(), ScatterReduceOp::dataInIndex(), GradOpInType::In);
     mapper.emplace_back(

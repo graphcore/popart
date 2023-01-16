@@ -795,6 +795,7 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("Sum", ScatterReduction::Sum);
     en.value("Max", ScatterReduction::Max);
     en.value("Min", ScatterReduction::Min);
+    en.value("Mul", ScatterReduction::Mul);
     en.value("NoReduction", ScatterReduction::None);
   }
   {

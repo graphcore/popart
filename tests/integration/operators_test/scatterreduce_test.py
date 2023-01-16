@@ -13,13 +13,14 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
-reductions = ["sum", "max", "min"]
+reductions = ["sum", "max", "min", "mul"]
 dtypes = [torch.float32, torch.float16, torch.int]
 
 reduction_map = {
     "sum": popart_core.ScatterReduction.Sum,
     "max": popart_core.ScatterReduction.Max,
     "min": popart_core.ScatterReduction.Min,
+    "mul": popart_core.ScatterReduction.Mul,
     "none": popart_core.ScatterReduction.NoReduction,
 }
 
@@ -54,7 +55,7 @@ torch_scatter_testcases = [
         "dim": 0,
         "sum": [3, 12, 0, 6],
         "add": [3, 12, 0, 6],
-        "mul": [2, 60, 1, 6],
+        "mul": [2, 60, 0, 6],
         "mean": [1.5, 4, 0, 6],
         "min": [1, 3, 0, 6],
         "arg_min": [0, 1, 6, 5],
@@ -67,7 +68,7 @@ torch_scatter_testcases = [
         "dim": 0,
         "sum": [[4, 6], [21, 24], [0, 0], [11, 12]],
         "add": [[4, 6], [21, 24], [0, 0], [11, 12]],
-        "mul": [[1 * 3, 2 * 4], [5 * 7 * 9, 6 * 8 * 10], [1, 1], [11, 12]],
+        "mul": [[1 * 3, 2 * 4], [5 * 7 * 9, 6 * 8 * 10], [0, 0], [11, 12]],
         "mean": [[2, 3], [7, 8], [0, 0], [11, 12]],
         "min": [[1, 2], [5, 6], [0, 0], [11, 12]],
         "arg_min": [[0, 0], [1, 1], [6, 6], [5, 5]],
@@ -80,7 +81,7 @@ torch_scatter_testcases = [
         "dim": 1,
         "sum": [[4, 21, 0, 11], [12, 18, 12, 0]],
         "add": [[4, 21, 0, 11], [12, 18, 12, 0]],
-        "mul": [[1 * 3, 5 * 7 * 9, 1, 11], [2 * 4 * 6, 8 * 10, 12, 1]],
+        "mul": [[1 * 3, 5 * 7 * 9, 0, 11], [2 * 4 * 6, 8 * 10, 12, 0]],
         "mean": [[2, 7, 0, 11], [4, 9, 12, 0]],
         "min": [[1, 5, 0, 11], [2, 8, 12, 0]],
         "arg_min": [[0, 1, 6, 5], [0, 2, 5, 6]],
@@ -93,7 +94,7 @@ torch_scatter_testcases = [
         "dim": 1,
         "sum": [[[4, 6], [5, 6], [0, 0]], [[7, 9], [0, 0], [22, 24]]],
         "add": [[[4, 6], [5, 6], [0, 0]], [[7, 9], [0, 0], [22, 24]]],
-        "mul": [[[3, 8], [5, 6], [1, 1]], [[7, 9], [1, 1], [120, 11 * 13]]],
+        "mul": [[[3, 8], [5, 6], [0, 0]], [[7, 9], [0, 0], [120, 11 * 13]]],
         "mean": [[[2, 3], [5, 6], [0, 0]], [[7, 9], [0, 0], [11, 12]]],
         "min": [[[1, 2], [5, 6], [0, 0]], [[7, 9], [0, 0], [10, 11]]],
         "arg_min": [[[0, 0], [1, 1], [3, 3]], [[1, 1], [3, 3], [0, 0]]],
@@ -216,7 +217,6 @@ def test_scatterreduce_index_broadcasted(op_tester, grouped):
 @pytest.mark.parametrize("reduction", ["max", "min"])
 def test_scatterreduce_repro(op_tester, reduction):
     src = torch.linspace(-1, 1, 16).view(-1, 2).T.contiguous()
-    print(src)
     index = torch.zeros_like(src).long()
     axsz = torch.max(index).item() + 1
 
@@ -259,7 +259,13 @@ def test_scatterreduce_training(op_tester, grouped, reduction):
                 ref = torch.stack([ref, ref_2nd_group])
             return ref
 
-        reducer = torch.amin if reduction == "min" else torch.amax
+        reducer = None
+        if reduction == "min":
+            reducer = torch.amin
+        elif reduction == "max":
+            reducer = torch.amax
+        elif reduction == "mul":
+            reducer = torch.prod
 
         if grouped:
             out_2nd = out.clone().detach()
@@ -350,8 +356,15 @@ def test_scatterreduce_axis(
         if reduction == "sum":
             return initials.index_add(dim=axis, index=index, source=src)
 
-        aminmax = torch.amin if reduction == "min" else torch.amax
-        reducer = lambda x: aminmax(x, dim=0, keepdim=True)
+        operation = None
+        if reduction == "min":
+            operation = torch.amin
+        elif reduction == "max":
+            operation = torch.amax
+        elif reduction == "mul":
+            operation = torch.prod
+
+        reducer = lambda x: operation(x, dim=0, keepdim=True)
 
         src = torch.transpose(src, 0, axis)
         out = torch.transpose(initials.clone(), 0, axis)

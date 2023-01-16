@@ -25,6 +25,7 @@ enum class SlicePlanUsedFor {
   Update,
   UpdateAdd,
   UpdateMax,
+  UpdateMul,
   CombinedSliceUpdate
 };
 

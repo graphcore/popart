@@ -3,6 +3,8 @@
 #include <ext/new_allocator.h>
 #include <limits>
 #include <memory>
+#include <string>
+#include <type_traits>
 #include <vector>
 #include <poplar/Graph.hpp>
 #include <poplar/OptionFlags.hpp>
@@ -37,6 +39,62 @@ class Op;
 
 namespace popx {
 class Devicex;
+
+template <typename FuncT, typename... Args>
+static decltype(auto) conditionalCall(bool condition,
+                                      FuncT funcTrue,
+                                      FuncT funcFalse,
+                                      Args &&... args) {
+
+  static_assert(std::is_function_v<typename std::remove_pointer_t<FuncT>>);
+
+  if (condition)
+    return funcTrue(std::forward<Args>(args)...);
+
+  return funcFalse(std::forward<Args>(args)...);
+}
+
+static std::string prepareDebugName(const char *name, bool isGrouped) {
+  std::string debugName = name;
+  if (isGrouped) {
+    debugName[0] = toupper(debugName[0]);
+    debugName    = "grouped" + debugName;
+  }
+
+  return debugName;
+}
+
+template <typename FuncT, typename... Args>
+static void multiUpdate(const Opx &opx,
+                        const char *name,
+                        bool isGrouped,
+                        FuncT groupedMultiUpdateFunc,
+                        FuncT multiUpdateFunc,
+                        Args &&... args) {
+
+  const std::string debugName = prepareDebugName(name, isGrouped);
+  conditionalCall(isGrouped,
+                  groupedMultiUpdateFunc,
+                  multiUpdateFunc,
+                  std::forward<Args>(args)...,
+                  opx.debugContext(debugName));
+}
+
+template <typename FuncT, typename... Args>
+static decltype(auto) multiSlice(const Opx &opx,
+                                 const char *name,
+                                 bool isGrouped,
+                                 FuncT groupedMultiSliceFunc,
+                                 FuncT multiSliceFunc,
+                                 Args &&... args) {
+
+  const std::string debugName = prepareDebugName(name, isGrouped);
+  return conditionalCall(isGrouped,
+                         groupedMultiSliceFunc,
+                         multiSliceFunc,
+                         std::forward<Args>(args)...,
+                         opx.debugContext(debugName));
+}
 
 /**
  * Strategy implementation for calculating the forward and backward passes of
@@ -249,26 +307,72 @@ public:
                poplar::program::Sequence &prog,
                const popops::SlicePlan &plan) const = 0;
 
-  virtual ~ReductionStrategy() {}
+  virtual ~ReductionStrategy() = default;
+
+protected:
+  void maskedFillOutput(const Opx &opx,
+                        const poplar::Tensor &out,
+                        const poplar::Tensor &src,
+                        const poplar::Tensor &indices,
+                        poplar::program::Sequence &seq,
+                        const popops::SlicePlan &plan,
+                        const bool isGrouped) const {
+    auto &graph = opx.graph();
+
+    const auto mask = opx.cloneNcopy(seq, out);
+    popops::zero(graph, mask, seq, "zeros");
+
+    const auto ones = opx.cloneNcopy(seq, src);
+    popops::fill(graph, ones, seq, 1, "ones");
+
+    popx::multiUpdate(opx,
+                      "scatterMask",
+                      isGrouped,
+                      popops::groupedMultiUpdateMax,
+                      popops::multiUpdateMax,
+                      graph,
+                      mask,
+                      ones,
+                      indices,
+                      std::vector<std::size_t>{0},
+                      std::vector<std::size_t>{1},
+                      seq,
+                      plan,
+                      poplar::OptionFlags());
+
+    const auto expr =
+        pe::Select(pe::_1, pe::_2, pe::Cast(pe::_2, poplar::BOOL));
+    popops::mapInPlace(
+        opx.graph(), expr, {out, mask}, seq, opx.debugContext("maskedFill"));
+  }
+
+  template <typename T>
+  static void initOutTensor(const Opx &opx,
+                            const poplar::Tensor &out,
+                            poplar::program::Sequence &prog,
+                            const T value) {
+    popops::fill<T>(opx.graph(), out, prog, value, opx.debugContext("initOut"));
+  }
 };
 
 class SumReductionStrategy : public ReductionStrategy {
 public:
   poplar::OptionFlags
-  createForwardPlanOptions(const ScatterReduceOp &op) const final {
+  createForwardPlanOptions(const ScatterReduceOp &op) const override final {
     return createSlicePlanOptions(SlicePlanUsedFor::UpdateAdd,
                                   op.getAvailableMemoryProportion());
   }
 
-  poplar::OptionFlags
-  createBackwardPlanOptions(const ScatterReduceGradOp &op) const final {
+  poplar::OptionFlags createBackwardPlanOptions(
+      const ScatterReduceGradOp &op) const override final {
     return createSlicePlanOptions(SlicePlanUsedFor::Slice,
                                   op.getAvailableMemoryProportion());
   }
 
-  void initReductionOutput(const Opx &opx,
-                           const poplar::Tensor &out,
-                           poplar::program::Sequence &prog) const final {
+  void
+  initReductionOutput(const Opx &opx,
+                      const poplar::Tensor &out,
+                      poplar::program::Sequence &prog) const override final {
     popops::zero(opx.graph(), out, prog, opx.debugContext("zero"));
   }
 
@@ -278,36 +382,27 @@ public:
                       const poplar::Tensor &indices,
                       poplar::program::Sequence &prog,
                       const popops::SlicePlan &plan,
-                      const bool isGrouped) const final {
-    auto &graph = opx.graph();
-    auto scale  = graph.addConstant(
+                      const bool isGrouped) const override final {
+    auto &graph      = opx.graph();
+    const auto scale = graph.addConstant(
         update.elementType(), {}, 1.0f, opx.debugContext("const_1"));
     graph.setTileMapping(scale, 0);
 
-    if (isGrouped)
-      popops::groupedMultiUpdateAdd(graph,
-                                    target,
-                                    update,
-                                    indices,
-                                    scale,
-                                    {0},
-                                    {1},
-                                    prog,
-                                    plan,
-                                    poplar::OptionFlags(),
-                                    opx.debugContext("groupedScatterSum"));
-    else
-      popops::multiUpdateAdd(graph,
-                             target,
-                             update,
-                             indices,
-                             scale,
-                             {0},
-                             {1},
-                             prog,
-                             plan,
-                             poplar::OptionFlags(),
-                             opx.debugContext("scatterSum"));
+    popx::multiUpdate(opx,
+                      "scatterSum",
+                      isGrouped,
+                      popops::groupedMultiUpdateAdd,
+                      popops::multiUpdateAdd,
+                      graph,
+                      target,
+                      update,
+                      indices,
+                      scale,
+                      std::vector<std::size_t>{0},
+                      std::vector<std::size_t>{1},
+                      prog,
+                      plan,
+                      poplar::OptionFlags());
   }
 
   std::vector<poplar::Tensor>
@@ -318,35 +413,26 @@ public:
                size_t axis,
                size_t group_size,
                poplar::program::Sequence &prog,
-               const popops::SlicePlan &plan) const final {
-    auto result =
-        group_size > 1
-            ? popops::groupedMultiSlice(
-                  opx.graph(),
-                  gradIn,
-                  indices,
-                  {0},
-                  {1},
-                  prog,
-                  plan,
-                  poplar::OptionFlags(),
-                  opx.getDebugNameAndId("groupedScatterSumGrad"))
-            : popops::multiSlice(opx.graph(),
-                                 gradIn,
-                                 indices,
-                                 {0},
-                                 {1},
-                                 prog,
-                                 plan,
-                                 poplar::OptionFlags(),
-                                 opx.getDebugNameAndId("scatterSumGrad"));
+               const popops::SlicePlan &plan) const override final {
+    auto gradData = popx::multiSlice(opx,
+                                     "scatterSumGrad",
+                                     group_size > 1,
+                                     popops::groupedMultiSlice,
+                                     popops::multiSlice,
+                                     opx.graph(),
+                                     gradIn,
+                                     indices,
+                                     std::vector<std::size_t>{0},
+                                     std::vector<std::size_t>{1},
+                                     prog,
+                                     plan,
+                                     poplar::OptionFlags());
 
-    auto gradData = result;
-    auto outInfo  = opx.outInfo(ScatterReduceGradOp::gradDataOutIndex());
-    gradData      = alignToAxis(gradData, outInfo.shape(), axis, group_size);
+    auto outInfo = opx.outInfo(ScatterReduceGradOp::gradDataOutIndex());
+    gradData     = alignToAxis(gradData, outInfo.shape(), axis, group_size);
 
     if (op.hasInitialValues()) {
-      auto gradInitials = opx.cloneNcopy(
+      const auto gradInitials = opx.cloneNcopy(
           prog, opx.getInTensor(ScatterReduceGradOp::gradInIndex()));
       return {gradData, gradInitials};
     }
@@ -358,13 +444,13 @@ public:
 class NoneReductionStrategy : public ReductionStrategy {
 public:
   poplar::OptionFlags
-  createForwardPlanOptions(const ScatterReduceOp &op) const final {
+  createForwardPlanOptions(const ScatterReduceOp &op) const override final {
     return createSlicePlanOptions(SlicePlanUsedFor::Update,
                                   op.getAvailableMemoryProportion());
   }
 
-  poplar::OptionFlags
-  createBackwardPlanOptions(const ScatterReduceGradOp &op) const final {
+  poplar::OptionFlags createBackwardPlanOptions(
+      const ScatterReduceGradOp &op) const override final {
     if (op.hasInitialValues()) {
       // none-reduction with initial values needs both a scatter and a gather
       // for each gradient output.
@@ -376,9 +462,10 @@ public:
                                   op.getAvailableMemoryProportion());
   }
 
-  void initReductionOutput(const Opx &opx,
-                           const poplar::Tensor &out,
-                           poplar::program::Sequence &prog) const final {
+  void
+  initReductionOutput(const Opx &opx,
+                      const poplar::Tensor &out,
+                      poplar::program::Sequence &prog) const override final {
     popops::zero(opx.graph(), out, prog, opx.debugContext("zero"));
   }
 
@@ -388,29 +475,22 @@ public:
                       const poplar::Tensor &indices,
                       poplar::program::Sequence &prog,
                       const popops::SlicePlan &plan,
-                      const bool isGrouped) const final {
-    if (isGrouped)
-      popops::groupedMultiUpdate(opx.graph(),
-                                 target,
-                                 update,
-                                 indices,
-                                 {0},
-                                 {1},
-                                 prog,
-                                 plan,
-                                 poplar::OptionFlags(),
-                                 opx.debugContext("groupedScatter"));
-    else
-      popops::multiUpdate(opx.graph(),
-                          target,
-                          update,
-                          indices,
-                          {0},
-                          {1},
-                          prog,
-                          plan,
-                          poplar::OptionFlags(),
-                          opx.debugContext("scatter"));
+                      const bool isGrouped) const override final {
+
+    popx::multiUpdate(opx,
+                      "scatter",
+                      isGrouped,
+                      popops::groupedMultiUpdate,
+                      popops::multiUpdate,
+                      opx.graph(),
+                      target,
+                      update,
+                      indices,
+                      std::vector<std::size_t>{0},
+                      std::vector<std::size_t>{1},
+                      prog,
+                      plan,
+                      poplar::OptionFlags());
   }
 
   std::vector<poplar::Tensor>
@@ -421,33 +501,25 @@ public:
                size_t axis,
                size_t group_size,
                poplar::program::Sequence &prog,
-               const popops::SlicePlan &plan) const final {
+               const popops::SlicePlan &plan) const override final {
     const bool isGrouped = group_size > 1;
-    auto result =
-        isGrouped
-            ? popops::groupedMultiSlice(
-                  opx.graph(),
-                  gradIn,
-                  indices,
-                  {0},
-                  {1},
-                  prog,
-                  plan,
-                  poplar::OptionFlags(),
-                  opx.getDebugNameAndId("groupedScatterNoneGrad"))
 
-            : popops::multiSlice(opx.graph(),
-                                 gradIn,
-                                 indices,
-                                 {0},
-                                 {1},
-                                 prog,
-                                 plan,
-                                 poplar::OptionFlags(),
-                                 opx.getDebugNameAndId("scatterNoneGrad"));
+    auto gradData = popx::multiSlice(opx,
+                                     "scatterNoneGrad",
+                                     isGrouped,
+                                     popops::groupedMultiSlice,
+                                     popops::multiSlice,
+                                     opx.graph(),
+                                     gradIn,
+                                     indices,
+                                     std::vector<std::size_t>{0},
+                                     std::vector<std::size_t>{1},
+                                     prog,
+                                     plan,
+                                     poplar::OptionFlags());
 
-    auto gradData        = result;
-    auto gradDataOutInfo = opx.outInfo(ScatterReduceGradOp::gradDataOutIndex());
+    const auto gradDataOutInfo =
+        opx.outInfo(ScatterReduceGradOp::gradDataOutIndex());
     gradData = alignToAxis(gradData, gradDataOutInfo.shape(), axis, group_size);
 
     if (!op.hasInitialValues()) {
@@ -455,8 +527,8 @@ public:
     }
 
     // Scatter of zeros into the gradIn
-    auto dataInfo    = opx.inInfo(ScatterReduceGradOp::dataInIndex());
-    auto indicesInfo = opx.inInfo(ScatterReduceGradOp::indicesInIndex());
+    const auto dataInfo    = opx.inInfo(ScatterReduceGradOp::dataInIndex());
+    const auto indicesInfo = opx.inInfo(ScatterReduceGradOp::indicesInIndex());
 
     auto numSlices  = static_cast<size_t>(dataInfo.nelms()) / group_size;
     auto outputSize = 1UL;
@@ -466,7 +538,8 @@ public:
       outputSize = (dataInfo.nelms() / numSlices) / group_size;
     }
 
-    auto numLookups = static_cast<size_t>(indicesInfo.nelms()) / group_size;
+    const auto numLookups =
+        static_cast<size_t>(indicesInfo.nelms()) / group_size;
 
     auto zeros =
         isGrouped
@@ -494,54 +567,47 @@ public:
     popops::fill(
         opx.graph(), zeros, prog, 0.0f, opx.debugContext("zerosUpdateFill"));
 
-    auto t = isGrouped ? popops::createGroupedSliceableTensor(
-                             opx.graph(),
-                             gradIn.elementType(),
-                             group_size,
-                             {gradIn.dim(1), gradIn.dim(2)},
-                             {0},
-                             {1},
-                             plan,
-                             poplar::OptionFlags(),
-                             opx.getDebugNameAndId("groupedZerosUpdate"))
-                       : popops::createSliceableTensor(
-                             opx.graph(),
-                             gradIn.elementType(),
-                             {gradIn.dim(0), gradIn.dim(1)},
-                             {0},
-                             {1},
-                             plan,
-                             poplar::OptionFlags(),
-                             opx.getDebugNameAndId("zerosUpdate"));
+    auto gradInitials = isGrouped
+                            ? popops::createGroupedSliceableTensor(
+                                  opx.graph(),
+                                  gradIn.elementType(),
+                                  group_size,
+                                  {gradIn.dim(1), gradIn.dim(2)},
+                                  {0},
+                                  {1},
+                                  plan,
+                                  poplar::OptionFlags(),
+                                  opx.getDebugNameAndId("groupedZerosUpdate"))
+                            : popops::createSliceableTensor(
+                                  opx.graph(),
+                                  gradIn.elementType(),
+                                  {gradIn.dim(0), gradIn.dim(1)},
+                                  {0},
+                                  {1},
+                                  plan,
+                                  poplar::OptionFlags(),
+                                  opx.getDebugNameAndId("zerosUpdate"));
 
-    auto gradInitials = t;
     prog.add(poplar::program::Copy(
         gradIn, gradInitials, false, opx.debugContext("copyToScatter")));
-    if (isGrouped) {
-      popops::groupedMultiUpdate(
-          opx.graph(),
-          gradInitials,
-          zeros,
-          indices,
-          {0},
-          {1},
-          prog,
-          plan,
-          poplar::OptionFlags(),
-          opx.getDebugNameAndId("groupedScatterInitialValuesGrad"));
-    } else {
-      popops::multiUpdate(opx.graph(),
-                          gradInitials,
-                          zeros,
-                          indices,
-                          {0},
-                          {1},
-                          prog,
-                          plan,
-                          poplar::OptionFlags(),
-                          opx.getDebugNameAndId("scatterInitialValuesGrad"));
-    }
-    auto info = opx.outInfo(ScatterReduceGradOp::gradInitialValuesOutIndex());
+
+    popx::multiUpdate(opx,
+                      "scatterInitialValuesGrad",
+                      isGrouped,
+                      popops::groupedMultiUpdate,
+                      popops::multiUpdate,
+                      opx.graph(),
+                      gradInitials,
+                      zeros,
+                      indices,
+                      std::vector<std::size_t>{0},
+                      std::vector<std::size_t>{1},
+                      prog,
+                      plan,
+                      poplar::OptionFlags());
+
+    const auto info =
+        opx.outInfo(ScatterReduceGradOp::gradInitialValuesOutIndex());
     gradInitials = alignToAxis(gradInitials, info.shape(), axis, group_size);
     return {gradData, gradInitials};
   }
@@ -550,91 +616,32 @@ public:
 class MaxReductionStrategy : public ReductionStrategy {
 public:
   poplar::OptionFlags
-  createForwardPlanOptions(const ScatterReduceOp &op) const final {
+  createForwardPlanOptions(const ScatterReduceOp &op) const override final {
     return createSlicePlanOptions(SlicePlanUsedFor::UpdateMax,
                                   op.getAvailableMemoryProportion());
   }
 
-  poplar::OptionFlags
-  createBackwardPlanOptions(const ScatterReduceGradOp &op) const final {
+  poplar::OptionFlags createBackwardPlanOptions(
+      const ScatterReduceGradOp &op) const override final {
     return createSlicePlanOptions(SlicePlanUsedFor::Slice,
                                   op.getAvailableMemoryProportion());
   }
 
-  void initReductionOutput(const Opx &opx,
-                           const poplar::Tensor &out,
-                           poplar::program::Sequence &prog) const final {
-    auto dtype = out.elementType();
+  void
+  initReductionOutput(const Opx &opx,
+                      const poplar::Tensor &out,
+                      poplar::program::Sequence &prog) const override final {
+    const auto dtype = out.elementType();
 
     if (dtype == poplar::FLOAT || dtype == poplar::HALF) {
-      initMaxTensor<float>(opx, out, prog);
-      return;
-    }
-
-    if (dtype == poplar::INT) {
-      initMaxTensor<int>(opx, out, prog);
-      return;
-    }
-
-    if (dtype == poplar::UNSIGNED_INT) {
-      initMaxTensor<unsigned int>(opx, out, prog);
-      return;
-    }
-
-    throw popart::internal_error("Unsupported data type {}", dtype);
-  }
-
-  template <typename T>
-  static void initMaxTensor(const Opx &opx,
-                            const poplar::Tensor &out,
-                            poplar::program::Sequence &prog) {
-    popops::fill<T>(
-        opx.graph(), out, prog, maxInitValue<T>(), opx.debugContext("maxInit"));
-  }
-
-  void maskedFillOutput(const Opx &opx,
-                        const poplar::Tensor &out,
-                        const poplar::Tensor &src,
-                        const poplar::Tensor &indices,
-                        poplar::program::Sequence &prog,
-                        const popops::SlicePlan &plan,
-                        const bool isGrouped) const {
-    auto &graph = opx.graph();
-    auto &seq   = prog;
-
-    auto mask = opx.cloneNcopy(prog, out);
-    popops::zero(graph, mask, seq, "zeros");
-
-    auto ones = opx.cloneNcopy(prog, src);
-    popops::fill(graph, ones, seq, 1, "ones");
-
-    if (isGrouped) {
-      popops::groupedMultiUpdateMax(graph,
-                                    mask,
-                                    ones,
-                                    indices,
-                                    {0},
-                                    {1},
-                                    seq,
-                                    plan,
-                                    poplar::OptionFlags(),
-                                    opx.debugContext("grouped_scatter_mask"));
+      initOutTensor(opx, out, prog, maxInitValue<float>());
+    } else if (dtype == poplar::INT) {
+      initOutTensor(opx, out, prog, maxInitValue<int>());
+    } else if (dtype == poplar::UNSIGNED_INT) {
+      initOutTensor(opx, out, prog, maxInitValue<unsigned int>());
     } else {
-      popops::multiUpdateMax(graph,
-                             mask,
-                             ones,
-                             indices,
-                             {0},
-                             {1},
-                             seq,
-                             plan,
-                             poplar::OptionFlags(),
-                             opx.debugContext("scatter_mask"));
+      throw popart::internal_error("Unsupported data type {}", dtype);
     }
-
-    auto expr = pe::Select(pe::_1, pe::_2, pe::Cast(pe::_2, poplar::BOOL));
-    popops::mapInPlace(
-        opx.graph(), expr, {out, mask}, prog, opx.debugContext("maskedFill"));
   }
 
   template <typename T> static T maxInitValue() {
@@ -649,29 +656,22 @@ public:
                       const poplar::Tensor &indices,
                       poplar::program::Sequence &prog,
                       const popops::SlicePlan &plan,
-                      const bool isGrouped) const final {
-    if (isGrouped)
-      popops::groupedMultiUpdateMax(opx.graph(),
-                                    target,
-                                    update,
-                                    indices,
-                                    {0},
-                                    {1},
-                                    prog,
-                                    plan,
-                                    poplar::OptionFlags(),
-                                    opx.debugContext("grouped_scatter_max"));
-    else
-      popops::multiUpdateMax(opx.graph(),
-                             target,
-                             update,
-                             indices,
-                             {0},
-                             {1},
-                             prog,
-                             plan,
-                             poplar::OptionFlags(),
-                             opx.debugContext("scatter_max"));
+                      const bool isGrouped) const override final {
+
+    popx::multiUpdate(opx,
+                      "scatterMax",
+                      isGrouped,
+                      popops::groupedMultiUpdateMax,
+                      popops::multiUpdateMax,
+                      opx.graph(),
+                      target,
+                      update,
+                      indices,
+                      std::vector<std::size_t>{0},
+                      std::vector<std::size_t>{1},
+                      prog,
+                      plan,
+                      poplar::OptionFlags());
 
     if (!opx.hasInput(ScatterReduceOp::initialValuesInIndex())) {
       // TODO(T65173): make this an operator option since it can be unnecessary.
@@ -688,34 +688,25 @@ public:
                size_t axis,
                size_t group_size,
                poplar::program::Sequence &prog,
-               const popops::SlicePlan &plan) const final {
+               const popops::SlicePlan &plan) const override final {
     const bool isGrouped = group_size > 1;
     auto &graph          = opx.graph();
-    auto result =
-        isGrouped ?
+    auto gradData        = popx::multiSlice(opx,
+                                     "gatherGradIn",
+                                     isGrouped,
+                                     popops::groupedMultiSlice,
+                                     popops::multiSlice,
+                                     graph,
+                                     gradIn,
+                                     indices,
+                                     std::vector<std::size_t>{0},
+                                     std::vector<std::size_t>{1},
+                                     prog,
+                                     plan,
+                                     poplar::OptionFlags());
 
-                  popops::groupedMultiSlice(
-                      graph,
-                      gradIn,
-                      indices,
-                      {0},
-                      {1},
-                      prog,
-                      plan,
-                      poplar::OptionFlags(),
-                      opx.getDebugNameAndId("groupedGatherGradIn"))
-                  : popops::multiSlice(graph,
-                                       gradIn,
-                                       indices,
-                                       {0},
-                                       {1},
-                                       prog,
-                                       plan,
-                                       poplar::OptionFlags(),
-                                       opx.getDebugNameAndId("gatherGradIn"));
-
-    auto gradData     = result;
-    auto gradDataInfo = opx.outInfo(ScatterReduceGradOp::gradDataOutIndex());
+    const auto gradDataInfo =
+        opx.outInfo(ScatterReduceGradOp::gradDataOutIndex());
     gradData = alignToAxis(gradData, gradDataInfo.shape(), axis, group_size);
 
     auto fwdOut = opx.getInTensor(ScatterReduceGradOp::fwdOutInIndex());
@@ -733,34 +724,26 @@ public:
       fwdOut = fwdOut.flatten(1 + startAxisDim, fwdOut.rank());
     }
 
-    auto fwdOutputs =
-        isGrouped ? popops::groupedMultiSlice(
-                        graph,
-                        fwdOut,
-                        indices,
-                        {0},
-                        {1},
-                        prog,
-                        plan,
-                        poplar::OptionFlags(),
-                        opx.getDebugNameAndId("groupedGatherFwdOut"))
-                  : popops::multiSlice(graph,
-                                       fwdOut,
-                                       indices,
-                                       {0},
-                                       {1},
-                                       prog,
-                                       plan,
-                                       poplar::OptionFlags(),
-                                       opx.getDebugNameAndId("gatherFwdOut"));
-
-    auto outputs = poplar::Tensor{fwdOutputs};
+    auto outputs = popx::multiSlice(opx,
+                                    "gatherFwdOut",
+                                    isGrouped,
+                                    popops::groupedMultiSlice,
+                                    popops::multiSlice,
+                                    graph,
+                                    fwdOut,
+                                    indices,
+                                    std::vector<std::size_t>{0},
+                                    std::vector<std::size_t>{1},
+                                    prog,
+                                    plan,
+                                    poplar::OptionFlags());
     outputs      = alignToAxis(outputs, gradDataInfo.shape(), axis, group_size);
 
     // gradDataOut * (data == outputs)
     const auto &data = opx.getInTensor(ScatterReduceGradOp::dataInIndex());
-    auto dtype       = gradData.elementType();
-    auto expr = pe::Mul(pe::_1, pe::Cast(pe::Equal(pe::_2, pe::_3), dtype));
+    const auto dtype = gradData.elementType();
+    const auto expr =
+        pe::Mul(pe::_1, pe::Cast(pe::Equal(pe::_2, pe::_3), dtype));
 
     popops::mapInPlace(opx.graph(),
                        expr,
@@ -773,12 +756,12 @@ public:
     }
 
     // gradIn * (fwdOut == initialValues)
-    auto grad = opx.getInTensor(ScatterReduceGradOp::gradInIndex());
-    auto fwd  = opx.getInTensor(ScatterReduceGradOp::fwdOutInIndex());
-    auto initialValues =
+    const auto grad = opx.getInTensor(ScatterReduceGradOp::gradInIndex());
+    const auto fwd  = opx.getInTensor(ScatterReduceGradOp::fwdOutInIndex());
+    const auto initialValues =
         opx.getInTensor(ScatterReduceGradOp::initialValuesInIndex());
 
-    auto gradInitials =
+    const auto gradInitials =
         popops::map(opx.graph(),
                     expr,
                     {grad, fwd, initialValues},
@@ -794,18 +777,19 @@ public:
 class MinReductionStrategy : public ReductionStrategy {
 public:
   poplar::OptionFlags
-  createForwardPlanOptions(const ScatterReduceOp &op) const final {
+  createForwardPlanOptions(const ScatterReduceOp &op) const override final {
     return max_strategy.createForwardPlanOptions(op);
   }
 
-  poplar::OptionFlags
-  createBackwardPlanOptions(const ScatterReduceGradOp &op) const final {
+  poplar::OptionFlags createBackwardPlanOptions(
+      const ScatterReduceGradOp &op) const override final {
     return max_strategy.createBackwardPlanOptions(op);
   }
 
-  void initReductionOutput(const Opx &opx,
-                           const poplar::Tensor &out,
-                           poplar::program::Sequence &prog) const final {
+  void
+  initReductionOutput(const Opx &opx,
+                      const poplar::Tensor &out,
+                      poplar::program::Sequence &prog) const override final {
     max_strategy.initReductionOutput(opx, out, prog);
   }
 
@@ -815,18 +799,16 @@ public:
                       const poplar::Tensor &indices,
                       poplar::program::Sequence &prog,
                       const popops::SlicePlan &plan,
-                      const bool isGrouped) const final {
+                      const bool isGrouped) const override final {
     auto &graph = opx.graph();
 
     if (opx.hasInput(ScatterReduceOp::initialValuesInIndex())) {
       popops::negInPlace(graph, target, prog, "negTarget");
     }
 
-    auto negUpdate = popops::neg(graph, update, prog, "negUpdate");
-
+    const auto negUpdate = popops::neg(graph, update, prog, "negUpdate");
     max_strategy.applyReduction(
-        opx, target, poplar::Tensor(negUpdate), indices, prog, plan, isGrouped);
-
+        opx, target, negUpdate, indices, prog, plan, isGrouped);
     popops::negInPlace(graph, target, prog, "negTarget");
   }
 
@@ -838,13 +820,165 @@ public:
                size_t axis,
                size_t group_size,
                poplar::program::Sequence &prog,
-               const popops::SlicePlan &plan) const final {
+               const popops::SlicePlan &plan) const override final {
     return max_strategy.calcGradient(
         op, opx, gradIn, indices, axis, group_size, prog, plan);
   }
 
 private:
   MaxReductionStrategy max_strategy;
+};
+
+class MulReductionStrategy : public ReductionStrategy {
+public:
+  poplar::OptionFlags
+  createForwardPlanOptions(const ScatterReduceOp &op) const override final {
+    return createSlicePlanOptions(SlicePlanUsedFor::UpdateMul,
+                                  op.getAvailableMemoryProportion());
+  }
+
+  poplar::OptionFlags createBackwardPlanOptions(
+      const ScatterReduceGradOp &op) const override final {
+    return createSlicePlanOptions(SlicePlanUsedFor::Slice,
+                                  op.getAvailableMemoryProportion());
+  }
+
+  void
+  initReductionOutput(const Opx &opx,
+                      const poplar::Tensor &out,
+                      poplar::program::Sequence &prog) const override final {
+    const auto dtype = out.elementType();
+
+    if (dtype == poplar::FLOAT || dtype == poplar::HALF) {
+      initOutTensor(opx, out, prog, 1.0f);
+    } else if (dtype == poplar::INT) {
+      initOutTensor(opx, out, prog, 1);
+    } else if (dtype == poplar::UNSIGNED_INT) {
+      initOutTensor(opx, out, prog, 1u);
+    } else {
+      throw popart::internal_error("Unsupported data type {}", dtype);
+    }
+  }
+
+  void applyReduction(const Opx &opx,
+                      const poplar::Tensor &target,
+                      const poplar::Tensor &update,
+                      const poplar::Tensor &indices,
+                      poplar::program::Sequence &prog,
+                      const popops::SlicePlan &plan,
+                      const bool isGrouped) const override final {
+
+    popx::multiUpdate(opx,
+                      "scatterMul",
+                      isGrouped,
+                      popops::groupedMultiUpdateMul,
+                      popops::multiUpdateMul,
+                      opx.graph(),
+                      target,
+                      update,
+                      indices,
+                      std::vector<std::size_t>{0},
+                      std::vector<std::size_t>{1},
+                      prog,
+                      plan,
+                      poplar::OptionFlags());
+
+    if (!opx.hasInput(ScatterReduceOp::initialValuesInIndex())) {
+      // TODO(T65173): make this an operator option since it can be unnecessary.
+      // Replace any non-updated values with zero
+      maskedFillOutput(opx, target, update, indices, prog, plan, isGrouped);
+    }
+  }
+
+  std::vector<poplar::Tensor>
+  calcGradient(const ScatterReduceGradOp &op,
+               const Opx &opx,
+               const poplar::Tensor &gradIn,
+               const poplar::Tensor &indices,
+               size_t axis,
+               size_t group_size,
+               poplar::program::Sequence &prog,
+               const popops::SlicePlan &plan) const override final {
+    const bool isGrouped = group_size > 1;
+    auto &graph          = opx.graph();
+
+    auto gradData = popx::multiSlice(opx,
+                                     "gatherGradIn",
+                                     isGrouped,
+                                     popops::groupedMultiSlice,
+                                     popops::multiSlice,
+                                     graph,
+                                     gradIn,
+                                     indices,
+                                     std::vector<std::size_t>{0},
+                                     std::vector<std::size_t>{1},
+                                     prog,
+                                     plan,
+                                     poplar::OptionFlags());
+    const auto gradDataInfo =
+        opx.outInfo(ScatterReduceGradOp::gradDataOutIndex());
+    gradData = alignToAxis(gradData, gradDataInfo.shape(), axis, group_size);
+
+    auto fwdOut = opx.getInTensor(ScatterReduceGradOp::fwdOutInIndex());
+    const unsigned startAxisDim = isGrouped ? 1 : 0;
+    if (op.indexBroadcasted()) {
+      fwdOut = fwdOut.dimRoll(axis, startAxisDim);
+      fwdOut = fwdOut.flatten();
+      fwdOut = fwdOut.expand({1});
+      if (isGrouped)
+        fwdOut = fwdOut.reshapePartial(
+            0, 1, {group_size, fwdOut.dim(0) / group_size});
+    } else {
+      fwdOut = fwdOut.dimRoll(axis, startAxisDim);
+      fwdOut = fwdOut.flatten(1 + startAxisDim, fwdOut.rank());
+    }
+
+    auto outputs = popx::multiSlice(opx,
+                                    "gatherFwdOut",
+                                    isGrouped,
+                                    popops::groupedMultiSlice,
+                                    popops::multiSlice,
+                                    graph,
+                                    fwdOut,
+                                    indices,
+                                    std::vector<std::size_t>{0},
+                                    std::vector<std::size_t>{1},
+                                    prog,
+                                    plan,
+                                    poplar::OptionFlags());
+    outputs      = alignToAxis(outputs, gradDataInfo.shape(), axis, group_size);
+
+    // gradDataOut * (fwdOutputs / data)
+    const auto &data = opx.getInTensor(ScatterReduceGradOp::dataInIndex());
+    const auto dtype = gradData.elementType();
+    const auto expr =
+        pe::Mul(pe::_1, pe::Mul(pe::Cast(pe::_2, dtype), pe::Inv(pe::_3)));
+
+    popops::mapInPlace(opx.graph(),
+                       expr,
+                       {gradData, outputs, data},
+                       prog,
+                       opx.getDebugNameAndId("gradOutMulOutputMask"));
+
+    if (!op.hasInitialValues()) {
+      return {gradData};
+    }
+
+    // gradDataOut * (fwdOutputs / data)
+    const auto grad = opx.getInTensor(ScatterReduceGradOp::gradInIndex());
+    const auto fwd  = opx.getInTensor(ScatterReduceGradOp::fwdOutInIndex());
+    const auto initialValues =
+        opx.getInTensor(ScatterReduceGradOp::initialValuesInIndex());
+
+    const auto gradInitials =
+        popops::map(opx.graph(),
+                    expr,
+                    {grad, fwd, initialValues},
+                    prog,
+                    opx.getDebugNameAndId("gradInMulInitialValuesMask"));
+
+    return {gradData, gradInitials};
+  }
 };
 
 std::unique_ptr<ReductionStrategy>
@@ -858,10 +992,12 @@ createStrategy(const ScatterReduction &reduction) {
   if (reduction == ScatterReduction::Min) {
     return std::make_unique<MinReductionStrategy>();
   }
+  if (reduction == ScatterReduction::Mul) {
+    return std::make_unique<MulReductionStrategy>();
+  }
   if (reduction == ScatterReduction::None) {
     return std::make_unique<NoneReductionStrategy>();
   }
-
   throw popart::internal_error("Unsupported reduction strategy!");
 }
 
@@ -869,9 +1005,9 @@ ScatterReduceOpx::ScatterReduceOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex), strategy(), plan(), axis() {
   verifyOp<ScatterReduceOp>(op, {Onnx::CustomOperators::ScatterReduce});
 
-  auto &srop   = getOp<ScatterReduceOp>();
-  strategy     = createStrategy(srop.getReduction());
-  auto options = strategy->createForwardPlanOptions(srop);
+  const auto &srop   = getOp<ScatterReduceOp>();
+  strategy           = createStrategy(srop.getReduction());
+  const auto options = strategy->createForwardPlanOptions(srop);
 
   axis       = static_cast<size_t>(srop.getAxis());
   group_size = static_cast<size_t>(srop.getGroupSize());
@@ -925,8 +1061,8 @@ ScatterReduceOpx::createInput(InIndex index,
 
   logging::debug("ScatterReduceOpx::createInput index={}", index);
 
-  auto &srop       = getOp<ScatterReduceOp>();
-  auto indicesInfo = inInfo(ScatterReduceOp::indicesInIndex());
+  auto &srop             = getOp<ScatterReduceOp>();
+  const auto indicesInfo = inInfo(ScatterReduceOp::indicesInIndex());
 
   if (index == ScatterReduceOp::indicesInIndex()) {
     return createIndicesTensor(graph(),
@@ -962,9 +1098,9 @@ ScatterReduceGradOpx::ScatterReduceGradOpx(Op *op, Devicex *devicex)
   verifyOp<ScatterReduceGradOp>(
       op, {Onnx::CustomGradOperators::ScatterReduceGradOp});
 
-  auto &srop   = getOp<ScatterReduceGradOp>();
-  strategy     = createStrategy(srop.getReduction());
-  auto options = strategy->createBackwardPlanOptions(srop);
+  const auto &srop   = getOp<ScatterReduceGradOp>();
+  strategy           = createStrategy(srop.getReduction());
+  const auto options = strategy->createBackwardPlanOptions(srop);
 
   axis       = static_cast<size_t>(srop.getAxis());
   group_size = static_cast<size_t>(srop.getGroupSize());
@@ -983,10 +1119,10 @@ ScatterReduceGradOpx::ScatterReduceGradOpx(Op *op, Devicex *devicex)
 }
 
 void ScatterReduceGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto &srop = getOp<ScatterReduceGradOp>();
-  auto gradIn      = getInTensor(ScatterReduceGradOp::gradInIndex());
-  auto indices     = getInTensor(ScatterReduceGradOp::indicesInIndex());
-  auto gradOut     = strategy->backward(
+  const auto &srop   = getOp<ScatterReduceGradOp>();
+  auto gradIn        = getInTensor(ScatterReduceGradOp::gradInIndex());
+  auto indices       = getInTensor(ScatterReduceGradOp::indicesInIndex());
+  const auto gradOut = strategy->backward(
       srop, *this, gradIn, indices, axis, group_size, prog, plan);
 
   if (gradOut.size() != srop.outTensorCount()) {
@@ -1009,7 +1145,7 @@ ScatterReduceGradOpx::createInput(InIndex index,
     throw error("ScatterReduceOpx::createInput : Invalid index = {}", index);
   }
 
-  auto &srop = getOp<ScatterReduceGradOp>();
+  const auto &srop = getOp<ScatterReduceGradOp>();
   if (index == ScatterReduceGradOp::gradInIndex()) {
     return createDataTensor(graph(),
                             inInfo(index),
