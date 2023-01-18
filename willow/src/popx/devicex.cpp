@@ -1114,37 +1114,41 @@ uint64_t Devicex::getRandomSeedToHost() {
 }
 
 void Devicex::setRngStateFromHost() {
-  if (1) { // Add Session option
+  if (ir().useSyntheticData() == false) {
     pEngine->disableExecutionProfiling();
     run(PopPrograms::ProgramIndex::RngStateFromHost, "SetRngState");
   }
 }
 
 std::vector<uint32_t> Devicex::getRngStateToHost() {
-  // Reset the buffer
-  logging::devicex::debug("Cleaning the rng buffer before receiving data");
-
-  // popart::DeviceInfo object is used to calculate rng state tensor size
-  // (instead of poplar::Graph) because poplar::Graph might not exist when
-  // we are using deserialized executable. Note that poplar::Target in
-  // DeviceInfo contains info about all replicas and poplar::Target in
-  // poplar::Graph about one replica.
-  const unsigned repFactor = getReplicationFactor();
-  const size_t rngSize     = RngStateLowering::getCombinedRngStateTensorSize(
-      *lowering().getDeviceInfo(), repFactor);
-
-  for (auto &buffer : rngBuffer) {
-    buffer.second = std::vector<uint32_t>(rngSize);
-  }
-  pEngine->disableExecutionProfiling();
-  run(PopPrograms::ProgramIndex::RngStateToHost, "GetRngState");
-  logging::devicex::debug("Copying data to host");
   std::vector<uint32_t> rngState;
-  for (uint16_t replicaId = 0; replicaId < repFactor; ++replicaId) {
-    rngState.insert(rngState.end(),
-                    rngBuffer[replicaId].begin(),
-                    rngBuffer[replicaId].end());
+
+  if (ir().useSyntheticData() == false) {
+    // Reset the buffer
+    logging::devicex::debug("Cleaning the rng buffer before receiving data");
+
+    // popart::DeviceInfo object is used to calculate rng state tensor size
+    // (instead of poplar::Graph) because poplar::Graph might not exist when
+    // we are using deserialized executable. Note that poplar::Target in
+    // DeviceInfo contains info about all replicas and poplar::Target in
+    // poplar::Graph about one replica.
+    const unsigned repFactor = getReplicationFactor();
+    const size_t rngSize     = RngStateLowering::getCombinedRngStateTensorSize(
+        *lowering().getDeviceInfo(), repFactor);
+
+    for (auto &buffer : rngBuffer) {
+      buffer.second = std::vector<uint32_t>(rngSize);
+    }
+    pEngine->disableExecutionProfiling();
+    run(PopPrograms::ProgramIndex::RngStateToHost, "GetRngState");
+    logging::devicex::debug("Copying data to host");
+    for (uint16_t replicaId = 0; replicaId < repFactor; ++replicaId) {
+      rngState.insert(rngState.end(),
+                      rngBuffer[replicaId].begin(),
+                      rngBuffer[replicaId].end());
+    }
   }
+
   return rngState;
 }
 

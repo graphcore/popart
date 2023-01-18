@@ -153,3 +153,61 @@ def test_rng_set_and_get(enableReplicatedGraphs):
         assert e_info.value.args[0].startswith(
             "Devicex::setRngStateValue received rngState of size"
         )
+
+
+def test_rng_set_and_get_in_case_of_synthetic_data():
+
+    np.random.seed(0)
+
+    # Model definition
+    builder = popart.Builder()
+    dShape = [100, 100]
+    i0 = builder.addInputTensor(popart.TensorInfo("FLOAT16", dShape))
+    wData = np.random.rand(*dShape).astype(np.float16)
+    w0 = builder.addInitializedInputTensor(wData)
+    out = builder.aiOnnx.matmul([i0, w0])
+    loss = builder.aiGraphcore.l1loss([out], 0.1)
+
+    with tu.create_test_device() as device:
+        bps = 1
+        tr_opt = popart.SGD({"defaultMomentum": (0.01, True)})
+
+        # Model with user data
+        options = popart.SessionOptions()
+        options.enableLoadAndOffloadRNGState = True
+
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(bps, [out]),
+            loss=loss,
+            optimizer=tr_opt,
+            deviceInfo=device,
+            userOptions=options,
+        )
+        session.prepareDevice()
+
+        # Model with synthetic data
+        options_synthetic = popart.SessionOptions()
+        options_synthetic.syntheticDataMode = popart.SyntheticDataMode.RandomNormal
+        options_synthetic.enableLoadAndOffloadRNGState = True
+
+        session_synthetic = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(bps, [out]),
+            loss=loss,
+            optimizer=tr_opt,
+            deviceInfo=device,
+            userOptions=options_synthetic,
+        )
+        session_synthetic.prepareDevice()
+
+        # Test RNG state values.
+        rng = session.getRNGState()
+        rng_synthetic = session_synthetic.getRNGState()
+
+        assert len(rng_synthetic) == 0 and rng != rng_synthetic
+
+        session_synthetic.setRNGState(rng)
+        rng_synthetic = session_synthetic.getRNGState()
+
+        assert len(rng_synthetic) == 0
