@@ -212,7 +212,7 @@ public:
   int64_t nbytes() const;
   // Defined in-header to encourage inlining (it's called a lot).
   int64_t dim(int i) const {
-    if (i >= shape_v.size()) {
+    if (i >= static_cast<int>(shape_v.size())) {
       throw error(
           "Invalid input dimension {}, tensor of rank {}", i, shape_v.size());
     }
