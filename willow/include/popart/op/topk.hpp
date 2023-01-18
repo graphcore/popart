@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 #include <popart/op/basesort.hpp>
+#include <popart/vendored/optional.hpp>
 
 #include "popart/names.hpp"
 #include "popart/op.hpp"
@@ -23,7 +24,9 @@ public:
          int64_t axis,
          bool largest,
          bool sorted,
-         const Op::Settings &settings);
+         const Op::Settings &settings,
+         const nonstd::optional<float> &available_memory_proportion =
+             nonstd::nullopt);
   std::unique_ptr<Op> clone() const override;
   void setup() final;
 
@@ -41,10 +44,16 @@ public:
   // - the starting indices of the sorted input, sliced from 0:K
   static OutIndex getIndicesOutIndex() { return 1; }
 
+  nonstd::optional<float> getAvailableMemoryProportion() const {
+    return available_memory_proportion;
+  }
+
 private:
   int64_t K;
   bool largest;
   bool sorted;
+
+  nonstd::optional<float> available_memory_proportion;
 };
 
 // Similar to Scatter, except it has 2 inputs instead of 3.
@@ -69,15 +78,21 @@ public:
   // The index at which the indices output of the forward Op is received
   static InIndex indicesInIndex() { return 1; }
 
-  static InIndex gradOutIndex() { return 0; }
+  static OutIndex gradOutIndex() { return 0; }
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  nonstd::optional<float> getAvailableMemoryProportion() const {
+    return available_memory_proportion;
+  }
+
 private:
   int64_t axis;
   TensorInfo gradOutInfo;
+
+  nonstd::optional<float> available_memory_proportion;
 };
 
 } // namespace popart

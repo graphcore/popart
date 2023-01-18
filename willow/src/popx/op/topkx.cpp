@@ -7,12 +7,14 @@
 #include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <popnn/Loss.hpp>
+#include <popops/DynamicSlice.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/ExprOp.hpp>
 #include <popops/Zero.hpp>
 #include <poputil/TileMapping.hpp>
 #include <popart/op/topk.hpp>
 #include <popart/popx/op/scatterutilx.hpp>
+#include <popart/popx/op/sliceplanx.hpp>
 #include <popart/popx/op/topkx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
@@ -41,38 +43,65 @@ TopKOpx::TopKOpx(Op *op, Devicex *devicex) : BaseSortOpx(op, devicex) {
 
 TopKGradOpx::TopKGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<TopKGradOp>(op, Onnx::GradOperators::TopKGrad);
-  axis        = dynamic_cast<TopKGradOp *>(op)->getAxis();
-  gradOutInfo = dynamic_cast<TopKGradOp *>(op)->getGradOutInfo();
-  gradOutShape.reserve(gradOutInfo.rank());
-  for (auto &x : gradOutInfo.shape()) {
-    gradOutShape.push_back(static_cast<size_t>(x));
-  }
-}
 
-const std::vector<size_t> &TopKGradOpx::getGradOutShape() const {
-  return gradOutShape;
+  auto &topKGradOp = getOp<TopKGradOp>();
+
+  axis        = topKGradOp.getAxis();
+  gradOutInfo = topKGradOp.getGradOutInfo();
+
+  auto options = createSlicePlanOptions(
+      SlicePlanUsedFor::Update, topKGradOp.getAvailableMemoryProportion());
+  plan = createSlicePlan(graph(),
+                         outInfo(topKGradOp.gradOutIndex()),
+                         inInfo(topKGradOp.indicesInIndex()),
+                         options);
 }
 
 void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
+  auto gradIn  = getInTensor(TopKGradOp::gradInIndex());
   auto indices = getInTensor(TopKGradOp::indicesInIndex());
 
-  auto gradIn = getInTensor(TopKGradOp::gradInIndex());
+  auto uaxis    = static_cast<unsigned>(axis);
+  auto dataInfo = outInfo(TopKGradOp::gradOutIndex());
+  auto dataGrad = createDataTensor(
+      graph(), dataInfo, plan, uaxis, 1U, true, getDebugNameAndId("dataGrad"));
 
-  auto dataGrad = graph().addVariable(
-      gradIn.elementType(), getGradOutShape(), debugContext("dataGrad"));
-  poputil::mapTensorLinearly(graph(), dataGrad);
+  popops::zero(graph(), dataGrad, prog, debugContext("dataGradFill"));
 
-  popops::zero(graph(), dataGrad, prog, debugContext("zero"));
+  poplar::Tensor out = scatterutilx::growScatter(
+      *this, prog, graph(), dataGrad, gradIn, indices, gradOutInfo, plan, axis);
 
-  scatterutilx::growScatter(prog,
-                            graph(),
-                            indices,
-                            gradIn,
-                            dataGrad,
-                            axis,
-                            getDebugNameAndId("scatter"));
+  setOutTensor(TopKGradOp::gradOutIndex(), out);
+}
 
-  setOutTensor(TopKGradOp::gradOutIndex(), dataGrad);
+poplar::Tensor
+TopKGradOpx::createInputTensor(InIndex index,
+                               const poplar::DebugNameAndId &dnai) const {
+  if (index != TopKGradOp::gradInIndex() &&
+      index != TopKGradOp::indicesInIndex()) {
+    throw error("TopKGradOpx::createInput : Invalid index = {}", index);
+  }
+
+  auto dataInfo    = outInfo(TopKGradOp::gradOutIndex());
+  auto indicesInfo = inInfo(TopKGradOp::indicesInIndex());
+  auto uaxis       = static_cast<unsigned>(axis);
+
+  if (index == TopKGradOp::indicesInIndex()) {
+    return createIndicesTensor(
+        graph(), indicesInfo, plan, uaxis, 1U, true, dnai);
+  }
+
+  return createUpdateTensor(
+      graph(), dataInfo, indicesInfo, plan, uaxis, 1U, true, dnai);
+}
+
+InputCreatorType TopKGradOpx::getInputCreatorType(InIndex index) const {
+  if (index == TopKGradOp::gradInIndex() ||
+      index == TopKGradOp::indicesInIndex()) {
+    return InputCreatorType::CanCreate;
+  }
+
+  return Opx::getInputCreatorType(index);
 }
 
 void TopKOpx::grow(poplar::program::Sequence &prog) const {

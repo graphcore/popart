@@ -11,9 +11,15 @@
 #include "popart/tensorinfo.hpp"
 
 namespace poplar {
+
+namespace popops {
+class SlicePlan;
+} // namespace popops
+
 namespace program {
 class Sequence;
 } // namespace program
+
 } // namespace poplar
 
 namespace popart {
@@ -34,14 +40,20 @@ private:
 class TopKGradOpx : public Opx {
 public:
   TopKGradOpx(Op *, Devicex *);
+
   void grow(poplar::program::Sequence &) const final;
-  // The info of the output of this Op
-  const std::vector<size_t> &getGradOutShape() const;
+
+  poplar::Tensor
+  createInputTensor(InIndex index,
+                    const poplar::DebugNameAndId &dnai) const final;
+  InputCreatorType getInputCreatorType(InIndex index) const final;
+  std::set<TensorId> mustExistBeforeCreate(InIndex) const final { return {}; }
 
 private:
   int64_t axis;
   TensorInfo gradOutInfo;
-  std::vector<size_t> gradOutShape;
+
+  popops::SlicePlan plan;
 };
 
 } // namespace popx

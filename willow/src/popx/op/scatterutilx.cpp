@@ -126,6 +126,65 @@ poplar::Tensor linearizeIndices(const Opx &opx,
   return result;
 }
 
+poplar::Tensor growScatter(const popart::popx::Opx &opx,
+                           poplar::program::Sequence &prog,
+                           poplar::Graph &graph,
+                           const poplar::Tensor &data,
+                           const poplar::Tensor &updates,
+                           const poplar::Tensor &indices,
+                           const popart::TensorInfo &dataInfo,
+                           const popops::SlicePlan &plan,
+                           int64_t axis) {
+  auto uaxis = static_cast<unsigned>(axis);
+  auto out   = popart::popx::createDataTensor(graph,
+                                            dataInfo,
+                                            plan,
+                                            uaxis,
+                                            1U,
+                                            /* broadcasted= */ true,
+                                            opx.getDebugNameAndId(""));
+
+  prog.add(poplar::program::Copy(
+      data, out, false, opx.debugContext("copyToScatter")));
+
+  auto data2d    = out.dimRoll(uaxis);
+  auto updates2d = updates.dimRoll(uaxis);
+  auto indices2d = indices.dimRoll(uaxis);
+
+  if (indices2d.rank() < 2) {
+    // popops::multiUpdate requires 2-d inputs
+    data2d    = data2d.expand({1});
+    updates2d = updates2d.expand({1, 1});
+    indices2d = indices2d.expand({1});
+  } else {
+    data2d = data2d.flatten();
+    data2d = data2d.expand({1});
+
+    auto numDataCols = dataInfo.nelms() / dataInfo.shape().at(uaxis);
+    indices2d        = popart::popx::scatterutilx::linearizeIndices(
+        opx, prog, indices2d, numDataCols, 1U);
+
+    updates2d = updates2d.flatten();
+    updates2d = updates2d.expand({1, 1});
+  }
+
+  // Assume indices are non-negative
+  indices2d = indices2d.reinterpret(poplar::UNSIGNED_INT);
+
+  popops::multiUpdate(graph,
+                      data2d,
+                      updates2d,
+                      indices2d,
+                      {0},
+                      {1},
+                      prog,
+                      plan,
+                      poplar::OptionFlags(),
+                      opx.debugContext("scatter"));
+
+  return out;
+}
+
 void growScatter(poplar::program::Sequence &prog,
                  poplar::Graph &graph,
                  const poplar::Tensor &indices,

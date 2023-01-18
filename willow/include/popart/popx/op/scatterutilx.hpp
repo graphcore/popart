@@ -53,6 +53,21 @@ poplar::Tensor linearizeIndices(const Opx &opx,
                                 int numDataCols,
                                 unsigned group_size);
 
+// Create poplar code which is responsible for
+// scatter functionality (based on popops::multiUpdate).
+// Note that input tensors should be sliceable.
+poplar::Tensor growScatter(const popart::popx::Opx &opx,
+                           poplar::program::Sequence &prog,
+                           poplar::Graph &graph,
+                           const poplar::Tensor &data,
+                           const poplar::Tensor &updates,
+                           const poplar::Tensor &indices,
+                           const popart::TensorInfo &dataInfo,
+                           const popops::SlicePlan &plan,
+                           int64_t axis);
+
+// Create poplar code which is responsible for
+// scatter functionality (based on popops::scatter).
 void growScatter(poplar::program::Sequence &prog,
                  poplar::Graph &,
                  const poplar::Tensor &indices,

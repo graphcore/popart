@@ -27,9 +27,11 @@ TopKOp::TopKOp(const OperatorIdentifier &opid_,
                int64_t axis_,
                bool largest_,
                bool sorted_,
-               const Op::Settings &settings_)
+               const Op::Settings &settings_,
+               const nonstd::optional<float> &available_memory_proportion_)
     : BaseSortOp(opid_, axis_, settings_), K(K_), largest(largest_),
-      sorted(sorted_) {}
+      sorted(sorted_),
+      available_memory_proportion(available_memory_proportion_) {}
 
 std::unique_ptr<Op> TopKOp::clone() const {
   return std::make_unique<TopKOp>(*this);
@@ -64,6 +66,8 @@ void TopKOp::appendOutlineAttributes(OpSerialiserBase &os) const {
     // in outlining
     os.appendAttribute("_K", K);
   }
+
+  os.appendAttribute(sAvailMemAttribute, available_memory_proportion);
 }
 
 int64_t TopKOp::getK() const { return K; }
@@ -76,8 +80,8 @@ std::vector<std::unique_ptr<Op>> TopKOp::getGradOps() {
 
 TopKGradOp::TopKGradOp(const TopKOp &topk)
     : Op(Onnx::GradOperators::TopKGrad, topk.getSettings()),
-      axis(topk.getAxis()), gradOutInfo(topk.inInfo(BaseSortOp::getInIndex())) {
-}
+      axis(topk.getAxis()), gradOutInfo(topk.inInfo(BaseSortOp::getInIndex())),
+      available_memory_proportion(topk.getAvailableMemoryProportion()) {}
 
 std::unique_ptr<Op> TopKGradOp::clone() const {
   return std::make_unique<TopKGradOp>(*this);
@@ -103,6 +107,7 @@ const std::map<int, int> &TopKGradOp::gradOutToNonGradIn() const {
 void TopKGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
+  os.appendAttribute(sAvailMemAttribute, available_memory_proportion);
 }
 
 int64_t TopKGradOp::getAxis() const { return axis; }
@@ -134,8 +139,20 @@ Op *topKFactory(const OpCreatorInfo &info, Graph &graph) {
     throw error("Unsupported operator version {} for topK", info.opid.version);
   }
 
-  Op *op = graph.createOp<TopKOp>(
-      info.opid, K, axis, largest, sorted, info.settings);
+  nonstd::optional<float> available_memory_proportion;
+
+  if (info.attributes.hasAttribute(sAvailMemAttribute)) {
+    available_memory_proportion =
+        info.attributes.getAttribute<Attributes::Float>(sAvailMemAttribute);
+  }
+
+  Op *op = graph.createOp<TopKOp>(info.opid,
+                                  K,
+                                  axis,
+                                  largest,
+                                  sorted,
+                                  info.settings,
+                                  available_memory_proportion);
 
   // Connect only the first input.
   op->connectInTensor(TopKOp::getInIndex(), info.getInputIds().at(0));

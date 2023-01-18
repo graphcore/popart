@@ -37,67 +37,6 @@ class Devicex;
 } // namespace popx
 } // namespace popart
 
-namespace {
-poplar::Tensor scatter(const popart::popx::Opx &opx,
-                       poplar::program::Sequence &prog,
-                       poplar::Graph &graph,
-                       const poplar::Tensor &data,
-                       const poplar::Tensor &updates,
-                       const poplar::Tensor &indices,
-                       const popart::TensorInfo &dataInfo,
-                       const popops::SlicePlan &plan,
-                       int64_t axis) {
-  auto uaxis = static_cast<unsigned>(axis);
-  auto out   = popart::popx::createDataTensor(graph,
-                                            dataInfo,
-                                            plan,
-                                            uaxis,
-                                            1U,
-                                            /* broadcasted= */ true,
-                                            opx.getDebugNameAndId(""));
-
-  prog.add(poplar::program::Copy(
-      data, out, false, opx.debugContext("copyToScatter")));
-
-  auto data2d    = out.dimRoll(uaxis);
-  auto updates2d = updates.dimRoll(uaxis);
-  auto indices2d = indices.dimRoll(uaxis);
-
-  if (indices2d.rank() < 2) {
-    // popops::multiUpdate requires 2-d inputs
-    data2d    = data2d.expand({1});
-    updates2d = updates2d.expand({1, 1});
-    indices2d = indices2d.expand({1});
-  } else {
-    data2d = data2d.flatten();
-    data2d = data2d.expand({1});
-
-    auto numDataCols = dataInfo.nelms() / dataInfo.shape().at(uaxis);
-    indices2d        = popart::popx::scatterutilx::linearizeIndices(
-        opx, prog, indices2d, numDataCols, 1U);
-
-    updates2d = updates2d.flatten();
-    updates2d = updates2d.expand({1, 1});
-  }
-
-  // Assume indices are non-negative
-  indices2d = indices2d.reinterpret(poplar::UNSIGNED_INT);
-
-  popops::multiUpdate(graph,
-                      data2d,
-                      updates2d,
-                      indices2d,
-                      {0},
-                      {1},
-                      prog,
-                      plan,
-                      poplar::OptionFlags(),
-                      opx.debugContext("scatter"));
-
-  return out;
-}
-} // namespace
-
 namespace popart {
 namespace popx {
 
@@ -118,15 +57,16 @@ ScatterOpx::ScatterOpx(Op *op, Devicex *devicex)
 }
 
 void ScatterOpx::grow(poplar::program::Sequence &prog) const {
-  auto scatterOut = scatter(*this,
-                            prog,
-                            graph(),
-                            getInTensor(ScatterOp::dataInIndex()),
-                            getInTensor(ScatterOp::updatesInIndex()),
-                            getInTensor(ScatterOp::indicesInIndex()),
-                            inInfo(ScatterOp::dataInIndex()),
-                            plan,
-                            static_cast<unsigned>(axis));
+  auto scatterOut =
+      scatterutilx::growScatter(*this,
+                                prog,
+                                graph(),
+                                getInTensor(ScatterOp::dataInIndex()),
+                                getInTensor(ScatterOp::updatesInIndex()),
+                                getInTensor(ScatterOp::indicesInIndex()),
+                                inInfo(ScatterOp::dataInIndex()),
+                                plan,
+                                static_cast<unsigned>(axis));
 
   setOutTensor(ScatterOp::outIndex(), scatterOut);
 }
@@ -200,15 +140,15 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
   popops::fill(
       graph(), zerosUpdate, prog, 0.0f, debugContext("zerosUpdateFill"));
 
-  auto gradOut = scatter(*this,
-                         prog,
-                         graph(),
-                         gradIn,
-                         zerosUpdate,
-                         indices,
-                         gradInInfo,
-                         plan,
-                         axis);
+  auto gradOut = scatterutilx::growScatter(*this,
+                                           prog,
+                                           graph(),
+                                           gradIn,
+                                           zerosUpdate,
+                                           indices,
+                                           gradInInfo,
+                                           plan,
+                                           axis);
 
   setOutTensor(ScatterDataGradOp::gradOutIndex(), gradOut);
 }
