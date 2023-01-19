@@ -896,6 +896,9 @@ def variable(
     :py:meth:`popxl.Ir.replica_grouping_from_assignment` for how to create such
     groupings.
 
+    If the `np.memmap` is read-only, when using the `Session` it disables the
+    weights to host program for the entire `Ir`.
+
     Args:
         data:
             The data used to initialise the tensor.
@@ -949,6 +952,7 @@ def variable(
         Variable: The desired variable.
     """
     g = gcg()
+    ir = g._ir
     pb_g = g._pb_graph
 
     if g != gmg():
@@ -961,6 +965,7 @@ def variable(
         )
 
     is_mmap = isinstance(data, np.memmap)
+    ir._has_read_only_memmap |= is_mmap and not data.flags.writeable
 
     # `addVarInit` will copy the data so it's not required here
     np_data = to_numpy(

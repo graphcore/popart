@@ -123,10 +123,10 @@ def to_numpy(
                 "When passing a memory-mapped NumPy array, the `dtype` "
                 "parameter must be None or the same as the array's dtype"
             )
-        if not x.flags.carray:
+        if not (x.flags.c_contiguous and x.flags.aligned):
             raise ValueError(
                 "When passing a memory-mapped NumPy array, it must "
-                "already be in C-ordered form."
+                "already be in C-ordered and aligned form."
             )
         if x.dtype in downcast_np_dtypes.keys():
             raise ValueError(

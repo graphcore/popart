@@ -74,6 +74,8 @@ class Ir:
         if not self._pb_ir.getDataFlow().batchesPerStep():
             self._pb_ir.getDataFlow().setBatchesPerStep(1)
 
+        self._has_read_only_memmap = False
+
     _ir_cache: "IrCache" = WeakValueDictionary()
 
     @classmethod

@@ -184,6 +184,54 @@ def test_mmap_variable(
     ), "sess.get_tensor_data(w) should return the exact same np.memmap object we passed during Ir construction"
 
 
+@pytest.mark.parametrize(
+    "create_var_fixture",
+    [onchip_var, remote_var, remote_replica_sharded_var, replica_sharded_var],
+)
+def test_mmap_variable_readonly(
+    tmpdir: pathlib.Path,
+    create_var_fixture: _TestFixture,
+):
+    """
+    Test creating a Variable using a READ-ONLY np.memmap:
+    """
+
+    ir = popxl.Ir(replication=2)
+
+    # Numpy bug? Doesn't work if pass a Path object, but works with string.
+    filepath = str(tmpdir / "w.npy")
+
+    write_w_data = np.memmap(filepath, dtype=np.float32, shape=(20, 20), mode="w+")
+    write_w_data.fill(1.0)
+    del write_w_data
+
+    readonly_w_data = np.memmap(filepath, dtype=np.float32, shape=(20, 20), mode="r")
+    create_var_f = create_var_fixture(readonly_w_data)
+
+    with ir.main_graph, popxl.in_sequence():
+        # Setup (create w_var and w)
+        w_var, w = next(create_var_f)
+        w += 1
+        # Teardown (remote_store). There may be no teardown, this is OK.
+        try:
+            next(create_var_f)
+        except StopIteration:
+            pass
+
+    with mk_session_with_test_device(ir) as sess:
+        sess.run()
+
+        # Cannot call `weights_to_host` with read only memmap
+        with pytest.raises(Exception):
+            sess.weights_to_host()
+
+    output_w = sess.get_tensor_data(w_var)
+
+    assert np.array_equal(
+        output_w, np.ones((20, 20), dtype=np.float32)
+    ), "Actual updated w does not match expected value"
+
+
 """
 In the following error-case tests, we use the fixtures, but only use the setup
 stage to create the variables; we do not need to remote_store.

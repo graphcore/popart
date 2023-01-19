@@ -33,6 +33,7 @@ class Session:
         self,
         ir: Ir,
         device_desc: Literal["ipu_hw", "ipu_model", "cpu"] = "cpu",
+        weights_to_host_on_exit: bool = True,
     ) -> None:
         """
         Construct a session object.
@@ -53,11 +54,20 @@ class Session:
                 - "ipu_model": IPU model.
                 - "cpu": CPU model. Does not support replication.
                   Defaults to "cpu".
+            weights_to_host_on_exit (bool): By default the Session context on exit will copy the weights from the device to the host.
+                Set this to False to disable. This is automatically disabled if the `ir` contains a read-only memmaped Variable.
 
         Raises:
             RuntimeError: If the desired device could not be acquired.
         """
         self.ir_: Ir = ir
+        self.weights_to_host_on_exit = weights_to_host_on_exit
+        if ir._has_read_only_memmap:
+            self.weights_to_host_on_exit = False
+            if weights_to_host_on_exit:
+                popart.getLogger().info(
+                    "Weights to host has been disabled as the `ir` contains a read-only memmaped variable."
+                )
 
         d2hs = ir.get_all_d2h_streams()
 
@@ -227,7 +237,13 @@ class Session:
 
         Raises:
             ValueError: If not attached to device before calling this function.
+            Exception: If `ir` contains a read-only memmaped variable.
         """
+        if self.ir._has_read_only_memmap:
+            raise Exception(
+                "Writing data from device to host is not possible as the `ir` contains "
+                "a read-only memmap."
+            )
         self._assert_attached_before_runtime()
         # NOTE: Internally detects if host weights out-of-sync and marks them as
         #       in-sync.
@@ -631,7 +647,7 @@ class Session:
             was_attached_or_device, popart.DeviceInfo
         )
         if should_teardown:
-            if exc_type is None:
+            if exc_type is None and self.weights_to_host_on_exit:
                 self.weights_to_host()
             self._device.detach()
             self._pb_session.setEngineIsLoaded(False)

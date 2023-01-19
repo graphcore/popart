@@ -105,10 +105,14 @@ def test_session_input_types(data, shape, dtype):
 # fmt: on
 
 
-def run_session(ir, input_tensors, input_d2hs, num_host_transfers):
+def run_session(
+    ir, input_tensors, input_d2hs, num_host_transfers, weights_to_host_on_exit=True
+):
     ir.num_host_transfers = num_host_transfers
 
-    session = popxl.Session(ir, device_desc="ipu_model")
+    session = popxl.Session(
+        ir, device_desc="ipu_model", weights_to_host_on_exit=weights_to_host_on_exit
+    )
 
     inputs = {}
     for t, t_d2h in zip(input_tensors, input_d2hs):
@@ -158,3 +162,31 @@ def test_get_tensor_data_bad_argument_type():
         session.get_tensor_data(h2d)
     with pytest.raises(TypeError):
         session.get_tensors_data([h2d])
+
+
+def test_session_no_weights_to_host_on_exit():
+    w_input = [2.0]
+    c_input = [1.0]
+
+    ir = popxl.Ir()
+    with ir.main_graph, popxl.in_sequence():
+        w = popxl.variable(w_input, popxl.dtypes.float32)
+        x_h2d = popxl.h2d_stream(w.shape, w.dtype)
+        x = ops.host_load(x_h2d)
+        y = w * x
+        y_d2h = popxl.d2h_stream(y.shape, y.dtype)
+        ops.host_store(y_d2h, y)
+        ops.var_updates.accumulate_(
+            w, popxl.constant(c_input, popxl.dtypes.float32), 1.0
+        )
+
+    session, inputs, outputs = run_session(
+        ir, [x], [x_h2d], 1, weights_to_host_on_exit=False
+    )
+
+    w_data = session.get_tensor_data(w)
+    assert np.allclose(outputs[y_d2h], inputs[x_h2d] * w_input)
+    assert np.allclose(
+        w_data,
+        w_input,
+    )
