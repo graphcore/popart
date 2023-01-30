@@ -129,6 +129,46 @@ py::array convertFromFloat8AsUInt8(const DataType srcType,
       pybind_tgt_dtype, src.size(), static_cast<void *>(out_vec.data())};
 }
 
+/**
+ * This is a PopART wrapper around Poplar's `calculateMetadataForConversion`.
+ * It calculates the scale for a given float8 format automatically based on the
+ * MSE metrics. The scale should only be used with float8 conversion.
+ *
+ * @tparam T The floating point type of data to calculate scale on the host.
+ * \param src The NumPy data on host to calculate scale for float8 conversion.
+ * \param destType Data type. Must be DataType::FLOAT8_143 or
+ * DataType::FLOAT8_152.
+ * \returns The calculated scale.
+ */
+template <typename T>
+int8_t calculateScaleforFloat8(py::array &src, const DataType destType) {
+
+  poplar::QuarterMetadata::Format QuarterMetadataFormat;
+  if (destType == DataType::FLOAT8_143) {
+    // In Poplar/Poplibs, cast to quarter negates `log2Scale`.
+    QuarterMetadataFormat = poplar::QuarterMetadata::Format::F143;
+
+  } else if (destType == DataType::FLOAT8_152) {
+    // In Poplar/Poplibs, cast to quarter negates `log2Scale`.
+    QuarterMetadataFormat = poplar::QuarterMetadata::Format::F152;
+  } else {
+    throw error("Unsupported data type {} for float8", destType);
+  }
+
+  src       = makeContiguous(src);
+  auto vals = static_cast<T *>(src.request().ptr);
+
+  gccs::ArrayRef<T> ins{vals, static_cast<size_t>(src.size())};
+
+  poplar::QuarterMetadata metadata = poplar::calculateMetadataForConversion(
+      poplar::QUARTER,
+      ins,
+      QuarterMetadataFormat,
+      poplar::CostMetric::MEAN_SQUARE_ERROR);
+  int scale = metadata.getScale();
+  return scale;
+}
+
 } // namespace
 
 void bindFloat8conversion(py::module &m) {
@@ -143,6 +183,9 @@ void bindFloat8conversion(py::module &m) {
           &convertFromFloat8AsUInt8<float>);
     m.def("convertFromFloat8AsUInt8ToFloat64",
           &convertFromFloat8AsUInt8<double>);
+    m.def("calculateScaleFromFloat32ToFloat8", calculateScaleforFloat8<float>);
+    m.def("calculateScaleFromFloat16ToFloat8",
+          calculateScaleforFloat8<poplar::Half>);
   }
 }
 

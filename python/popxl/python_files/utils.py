@@ -347,6 +347,49 @@ def host_cast_then_pow2scale(
     return res
 
 
+def host_calculate_pow2scale(
+    src: np.ndarray,
+    dtype: "dtypes.dtype" = None,
+) -> int:
+    """
+    Calculate the scale for a given fp8 format automatically based on the MSE metrics.
+
+    Args:
+        src:
+            A PopXL NumPy-based float8 data array to convert to `dtype`. This must be a
+            NumPy array with dtype float16 or float32.
+        dtype:
+            The PopXL dtype representing the target data type. This must be one
+            of `popxl.float8_143` or `popxl.float8_152`.
+
+    Raises:
+        RuntimeError: If parameters are not supported.
+
+    Returns:
+        int: A scale calculated based on the input data `src`.
+    """
+    if dtype != float8_143 and dtype != float8_152:
+        raise RuntimeError(f"dtype {dtype} not currently supported.")
+
+    popart_dtype = _convert_popxl_float8_dtype_to_popart(dtype)
+
+    if torch_imported and isinstance(src, torch.Tensor):
+        src = src.detach().numpy()
+    if not isinstance(src, np.ndarray):
+        src = np.asarray(src, order="C")
+
+    res = 0
+
+    if src.dtype == np.float16:
+        res = _ir.calculateScaleFromFloat16ToFloat8(src, popart_dtype)
+    elif src.dtype == np.float32:
+        res = _ir.calculateScaleFromFloat32ToFloat8(src, popart_dtype)
+    else:
+        raise RuntimeError(f"src.dtype {src.dtype} not currently supported.")
+
+    return res
+
+
 def _popxl_to_numpy(t: Union["Constant", "Variable"]) -> np.ndarray:
     """Return the data contained in the tensor. See the cpp class `TensorData` for details.
 

@@ -277,3 +277,45 @@ class TestFP8Conversion:
         np.testing.assert_allclose(
             a1, c1.reshape(transposed_shape), rtol=0.1, atol=0.06
         )
+
+
+@pytest.mark.parametrize(
+    "format_", [popart.DataType.FLOAT8_143, popart.DataType.FLOAT8_152]
+)
+@pytest.mark.parametrize("dtype_from", [np.float16, np.float32])
+@pytest.mark.parametrize("shape", [(16,), (3, 4), (2, 9, 2, 1)])
+def test_calculateFP8Scale(
+    format_: popart.DataType,
+    shape: Tuple,
+    dtype_from: np.dtype,
+) -> None:
+    """Test scale calculator of numpy array for a given FP8 format.
+    Args:
+        format_ (popart.DataType): FP8_143 or FP8_152 format
+        shape (Tuple): Shape to use.
+        dtype_from (np.dtype): Numpy dtype to convert from.
+
+    Raises:
+        TypeError: If an incorrect format is provided.
+    """
+
+    a1 = None
+    if shape != ():
+        a1 = np.random.random(size=np.prod(shape)).reshape(shape).astype(dtype_from)
+    else:
+        a1 = np.array(random.random())
+
+    assert a1.flags["C_CONTIGUOUS"]
+
+    if dtype_from == np.float16:
+        res = _ir.calculateScaleFromFloat16ToFloat8(a1, format_)
+    elif dtype_from == np.float32:
+        res = _ir.calculateScaleFromFloat32ToFloat8(a1, format_)
+    else:
+        raise TypeError(f"Unsupported dtype {dtype_from}")
+
+    # check if the result is within the scale range
+    if format_ == popart.DataType.FLOAT8_143:
+        assert -31 <= res <= 31
+    if format_ == popart.DataType.FLOAT8_152:
+        assert -31 <= res <= 31

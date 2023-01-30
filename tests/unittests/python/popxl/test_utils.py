@@ -9,6 +9,7 @@ from popxl.utils import (
     downcast_np_dtypes,
     host_pow2scale_then_cast,
     host_cast_then_pow2scale,
+    host_calculate_pow2scale,
 )
 from popxl.dtypes import _NP_TO_POPXL, _PT_TO_POPXL
 
@@ -53,6 +54,24 @@ def test_to_numpy(x, dtype, downcast, exp_type):
     assert isinstance(out, np.ndarray)
     assert exp_type == out.dtype
 # fmt: on
+
+
+@pytest.mark.parametrize("dtype_from", [popxl.float16, popxl.float32])
+@pytest.mark.parametrize("dtype_to", [popxl.float8_143, popxl.float8_152])
+@pytest.mark.parametrize("shape", [(1, 5), (16,), (3, 4), (1,), (2, 9, 2, 1)])
+def test_host_calculate_pow2scale(dtype_from, dtype_to, shape):
+    # Generate some random data.
+    x = (
+        np.random.random(size=np.prod(shape))
+        .reshape(shape)
+        .astype(dtype_from.as_numpy())
+    )
+    res = host_calculate_pow2scale(x, dtype=dtype_to)
+    if dtype_to == popxl.float8_143:
+        assert -31 <= res <= 31
+    if dtype_to == popxl.float8_152:
+        assert -31 <= res <= 31
+
 
 # fmt: off
 @pytest.mark.parametrize("src,dtype,log2_scale,nan_on_overflow,exp_vals", [
@@ -162,6 +181,8 @@ def test_host_cast_then_pow2scale(dtype_from, dtype_to, shape, log2_scale):
         *map(lambda d: ("np", d), _NP_TO_POPXL.keys()),
     ),
 )
+
+
 def test_to_numpy_copy(src, dtype, copy):
     if src == "pt":
         t = torch.ones((2, 2), dtype=dtype)
