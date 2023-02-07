@@ -324,3 +324,23 @@ def op_tester(tmpdir):
     op_tester = OpTester(str(tmpdir))
     yield op_tester
     op_tester.tearDown()
+
+
+@pytest.fixture(scope="session")
+def onnx_opset_version():
+    popart_max_onnx_opset_version = 11
+    default_onnx_opset_version = 0
+
+    try:
+        from torch.onnx.symbolic_helper import _export_onnx_opset_version
+    except ImportError:
+        try:
+            from torch.onnx._globals import GLOBALS
+        except ImportError:
+            default_onnx_opset_version = popart_max_onnx_opset_version
+        else:
+            default_onnx_opset_version = GLOBALS.export_onnx_opset_version
+    else:
+        default_onnx_opset_version = _export_onnx_opset_version
+
+    return min(popart_max_onnx_opset_version, default_onnx_opset_version)

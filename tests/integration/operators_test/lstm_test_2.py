@@ -144,7 +144,7 @@ def test_lstm_torch_grad_all_inputs(op_tester):
 
 
 @tu.requires_ipu_model
-def test_import_torch_lstm(tmpdir):
+def test_import_torch_lstm(tmpdir, onnx_opset_version):
     torch.manual_seed(0)
     np.random.seed(0)
 
@@ -177,6 +177,7 @@ def test_import_torch_lstm(tmpdir):
             onnx_file_name,
             input_names=["X", "initial_h", "initial_c"],
             output_names=["Y", "Y_h", "Y_c"],
+            opset_version=onnx_opset_version,
         )
 
     # create a random np array of shape `*shape` and type np.float32
@@ -238,7 +239,7 @@ def test_import_torch_lstm(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_import_torch_lstm_train(tmpdir):
+def test_import_torch_lstm_train(tmpdir, onnx_opset_version):
     torch.manual_seed(0)
     np.random.seed(0)
 
@@ -272,6 +273,7 @@ def test_import_torch_lstm_train(tmpdir):
             input_names=["X", "initial_h", "initial_c"],
             output_names=["out"],
             do_constant_folding=False,
+            opset_version=onnx_opset_version,
         )
 
     # create a random np array of shape `*shape` and type np.float32
@@ -419,7 +421,7 @@ def test_import_torch_lstm_train(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_import_torch_lstm_multi_run(tmpdir):
+def test_import_torch_lstm_multi_run(tmpdir, onnx_opset_version):
     torch.manual_seed(0)
     np.random.seed(0)
 
@@ -452,6 +454,7 @@ def test_import_torch_lstm_multi_run(tmpdir):
             onnx_file_name,
             input_names=["X", "initial_h", "initial_c"],
             output_names=["Y", "Y_h", "Y_c"],
+            opset_version=onnx_opset_version,
         )
 
     # create a random np array of shape `*shape` and type np.float32
@@ -540,7 +543,7 @@ def test_import_torch_lstm_multi_run(tmpdir):
 
 # This tests certain configurations of torch lstm that can
 # export a model with a constant of shape operation.
-def test_lstm_export_with_constantofshape(tmpdir):
+def test_lstm_export_with_constantofshape(tmpdir, onnx_opset_version):
     np.random.seed(42)
     torch.manual_seed(43)
 
@@ -573,6 +576,7 @@ def test_lstm_export_with_constantofshape(tmpdir):
         verbose=True,
         input_names=["data"],
         output_names=["tag"],
+        opset_version=onnx_opset_version,
     )
 
     # Verify this model contains a ConstantOfShape op.

@@ -14,6 +14,9 @@ import test_util as tu
 
 import torch_lamb
 
+version_to_int = lambda version: int("".join(version.split(".")[:2]))
+current_version = version_to_int(torch.__version__)
+
 
 def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
     seed = 1015
@@ -163,7 +166,7 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
     net = Net()
 
     for step in range(numberOfSteps):
-        if step is 0:
+        if step == 0:
             oldOptimizer = None
         else:
             oldOptimizer = optimizer
@@ -274,7 +277,8 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
                 else False,
             )
 
-        if step is 0:
+        use_step_tensor = current_version >= version_to_int("1.13.0")
+        if step == 0:
             for group in optimizer.param_groups:
                 for p in group["params"]:
                     optimizer.state[p]["momentum_buffer"] = p.data * 0
@@ -285,7 +289,9 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
                     optimizer.state[p]["grad_avg"] = p.data * 0
                     optimizer.state[p]["acc_delta"] = p.data * 0
                     optimizer.state[p]["sum"] = p.data * 0
-                    optimizer.state[p]["step"] = 0
+                    optimizer.state[p]["step"] = (
+                        torch.Tensor([0]) if use_step_tensor else 0
+                    )
         else:
             for group, oldGroup in zip(
                 optimizer.param_groups, oldOptimizer.param_groups
