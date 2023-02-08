@@ -110,6 +110,7 @@ gather(Graph &g, TensorId data, TensorId indices, int64_t axis) {
                                         {{GatherOp::outIndex(), out}},
                                         Onnx::AiOnnx::OpSet9::Gather,
                                         axis,
+                                        1,
                                         Op::Settings(g, "gather"),
                                         nonstd::nullopt)};
 }

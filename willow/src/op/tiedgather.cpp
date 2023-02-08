@@ -19,6 +19,7 @@ TiedGatherOp::TiedGatherOp(
     bool zeroOutOfRangeIndices_)
     : GatherOp(Onnx::CustomOperators::TiedGather,
                axis_,
+               1,
                settings_,
                available_memory_proportion_,
                zeroOutOfRangeIndices_) {}
@@ -42,7 +43,7 @@ std::vector<std::unique_ptr<Op>> TiedGatherOp::getGradOps() {
 
 TiedGatherGradOp::TiedGatherGradOp(const TiedGatherOp *fwdOp_,
                                    const int64_t axis_)
-    : GatherGradOp(*fwdOp_, axis_), fwdOp(fwdOp_) {
+    : GatherGradOp(*fwdOp_, axis_, 1), fwdOp(fwdOp_) {
   if (!fwdOp) {
     throw internal_error("TiedGatherGradOp ctor passed null fwdOp.");
   }

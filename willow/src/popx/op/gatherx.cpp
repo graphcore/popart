@@ -47,7 +47,9 @@ GatherBaseOpx::GatherBaseOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 
 void GatherBaseOpx::setCommonMembersPostVerify(const Op *op) {
   // Note TiedGatherOp extends GatherOp.
-  axis = dynamic_cast<const GatherOp *>(op)->getAxis();
+
+  axis       = dynamic_cast<const GatherOp *>(op)->getAxis();
+  group_size = dynamic_cast<const GatherOp *>(op)->getGroupSize();
 
   // We always want the gather to layout its inputs
   inputCreatorPriority = std::numeric_limits<double>::max();
@@ -59,14 +61,19 @@ GatherOpx::GatherOpx(Op *op, Devicex *devicex) : GatherBaseOpx(op, devicex) {
 
   setCommonMembersPostVerify(op);
 
-  const auto &gop = getOp<GatherOp>();
-  auto options    = createSlicePlanOptions(SlicePlanUsedFor::Slice,
+  const auto &gop        = getOp<GatherOp>();
+  auto options           = createSlicePlanOptions(SlicePlanUsedFor::Slice,
                                         gop.getAvailableMemoryProportion());
-  plan            = createSlicePlan(graph(),
-                         inInfo(gop.dataInIndex()),
-                         inInfo(gop.indicesInIndex()),
-                         options,
-                         axis);
+  const auto dataInfo    = inInfo(gop.dataInIndex());
+  const auto indicesInfo = inInfo(gop.indicesInIndex());
+  plan                   = createSlicePlan(
+      graph(), dataInfo, indicesInfo, options, axis, group_size);
+
+  // Check that indices or data are not empty tensors. If yes, set the group
+  // size to 1 because grouped verison require a SlicePlan which cannot be
+  // defined in this situation.
+  if (indicesInfo.nelms() == 0 || dataInfo.nelms() == 0)
+    group_size = 1;
 }
 
 void GatherOpx::grow(poplar::program::Sequence &prog) const {
@@ -89,14 +96,19 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
   // Flatten the scalar indices.
   auto offsets = indices.flatten();
   // Add a degenerate dimension at the end.
-  offsets = offsets.expand({1});
+  offsets              = offsets.expand({1});
+  unsigned ugroup_size = static_cast<unsigned>(group_size);
+
+  if (isGrouped())
+    offsets = offsets.reshapePartial(
+        0, 1, {ugroup_size, offsets.dim(0) / ugroup_size});
 
   // Place the gather axis at the front.
-  data = data.dimRoll(static_cast<unsigned>(axis));
+  data = data.dimRoll(static_cast<unsigned>(axis), isGrouped() ? 1 : 0);
   // Store the shape for later.
-  auto tmp_shape = data.shape();
+  auto tmpShape = data.shape();
   // Flatten the other dimensions.
-  data = data.flatten(1, data.rank());
+  data = data.flatten(isGrouped() ? 2 : 1, data.rank());
 
   poplar::Tensor mask;
   if (op.zeroOutOfRangeIndices()) {
@@ -105,26 +117,40 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   offsets = offsets.reinterpret(poplar::UNSIGNED_INT);
-
-  auto result = popops::multiSlice(graph(),
-                                   data,
-                                   offsets,
-                                   {0},
-                                   {1},
-                                   prog,
-                                   plan,
-                                   poplar::OptionFlags(),
-                                   debugContext());
+  auto result =
+      isGrouped()
+          ? popops::groupedMultiSlice(graph(),
+                                      data,
+                                      offsets,
+                                      {0},
+                                      {1},
+                                      prog,
+                                      plan,
+                                      poplar::OptionFlags(),
+                                      debugContext("GroupedGatherResult"))
+          : popops::multiSlice(graph(),
+                               data,
+                               offsets,
+                               {0},
+                               {1},
+                               prog,
+                               plan,
+                               poplar::OptionFlags(),
+                               debugContext("gatherResult"));
 
   if (op.zeroOutOfRangeIndices()) {
     zeroOutputOfOutOfRangeIndices(prog, result, mask, data);
   }
 
   // Reshape the result to "unflatten" the other dimensions.
-  tmp_shape.front() = result.dim(0);
-  result            = result.reshape(tmp_shape);
+  tmpShape.front() = result.dim(0);
+  if (isGrouped())
+    tmpShape[1] = result.dim(1);
+
+  result = result.reshape(tmpShape);
+
   // Put the gather axis dimension back in the right place.
-  result = result.dimRoll(0, static_cast<unsigned>(axis));
+  result = result.dimRoll(isGrouped() ? 1 : 0, static_cast<unsigned>(axis));
 
   // Reshape into the expected ONNX shape.
   result = result.reshape(outputShape);
@@ -137,7 +163,7 @@ GatherBaseOpx::zeroIndiciesThatAreOutOfRange(
     poplar::program::Sequence &prog,
     const poplar::Tensor &data,
     const poplar::Tensor &offsets) const {
-  auto gather_size = data.shape()[0];
+  auto gather_size = data.shape()[isGrouped() ? 1 : 0];
   auto dtype       = offsets.elementType();
   auto max_value   = getConst(dtype, {}, gather_size, "max_value");
   auto mask =
@@ -177,27 +203,52 @@ GatherOpx::createInput(InIndex index,
   if (index != GatherOp::dataInIndex() && index != GatherOp::indicesInIndex()) {
     throw error("GatherOpx::createInput Cannot create input {}", index);
   }
-  std::vector<size_t> dims  = {static_cast<size_t>(axis)};
+
+  std::vector<size_t> dims  = {static_cast<size_t>(axis) -
+                              static_cast<size_t>(isGrouped())};
   std::vector<size_t> sizes = {1};
 
   if (index == GatherOp::dataInIndex()) {
-    auto dataInfo        = inInfo(index);
-    const auto dataShape = dataInfo.shape_szt();
-    auto data            = popops::createSliceableTensor(graph(),
-                                              popType(dataInfo),
-                                              dataShape,
-                                              dims,
-                                              sizes,
-                                              plan,
-                                              poplar::OptionFlags(),
-                                              dnai);
+    auto dataInfo  = inInfo(index);
+    auto dataShape = dataInfo.shape_szt();
+    if (isGrouped())
+      dataShape.erase(dataShape.begin());
+
+    auto data =
+        isGrouped()
+            ? popops::createGroupedSliceableTensor(graph(),
+                                                   popType(dataInfo),
+                                                   group_size,
+                                                   dataShape,
+                                                   dims,
+                                                   sizes,
+                                                   plan,
+                                                   poplar::OptionFlags(),
+                                                   dnai)
+            : popops::createSliceableTensor(graph(),
+                                            popType(dataInfo),
+                                            dataShape,
+                                            dims,
+                                            sizes,
+                                            plan,
+                                            poplar::OptionFlags(),
+                                            dnai);
 
     return data;
   }
-
   auto indicesInfo = inInfo(index);
-  auto indices     = popops::createIndicesTensor(
-      graph(), dims, indicesInfo.nelms(), plan, poplar::OptionFlags(), dnai);
+  auto numLookups  = static_cast<size_t>(indicesInfo.nelms()) / group_size;
+  auto indices =
+      isGrouped()
+          ? popops::createGroupedIndicesTensor(graph(),
+                                               group_size,
+                                               dims,
+                                               numLookups,
+                                               plan,
+                                               poplar::OptionFlags(),
+                                               dnai)
+          : popops::createIndicesTensor(
+                graph(), dims, numLookups, plan, poplar::OptionFlags(), dnai);
   indices = indices.reinterpret(popType(indicesInfo));
   indices = indices.reshape(indicesInfo.shape_szt());
   return indices;
@@ -222,15 +273,20 @@ std::set<TensorId> GatherBaseOpx::mustExistBeforeCreate(int) const {
 GatherGradOpx::GatherGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<GatherGradOp>(op, Onnx::GradOperators::GatherGrad);
 
-  auto &gop    = getOp<GatherGradOp>();
-  axis         = gop.getAxis();
-  auto options = createSlicePlanOptions(SlicePlanUsedFor::UpdateAdd,
+  auto &gop              = getOp<GatherGradOp>();
+  axis                   = gop.getAxis();
+  group_size             = gop.getGroupSize();
+  auto options           = createSlicePlanOptions(SlicePlanUsedFor::UpdateAdd,
                                         gop.getAvailableMemoryProportion());
-  plan         = createSlicePlan(graph(),
-                         outInfo(gop.gradOutIndex()),
-                         inInfo(gop.indicesInIndex()),
-                         options,
-                         axis);
+  const auto indicesInfo = inInfo(gop.indicesInIndex());
+  const auto outputInfo  = outInfo(gop.gradOutIndex());
+  plan                   = createSlicePlan(
+      graph(), outputInfo, indicesInfo, options, axis, group_size);
+  // Check that indices or data are not empty tensors. If yes, set the group
+  // size to 1 because grouped verison require a SlicePlan which cannot be
+  // defined in this situation.
+  if (indicesInfo.nelms() == 0 || outputInfo.nelms() == 0)
+    group_size = 1;
 
   // We always want this op to layout its inputs
   inputCreatorPriority = std::numeric_limits<double>::max();
@@ -243,26 +299,49 @@ GatherGradOpx::createInput(InIndex index,
       index != GatherGradOp::indicesInIndex()) {
     throw error("GatherGradOpx::createInput Cannot create input {}", index);
   }
-  std::vector<size_t> dims  = {static_cast<size_t>(axis)};
+  std::vector<size_t> dims  = {static_cast<size_t>(axis) -
+                              static_cast<size_t>(isGrouped())};
   std::vector<size_t> sizes = {1};
 
   if (index == GatherGradOp::gradInIndex()) {
-    auto gradInfo        = inInfo(index);
-    const auto dataShape = gradInfo.shape_szt();
+    auto gradInfo  = inInfo(index);
+    auto dataShape = gradInfo.shape_szt();
+    if (isGrouped())
+      dataShape.erase(dataShape.begin());
 
-    return popops::createSliceableTensor(graph(),
-                                         popType(gradInfo),
-                                         dataShape,
-                                         dims,
-                                         sizes,
-                                         plan,
-                                         poplar::OptionFlags(),
-                                         dnai);
+    return isGrouped()
+               ? popops::createGroupedSliceableTensor(graph(),
+                                                      popType(gradInfo),
+                                                      group_size,
+                                                      dataShape,
+                                                      dims,
+                                                      sizes,
+                                                      plan,
+                                                      poplar::OptionFlags(),
+                                                      dnai)
+               : popops::createSliceableTensor(graph(),
+                                               popType(gradInfo),
+                                               dataShape,
+                                               dims,
+                                               sizes,
+                                               plan,
+                                               poplar::OptionFlags(),
+                                               dnai);
   }
 
   auto indicesInfo = inInfo(index);
-  auto indices     = popops::createIndicesTensor(
-      graph(), dims, indicesInfo.nelms(), plan, poplar::OptionFlags(), dnai);
+  auto numLookups  = static_cast<size_t>(indicesInfo.nelms()) / group_size;
+  auto indices =
+      group_size
+          ? popops::createGroupedIndicesTensor(graph(),
+                                               group_size,
+                                               dims,
+                                               numLookups,
+                                               plan,
+                                               poplar::OptionFlags(),
+                                               dnai)
+          : popops::createIndicesTensor(
+                graph(), dims, numLookups, plan, poplar::OptionFlags(), dnai);
   indices = indices.reinterpret(popType(indicesInfo));
   return indices.reshape(indicesInfo.shape_szt());
 }
@@ -284,26 +363,35 @@ std::tuple<poplar::Tensor, poplar::Tensor, poplar::Tensor>
 GatherGradOpx::handleNDMultiUpdate(poplar::Tensor target,
                                    poplar::Tensor update,
                                    poplar::Tensor indices,
-                                   int64_t axis) {
+                                   int64_t axis,
+                                   int64_t group_size) {
+  bool isGrouped = group_size > 1;
   // Flatten the index shaped region of the update
+  const unsigned flattenRange =
+      indices.rank() - static_cast<unsigned>(isGrouped);
   update = update.flatten(static_cast<unsigned>(axis),
-                          static_cast<unsigned>(axis) + indices.rank());
+                          static_cast<unsigned>(axis) + flattenRange);
   // Put the slice dimension at the front
-  update = update.dimRoll(static_cast<unsigned>(axis));
+  update = update.dimRoll(static_cast<unsigned>(axis), isGrouped ? 1 : 0);
   // Flatten the rest of the dimensions
-  update = update.flatten(1, update.rank());
+  update = update.flatten(isGrouped ? 2 : 1, update.rank());
   // Add a degenerate dimension
-  update = update.expand({1});
+  update = update.expand({isGrouped ? 2U : 1U});
 
   // Put the slice dimension at the front
-  target = target.dimRoll(static_cast<unsigned>(axis));
+  target = target.dimRoll(static_cast<unsigned>(axis), isGrouped ? 1 : 0);
   // Flatten the rest of the dimensions
-  target = target.flatten(1, target.rank());
+  target = target.flatten(isGrouped ? 2 : 1, target.rank());
 
   // Flatten the indices to a vector
   indices = indices.flatten();
   // Add a degenerate dimension
   indices = indices.expand({1});
+  if (isGrouped) {
+    unsigned ugroup_size = static_cast<unsigned>(group_size);
+    indices              = indices.reshapePartial(
+        0, 1, {ugroup_size, indices.dim(0) / ugroup_size});
+  }
   // Reinterpret the indices as unsigned int, assuming negative indices don't
   // exist.
   indices = indices.reinterpret(poplar::UNSIGNED_INT);
@@ -312,20 +400,36 @@ GatherGradOpx::handleNDMultiUpdate(poplar::Tensor target,
 }
 
 void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto outputShape =
+  auto outputShape =
       vXtoY<int64_t, std::size_t>(outShape(GatherGradOp::gradOutIndex()));
 
   auto update  = getInTensor(GatherGradOp::gradInIndex());
   auto indices = getInTensor(GatherGradOp::indicesInIndex());
 
-  auto result = popops::createSliceableTensor(graph(),
-                                              update.elementType(),
-                                              outputShape,
-                                              {static_cast<size_t>(axis)},
-                                              {1},
-                                              plan,
-                                              poplar::OptionFlags(),
-                                              debugContext("gatherGradResult"));
+  if (isGrouped())
+    outputShape.erase(outputShape.begin());
+
+  auto result =
+      isGrouped()
+          ? popops::createGroupedSliceableTensor(
+                graph(),
+                update.elementType(),
+                group_size,
+                outputShape,
+                {static_cast<size_t>(axis - 1)},
+                {1},
+                plan,
+                poplar::OptionFlags(),
+                debugContext("groupedGatherGradResult"))
+
+          : popops::createSliceableTensor(graph(),
+                                          update.elementType(),
+                                          outputShape,
+                                          {static_cast<size_t>(axis)},
+                                          {1},
+                                          plan,
+                                          poplar::OptionFlags(),
+                                          debugContext("gatherGradResult"));
 
   // Zero the result tensor
   popops::zero(graph(), result, prog, debugContext("zero"));
@@ -340,24 +444,38 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
       update.elementType(), {}, 1.0f, debugContext("const_1"));
   graph().setTileMapping(scale, 0);
   // Rolls axis to front.
-  const auto inputs = handleNDMultiUpdate(result, update, indices, axis);
-  auto &targetND    = std::get<0>(inputs);
-  auto &updateND    = std::get<1>(inputs);
-  auto &indicesND   = std::get<2>(inputs);
+  const auto inputs =
+      handleNDMultiUpdate(result, update, indices, axis, group_size);
+  auto &targetND  = std::get<0>(inputs);
+  auto &updateND  = std::get<1>(inputs);
+  auto &indicesND = std::get<2>(inputs);
 
   // Accumulate the updates into the target
-  popops::multiUpdateAdd(graph(),
-                         targetND,
-                         updateND,
-                         indicesND,
-                         scale,
-                         {0},
-                         {1},
-                         prog,
-                         plan,
-                         poplar::OptionFlags(),
-                         debugContext("gatherGrad"));
-
+  if (isGrouped()) {
+    popops::groupedMultiUpdateAdd(graph(),
+                                  targetND,
+                                  updateND,
+                                  indicesND,
+                                  scale,
+                                  {0},
+                                  {1},
+                                  prog,
+                                  plan,
+                                  poplar::OptionFlags(),
+                                  debugContext("groupedGatherGrad"));
+  } else {
+    popops::multiUpdateAdd(graph(),
+                           targetND,
+                           updateND,
+                           indicesND,
+                           scale,
+                           {0},
+                           {1},
+                           prog,
+                           plan,
+                           poplar::OptionFlags(),
+                           debugContext("gatherGrad"));
+  }
   setOutTensor(GatherGradOp::gradOutIndex(), result);
 }
 

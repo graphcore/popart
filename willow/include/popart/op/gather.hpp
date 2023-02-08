@@ -20,6 +20,7 @@ class GatherOp : public Op {
 public:
   GatherOp(const OperatorIdentifier &_opid,
            int64_t axis_,
+           int64_t group_size_,
            const Op::Settings &settings_,
            const nonstd::optional<float> &available_memory_proportion_ =
                nonstd::nullopt,
@@ -31,6 +32,7 @@ public:
 
   // Which axis to gather on.
   int64_t getAxis() const;
+  int64_t getGroupSize() const;
 
   static InIndex dataInIndex() { return 0; }
   static InIndex indicesInIndex() { return 1; }
@@ -55,14 +57,15 @@ public:
   bool zeroOutOfRangeIndices() const { return zeroOutOfRangeIndices__; }
 
 private:
-  int64_t axis = 0;
+  int64_t axis       = 0;
+  int64_t group_size = 1;
   nonstd::optional<float> available_memory_proportion;
   bool zeroOutOfRangeIndices__;
 };
 
 class GatherGradOp : public Op {
 public:
-  GatherGradOp(const GatherOp &op, int64_t axis);
+  GatherGradOp(const GatherOp &op, int64_t axis, int64_t group_size);
 
   std::unique_ptr<Op> clone() const override;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
@@ -71,6 +74,7 @@ public:
 
   // Which axis to gather on.
   int64_t getAxis() const;
+  int64_t getGroupSize() const;
 
   static InIndex gradInIndex() { return 0; }
   static InIndex indicesInIndex() { return 1; }
@@ -94,6 +98,7 @@ public:
 
 private:
   int64_t axis;
+  int64_t group_size;
   TensorInfo fwdDataInfo;
   nonstd::optional<float> available_memory_proportion;
 };

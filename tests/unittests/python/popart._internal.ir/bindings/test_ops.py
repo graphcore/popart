@@ -789,6 +789,7 @@ def test_gather_op(connected: bool) -> None:
             outs,
             opid=opid,
             axis_=0,
+            group_size_=1,
             available_memory_proportion_=_ir.OptionalFloat(0.4),
             zeroOutOfRangeIndices_=False,
             settings=settings,
@@ -799,6 +800,7 @@ def test_gather_op(connected: bool) -> None:
     op = main.createOp_GatherOp(
         opid=opid,
         axis_=0,
+        group_size_=1,
         available_memory_proportion_=_ir.OptionalFloat(0.4),
         zeroOutOfRangeIndices_=False,
         settings=settings,

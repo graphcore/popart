@@ -31,7 +31,7 @@ from .log import log
 from .onehot import onehot
 from .topk import topk
 from .fmod import fmod
-from .gather import gather, tied_gather
+from .gather import gather, groupedgather, tied_gather
 from .gelu import gelu, gelu_
 from .group_norm import group_norm, layer_norm
 from .host_load import host_load
@@ -164,6 +164,7 @@ __all__ = [
     "fmod",
     # gather.py
     "gather",
+    "groupedgather",
     "tied_gather",
     # gelu.py
     "gelu",

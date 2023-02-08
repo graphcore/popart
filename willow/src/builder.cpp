@@ -30,6 +30,7 @@
 #include "popart/error.hpp"
 #include "popart/graphcoreoperators.hpp"
 #include "popart/names.hpp"
+#include "popart/onnxoperators.gen.hpp"
 #include "popart/op.hpp"
 #include "popart/op/collectives/collectives.hpp"
 #include "popart/op/loss.hpp"
@@ -1297,6 +1298,23 @@ TensorId AiGraphcoreOpset1::scatterreduce(const std::vector<TensorId> &args,
                                           const DebugContext &debugContext) {
   return groupedscatterreduce(
       args, axis_size, axis, reduction, 1, debugContext);
+}
+
+TensorId AiGraphcoreOpset1::groupedgather(const std::vector<TensorId> &args,
+                                          Attributes::Int axis,
+                                          Attributes::Int group_size,
+                                          const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes = {{"axis", axis},
+                                                   {"group_size", group_size}};
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  constexpr int version = 9;
+  auto outputs =
+      impl->op(Onnx::AiOnnx::OpSet9::Gather, version, args, attributes, {di});
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::swish(const std::vector<TensorId> &args,

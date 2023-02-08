@@ -7,6 +7,87 @@ from .utils import check_in_graph, convert_optional_float, check_tensor_ipu_and_
 
 
 @op_debug_context
+def groupedgather(
+    t: Tensor,
+    indices: Tensor,
+    axis: int = 0,
+    group_size: Optional[int] = 1,
+    available_memory_proportion: Optional[float] = None,
+    zero_OOR=False,
+) -> Tensor:
+    """
+    Select multiple elements from a tensor along specified axes.
+
+    Elements are specified via `indices`, along a specified axis for each
+    group.
+
+    Examples:
+
+    .. code-block:: python
+
+        x = popxl.variable(np.arange(16).reshape(2, 2, 4))
+        # [[[ 0,  1,  2,  3],
+        #   [ 4,  5,  6,  7]],
+        #  [[ 8,  9, 10, 11],
+        #   [12, 13, 14, 15]]]
+
+        gather(x, [[0, 1, 0], [1, 0, 1]]) == Tensor(
+            [[x[0][3], x[0][1], x[0][2]], [x[1][1], x[0][2], x[1][3]]]
+        )
+        # [[[ 0,  1,  2,  3],
+        #   [ 4,  5,  6,  7],
+        #   [ 0,  1,  2,  3]],
+        #  [[12, 13, 14, 15],
+        #   [ 8,  9, 10, 11],
+        #   [12, 13, 14, 15]]]
+
+    Args:
+        t (Tensor):
+            The input tensor.
+        indices (Tensor):
+            The indices of the elements to extract.
+        axis (int):
+            The axis to gather on. The default is 0.
+        group_size (int):
+            The group size of the data. The default is 1.
+        available_memory_proportion (Optional[float]):
+            The maximum proportion of available memory on each tile that this layer
+            should consume temporarily during the course of the operation.
+            Defaults to 1.0 if not set globally.
+        zero_OOR (bool):
+            If `False`, out of range (OOR) indices will produce undefined data.
+            If `True`, out of range indices will produce zeros.
+
+    Returns:
+        Tensor:
+            The gathered elements concatenated.
+    """
+    ctx = get_current_context()
+    g = ctx.graph
+    pb_g = g._pb_graph
+
+    check_in_graph(g, t=t, indices=indices)
+    check_tensor_ipu_and_tile_set(t=t, indices=indices)
+
+    available_memory_proportion = convert_optional_float(available_memory_proportion)
+
+    opid = _ir.OperatorIdentifier("ai.onnx", "Gather", 1, _ir.NumInputs(2, 3), 1)
+    settings = ctx._get_op_settings("gather")
+    op = pb_g.createConnectedOp_GatherOp(
+        {0: t.id, 1: indices.id},
+        {0: g._create_tensor_id("gather_out")},
+        opid=opid,
+        axis_=axis,
+        group_size_=group_size,
+        available_memory_proportion_=available_memory_proportion,
+        zeroOutOfRangeIndices_=zero_OOR,
+        settings=settings,
+    )
+
+    return Tensor._from_pb_tensor(op.outTensor(0))
+
+
+@op_debug_context
 def gather(
     t: Tensor,
     indices: Tensor,
@@ -62,28 +143,8 @@ def gather(
         Tensor:
             The gathered elements concatenated.
     """
-    ctx = get_current_context()
-    g = ctx.graph
-    pb_g = g._pb_graph
 
-    check_in_graph(g, t=t, indices=indices)
-    check_tensor_ipu_and_tile_set(t=t, indices=indices)
-
-    available_memory_proportion = convert_optional_float(available_memory_proportion)
-
-    opid = _ir.OperatorIdentifier("ai.onnx", "Gather", 11, _ir.NumInputs(2, 2), 1)
-    settings = ctx._get_op_settings("gather")
-    op = pb_g.createConnectedOp_GatherOp(
-        {0: t.id, 1: indices.id},
-        {0: g._create_tensor_id("gather_out")},
-        opid=opid,
-        axis_=axis,
-        available_memory_proportion_=available_memory_proportion,
-        zeroOutOfRangeIndices_=zero_OOR,
-        settings=settings,
-    )
-
-    return Tensor._from_pb_tensor(op.outTensor(0))
+    return groupedgather(t, indices, axis, 1, available_memory_proportion, zero_OOR)
 
 
 @op_debug_context

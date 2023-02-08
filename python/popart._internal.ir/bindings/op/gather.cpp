@@ -29,11 +29,13 @@ void bindGather(py::module &m) {
   py::class_<GatherOp, popart::Op, std::shared_ptr<GatherOp>>(sm, "GatherOp")
       .def(py::init<const OperatorIdentifier &,
                     int64_t,
+                    int64_t,
                     const Op::Settings &,
                     const nonstd::optional<float> &,
                     bool>(),
            py::arg("opid"),
-           py::arg("axis"),
+           py::arg("axis_"),
+           py::arg("group_size_"),
            py::arg("settings"),
            py::arg("available_memory_proportion_"),
            py::arg("zeroOutOfRangeIndices_"))

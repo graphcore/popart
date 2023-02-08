@@ -473,7 +473,7 @@ void SparseAccumulateOpx::grow(poplar::program::Sequence &prog) const {
 
   // Rolls axis to front.
   const auto inputs =
-      GatherGradOpx::handleNDMultiUpdate(accl, grad, indices, axis);
+      GatherGradOpx::handleNDMultiUpdate(accl, grad, indices, axis, 1);
   auto &targetND  = std::get<0>(inputs);
   auto &updateND  = std::get<1>(inputs);
   auto &indicesND = std::get<2>(inputs);

@@ -24,10 +24,11 @@ struct OperatorIdentifier;
 
 GatherOp::GatherOp(const OperatorIdentifier &_opid,
                    int64_t axis_,
+                   int64_t group_size_,
                    const Op::Settings &settings_,
                    const nonstd::optional<float> &available_memory_proportion_,
                    bool zeroOutOfRangeIndices_)
-    : Op(_opid, settings_), axis(axis_),
+    : Op(_opid, settings_), axis(axis_), group_size(group_size_),
       available_memory_proportion(available_memory_proportion_),
       zeroOutOfRangeIndices__(zeroOutOfRangeIndices_) {}
 
@@ -37,11 +38,12 @@ std::unique_ptr<Op> GatherOp::clone() const {
 
 std::vector<std::unique_ptr<Op>> GatherOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> result;
-  result.push_back(std::make_unique<GatherGradOp>(*this, axis));
+  result.push_back(std::make_unique<GatherGradOp>(*this, axis, group_size));
   return result;
 }
 
 int64_t GatherOp::getAxis() const { return axis; }
+int64_t GatherOp::getGroupSize() const { return group_size; }
 
 void GatherOp::setup() {
   int64_t axis_min = -static_cast<int64_t>(inShape(dataInIndex()).size());
@@ -59,9 +61,17 @@ void GatherOp::setup() {
   axis += inShape(dataInIndex()).size();       // axis in the range [0, 2m-1]
   axis = axis % inShape(dataInIndex()).size(); // axis in the range [0, m-1]
 
+  if (axis == 0 && group_size > 1) {
+    throw error(
+        "GatherOp::setup axis = {} indicates the dimension of the group", axis);
+  }
+
   // Replace the axis dimension with the indices shape
-  auto data_shape            = inShape(dataInIndex());
-  const auto indices_shape   = inShape(indicesInIndex());
+  auto data_shape    = inShape(dataInIndex());
+  auto indices_shape = inShape(indicesInIndex());
+  // Avoiding double addition of a group dimension (with indices and dates).
+  if (group_size > 1)
+    indices_shape.erase(indices_shape.begin());
   const auto insertion_point = data_shape.erase(data_shape.begin() + axis);
 
   data_shape.insert(
@@ -75,6 +85,7 @@ void GatherOp::setup() {
 void GatherOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
+  os.appendAttribute("group_size", group_size);
   os.appendAttribute(sAvailMemAttribute, available_memory_proportion);
 }
 
@@ -86,9 +97,11 @@ bool GatherOp::canBeReplacedByIdentity() const {
           inInfo(indicesInIndex()).nelms() == 1);
 }
 
-GatherGradOp::GatherGradOp(const GatherOp &op, int64_t axis_)
+GatherGradOp::GatherGradOp(const GatherOp &op,
+                           int64_t axis_,
+                           int64_t group_size_)
     : Op(Onnx::GradOperators::GatherGrad, op.getSettings()), axis(axis_),
-      fwdDataInfo(op.inInfo(GatherOp::dataInIndex())),
+      group_size(group_size_), fwdDataInfo(op.inInfo(GatherOp::dataInIndex())),
       available_memory_proportion(op.getAvailableMemoryProportion()) {}
 
 std::unique_ptr<Op> GatherGradOp::clone() const {
@@ -113,10 +126,12 @@ const std::map<int, int> &GatherGradOp::gradOutToNonGradIn() const {
 void GatherGradOp::setup() { outInfo(gradOutIndex()) = fwdDataInfo; }
 
 int64_t GatherGradOp::getAxis() const { return axis; }
+int64_t GatherGradOp::getGroupSize() const { return group_size; }
 
 void GatherGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
+  os.appendAttribute("group_size", group_size);
   os.appendAttribute(sAvailMemAttribute, available_memory_proportion);
 }
 
@@ -137,16 +152,18 @@ static OpDefinition::DataTypes T  = {DataType::UINT8,
                                     DataType::FLOAT8_152};
 static OpDefinition::DataTypes T1 = {DataType::INT32, DataType::INT64};
 
-static OpDefinition
-    gatherOpDef({OpDefinition::Inputs({{"data", T}, {"indices", T1}}),
-                 OpDefinition::Outputs({{"Y", T}}),
-                 OpDefinition::Attributes({{"axis", {"*"}}})});
+static OpDefinition gatherOpDef(
+    {OpDefinition::Inputs({{"data", T}, {"indices", T1}}),
+     OpDefinition::Outputs({{"Y", T}}),
+     OpDefinition::Attributes({{"axis", {"*"}}, {"group_size", {"*"}}})});
 
 static OpCreator<GatherOp> gatherOpCreator(
     OpDefinitions({{Onnx::Operators::Gather_1, gatherOpDef},
                    {Onnx::Operators::Gather_11, gatherOpDef}}),
     [](const OpCreatorInfo &info) {
       int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", 0);
+      int64_t group_size =
+          info.attributes.getAttribute<Attributes::Int>("group_size", 1);
 
       nonstd::optional<float> available_memory_proportion;
 
@@ -155,8 +172,11 @@ static OpCreator<GatherOp> gatherOpCreator(
             info.attributes.getAttribute<Attributes::Float>(sAvailMemAttribute);
       }
 
-      return std::unique_ptr<Op>(new GatherOp(
-          info.opid, axis, info.settings, available_memory_proportion));
+      return std::unique_ptr<Op>(new GatherOp(info.opid,
+                                              axis,
+                                              group_size,
+                                              info.settings,
+                                              available_memory_proportion));
     },
     true);
 } // namespace

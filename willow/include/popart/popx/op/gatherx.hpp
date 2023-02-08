@@ -45,6 +45,8 @@ public:
 
 protected:
   int64_t axis;
+  int64_t group_size;
+  bool isGrouped() const { return group_size > 1; }
   void setCommonMembersPostVerify(const Op *op);
 
   // Zero indices that are out of range so they produce output from the weight
@@ -86,7 +88,8 @@ public:
   handleNDMultiUpdate(poplar::Tensor target,
                       poplar::Tensor update,
                       poplar::Tensor indices,
-                      int64_t axis);
+                      int64_t axis,
+                      int64_t group_size);
   // create the input poplar::Tensor for input at index
   // default : throw error (not all Opxs can createInput)
   poplar::Tensor createInput(InIndex index,
@@ -102,6 +105,9 @@ public:
 private:
   popops::SlicePlan plan;
   int64_t axis;
+  int64_t group_size;
+
+  bool isGrouped() const { return group_size > 1; }
 };
 
 } // namespace popx

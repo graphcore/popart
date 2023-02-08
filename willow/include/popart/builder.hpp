@@ -1066,6 +1066,11 @@ public:
       int64_t keepdims                                   = 1,
       const DebugContext &debugContext                   = {});
 
+  TensorId groupedgather(const std::vector<TensorId> &args,
+                         Attributes::Int axis             = 0,
+                         Attributes::Int group_size       = 1,
+                         const DebugContext &debugContext = {});
+
   /**
    * Add a grouped scatterreduce operation to the model.
    *

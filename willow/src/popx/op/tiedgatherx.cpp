@@ -115,7 +115,7 @@ void TiedGatherOpx::grow(poplar::program::Sequence &prog) const {
     // Place the gather axis at the front.
     data = data.dimShufflePartial({0}, {axis});
     // Store the shape for later.
-    auto tmp_shape = data.shape();
+    auto tmpShape = data.shape();
     // Flatten the other dimensions.
     data = data.flatten(1, data.rank());
 
@@ -140,8 +140,8 @@ void TiedGatherOpx::grow(poplar::program::Sequence &prog) const {
     }
 
     // Reshape the result to "unflatten" the other dimensions.
-    tmp_shape.front() = result.dim(0);
-    result            = result.reshape(tmp_shape);
+    tmpShape.front() = result.dim(0);
+    result           = result.reshape(tmpShape);
     // Put the gather axis dimension back in the right place.
     result = result.dimShufflePartial({axis}, {0});
 

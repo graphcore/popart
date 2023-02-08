@@ -36,7 +36,17 @@ struct OperatorIdentifier;
 namespace {
 class SplitGatherOp : public GatherOp {
 public:
-  using GatherOp::GatherOp;
+  SplitGatherOp(const OperatorIdentifier &_opid,
+                const int64_t axis_,
+                const Op::Settings &settings_,
+                const nonstd::optional<float> available_memory_proportion_,
+                bool zeroOutOfRangeIndices_ = false)
+      : GatherOp(_opid,
+                 axis_,
+                 1,
+                 settings_,
+                 available_memory_proportion_,
+                 zeroOutOfRangeIndices_) {}
 };
 } // namespace
 
