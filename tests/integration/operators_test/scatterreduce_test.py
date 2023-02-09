@@ -1,10 +1,16 @@
-# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+# Copyright (c) 2023 Graphcore Ltd. All rights reserved.
+
+from functools import partial
+from itertools import product
+from typing import Any, List, Optional
+
 import numpy as np
+import torch
+import torch_scatter
+import pytest
+
 import popart
 import popart_core
-import torch
-import pytest
-from itertools import product
 
 # `import test_util` requires adding to sys.path
 import sys
@@ -55,7 +61,7 @@ torch_scatter_testcases = [
         "dim": 0,
         "sum": [3, 12, 0, 6],
         "add": [3, 12, 0, 6],
-        "mul": [2, 60, 0, 6],
+        "mul": [2, 60, 1, 6],
         "mean": [1.5, 4, 0, 6],
         "min": [1, 3, 0, 6],
         "arg_min": [0, 1, 6, 5],
@@ -68,7 +74,7 @@ torch_scatter_testcases = [
         "dim": 0,
         "sum": [[4, 6], [21, 24], [0, 0], [11, 12]],
         "add": [[4, 6], [21, 24], [0, 0], [11, 12]],
-        "mul": [[1 * 3, 2 * 4], [5 * 7 * 9, 6 * 8 * 10], [0, 0], [11, 12]],
+        "mul": [[1 * 3, 2 * 4], [5 * 7 * 9, 6 * 8 * 10], [1, 1], [11, 12]],
         "mean": [[2, 3], [7, 8], [0, 0], [11, 12]],
         "min": [[1, 2], [5, 6], [0, 0], [11, 12]],
         "arg_min": [[0, 0], [1, 1], [6, 6], [5, 5]],
@@ -81,7 +87,7 @@ torch_scatter_testcases = [
         "dim": 1,
         "sum": [[4, 21, 0, 11], [12, 18, 12, 0]],
         "add": [[4, 21, 0, 11], [12, 18, 12, 0]],
-        "mul": [[1 * 3, 5 * 7 * 9, 0, 11], [2 * 4 * 6, 8 * 10, 12, 0]],
+        "mul": [[1 * 3, 5 * 7 * 9, 1, 11], [2 * 4 * 6, 8 * 10, 12, 1]],
         "mean": [[2, 7, 0, 11], [4, 9, 12, 0]],
         "min": [[1, 5, 0, 11], [2, 8, 12, 0]],
         "arg_min": [[0, 1, 6, 5], [0, 2, 5, 6]],
@@ -94,7 +100,7 @@ torch_scatter_testcases = [
         "dim": 1,
         "sum": [[[4, 6], [5, 6], [0, 0]], [[7, 9], [0, 0], [22, 24]]],
         "add": [[[4, 6], [5, 6], [0, 0]], [[7, 9], [0, 0], [22, 24]]],
-        "mul": [[[3, 8], [5, 6], [0, 0]], [[7, 9], [0, 0], [120, 11 * 13]]],
+        "mul": [[[3, 8], [5, 6], [1, 1]], [[7, 9], [1, 1], [120, 11 * 13]]],
         "mean": [[[2, 3], [5, 6], [0, 0]], [[7, 9], [0, 0], [11, 12]]],
         "min": [[[1, 2], [5, 6], [0, 0]], [[7, 9], [0, 0], [10, 11]]],
         "arg_min": [[[0, 0], [1, 1], [3, 3]], [[1, 1], [3, 3], [0, 0]]],
@@ -132,11 +138,204 @@ torch_scatter_testcases = [
 ################################################################################
 
 
+def pytorch_scatter_reduce_supported():
+    version_to_int = lambda version: int("".join(version.split(".")[:2]))
+    current_version = version_to_int(torch.__version__)
+    return current_version >= version_to_int("1.13.0")
+
+
 def idfn(val):
     if isinstance(val, torch.dtype):
         return f"{val}".split(".")[-1]
 
     return val
+
+
+def torch_scatter_reduce_to_torch(reduce: str) -> str:
+    if reduce == "mul":
+        return "prod"
+    elif reduce == "max":
+        return "amax"
+    elif reduce == "min":
+        return "amin"
+
+    return reduce
+
+
+def scatter_reduce_reference(
+    src_group: List[torch.Tensor],
+    index_group: List[torch.Tensor],
+    dim: int = -1,
+    out_group: Optional[List[torch.Tensor]] = None,
+    dim_size: Optional[int] = None,
+    reduce: str = "sum",
+    group_size: int = 1,
+    use_torch_scatter_as_reference: bool = True,
+) -> List[torch.Tensor]:
+
+    if reduce == "none":
+        use_torch_scatter_as_reference = False
+    elif not pytorch_scatter_reduce_supported() and not use_torch_scatter_as_reference:
+        use_torch_scatter_as_reference = True
+
+    assert len(src_group) == group_size
+    assert len(index_group) == group_size
+
+    results = []
+    include_self = out_group is not None
+
+    def prepare_input():
+        if include_self:
+            input = out_group[group_id]
+        else:
+            input_size = list(index.shape)
+            input_size[dim] = dim_size
+            input = torch.zeros(*input_size).float()
+        return input
+
+    for group_id in range(group_size):
+        src = src_group[group_id]
+        index = index_group[group_id]
+        out = None
+        if out_group is not None:
+            out = out_group[group_id]
+
+        if reduce == "none":
+            results.append(
+                torch.scatter(prepare_input(), dim=dim, index=index, src=src)
+            )
+        elif use_torch_scatter_as_reference:
+            results.append(
+                torch_scatter.scatter(
+                    src, index, dim, out, dim_size=dim_size, reduce=reduce
+                )
+            )
+        else:
+            reduce = torch_scatter_reduce_to_torch(reduce)
+
+            results.append(
+                torch.scatter_reduce(
+                    input=prepare_input(),
+                    dim=dim,
+                    index=index,
+                    src=src,
+                    reduce=reduce,
+                    include_self=include_self,
+                )
+            )
+
+    if group_size == 1:
+        return results
+
+    return [torch.stack(results)]
+
+
+def scatter_reduce_reference_backward(
+    d__o: torch.Tensor,
+    src_group: List[torch.Tensor],
+    index_group: List[torch.Tensor],
+    dim: int = -1,
+    out_group: Optional[List[torch.Tensor]] = None,
+    dim_size: Optional[int] = None,
+    reduce: str = "sum",
+    group_size: int = 1,
+    use_torch_scatter_as_reference: bool = True,
+) -> List[torch.Tensor]:
+
+    if reduce == "none":
+        use_torch_scatter_as_reference = False
+    elif not pytorch_scatter_reduce_supported() and not use_torch_scatter_as_reference:
+        use_torch_scatter_as_reference = True
+
+    for src_tensor in src_group:
+        src_tensor.requires_grad_()
+
+    with_intial_values = out_group is not None
+
+    if with_intial_values and not use_torch_scatter_as_reference:
+        for out_tensor in out_group:
+            out_tensor.requires_grad_()
+
+    ref_out = scatter_reduce_reference(
+        src_group,
+        index_group,
+        dim=dim,
+        out_group=out_group,
+        dim_size=dim_size,
+        reduce=reduce,
+        group_size=group_size,
+        use_torch_scatter_as_reference=use_torch_scatter_as_reference,
+    )[0]
+
+    ref_out.backward(d__o)
+
+    def get_gradients(group):
+        if group is None:
+            return None
+        gradients = [tensor.grad for tensor in group]
+        if None in gradients:
+            return None
+        return gradients[0] if group_size == 1 else torch.stack(gradients)
+
+    if with_intial_values:
+        return [ref_out, get_gradients(src_group), get_gradients(out_group), d__o]
+
+    return [ref_out, get_gradients(src_group), d__o]
+
+
+def scatter_reduce_builder(
+    builder: Any,
+    src_group: List[torch.Tensor],
+    index_group: List[torch.Tensor],
+    dim: int = -1,
+    out_group: Optional[List[torch.Tensor]] = None,
+    dim_size: Optional[int] = None,
+    reduce: str = "sum",
+    group_size: int = 1,
+    backward: bool = False,
+):
+
+    with_intial_values = out_group is not None
+
+    if group_size > 1:
+        scatter_func = partial(
+            builder.aiGraphcore.groupedscatterreduce, group_size=group_size
+        )
+        if dim >= 0:
+            dim += 1
+        src = torch.stack(src_group)
+        index = torch.stack(index_group)
+        if with_intial_values:
+            initial = torch.stack(out_group)
+    else:
+        scatter_func = builder.aiGraphcore.scatterreduce
+        src = src_group[0]
+        index = index_group[0]
+        if with_intial_values:
+            initial = out_group[0]
+
+    D = builder.addInputTensor(src.numpy())
+    I = builder.addInputTensor(index.numpy().astype(np.uint32))
+    input_tensors = [D, I]
+
+    if with_intial_values:
+        V = builder.addInputTensor(initial.numpy())
+        input_tensors.append(V)
+
+    out = scatter_func(
+        input_tensors, axis=dim, axis_size=dim_size, reduction=reduction_map[reduce]
+    )
+
+    builder.addOutputTensor(out)
+
+    out_tensors = [out]
+    if backward:
+        out_tensors.append(popart.reservedGradientPrefix() + D)
+        if with_intial_values:
+            out_tensors.append(popart.reservedGradientPrefix() + V)
+        out_tensors.append(popart.reservedGradientPrefix() + out)
+
+    return out_tensors
 
 
 @tu.requires_ipu_model
@@ -158,13 +357,9 @@ def test_scatterreduce_basic(op_tester, test, reduction, dtype):
         index = index.expand_as(src)
 
     def init_builder(builder):
-        D = builder.addInputTensor(src.numpy())
-        I = builder.addInputTensor(index.numpy().astype(np.uint32))
-        out = builder.aiGraphcore.scatterreduce(
-            [D, I], axis=axis, axis_size=axsz, reduction=reduction_map[reduction]
+        return scatter_reduce_builder(
+            builder, [src], [index], dim=axis, dim_size=axsz, reduce=reduction
         )
-        builder.addOutputTensor(out)
-        return [out]
 
     def reference(_):  # ref_data is an unused argument
         expected = torch.tensor(test[reduction], dtype=dtype)
@@ -174,9 +369,11 @@ def test_scatterreduce_basic(op_tester, test, reduction, dtype):
 
 
 @pytest.mark.parametrize("grouped", [True, False])
-def test_scatterreduce_index_broadcasted(op_tester, grouped):
+@pytest.mark.parametrize("reduction", reductions)
+def test_scatterreduce_index_broadcasted(op_tester, grouped, reduction):
     src = torch.tensor([[2, 4, 9], [5, 3, 1], [1, 8, 6], [0, 2, 7]]).float()
     index = torch.tensor([[2, 1, 0], [1, 0, 1], [0, 2, 1], [1, 2, 2]]).long()
+    axis = 0
     axsz = torch.max(index).item() + 1
     if grouped:
         src_2nd_group = torch.tensor(
@@ -185,31 +382,31 @@ def test_scatterreduce_index_broadcasted(op_tester, grouped):
         index_2nd_group = torch.tensor(
             [[0, 1, 2], [1, 0, 1], [1, 2, 0], [2, 2, 1]]
         ).long()
+    group_size = 2 if grouped else 1
+
+    src_group = [src, src_2nd_group] if grouped else [src]
+    index_group = [index, index_2nd_group] if grouped else [index]
 
     def init_builder(builder):
-        if grouped:
-            D = builder.addInputTensor(torch.stack([src, src_2nd_group]).numpy())
-            I = builder.addInputTensor(
-                torch.stack([index, index_2nd_group]).numpy().astype(np.uint32)
-            )
-            out = builder.aiGraphcore.groupedscatterreduce(
-                [D, I], axis_size=axsz, axis=1, group_size=2
-            )
-        else:
-            D = builder.addInputTensor(src.numpy())
-            I = builder.addInputTensor(index.numpy().astype(np.uint32))
-            out = builder.aiGraphcore.scatterreduce([D, I], axis_size=axsz, axis=0)
-        builder.addOutputTensor(out)
-        return [out]
+        return scatter_reduce_builder(
+            builder,
+            src_group,
+            index_group,
+            dim=axis,
+            dim_size=axsz,
+            reduce=reduction,
+            group_size=group_size,
+        )
 
     def reference(_):  # ref_data is an unused argument
-        ref = torch.zeros(axsz, src.shape[1])
-        ref.scatter_add_(dim=0, index=index, src=src)
-        if grouped:
-            ref_2nd_group = torch.zeros(axsz, src_2nd_group.shape[1])
-            ref_2nd_group.scatter_add_(dim=0, index=index_2nd_group, src=src_2nd_group)
-            ref = torch.stack([ref, ref_2nd_group])
-        return [ref]
+        return scatter_reduce_reference(
+            src_group,
+            index_group,
+            dim=axis,
+            dim_size=axsz,
+            reduce=reduction,
+            group_size=group_size,
+        )
 
     op_tester.run(init_builder, reference)
 
@@ -219,20 +416,21 @@ def test_scatterreduce_repro(op_tester, reduction):
     src = torch.linspace(-1, 1, 16).view(-1, 2).T.contiguous()
     index = torch.zeros_like(src).long()
     axsz = torch.max(index).item() + 1
+    axis = 0
 
     def init_builder(builder):
         D = builder.addInputTensor(src.numpy())
         I = builder.addInputTensor(index.numpy().astype(np.uint32))
         out = builder.aiGraphcore.scatterreduce(
-            [D, I], axis_size=axsz, axis=0, reduction=reduction_map[reduction]
+            [D, I], axis_size=axsz, axis=axis, reduction=reduction_map[reduction]
         )
         builder.addOutputTensor(out)
         return [out]
 
     def reference(_):  # ref_data is an unused argument
-        reducer = torch.amin if reduction == "min" else torch.amax
-        ref = reducer(src, dim=0, keepdim=True)
-        return [ref]
+        return scatter_reduce_reference(
+            [src], [index], dim=axis, dim_size=axsz, reduce=reduction
+        )
 
     op_tester.run(init_builder, reference)
 
@@ -243,78 +441,40 @@ def test_scatterreduce_training(op_tester, grouped, reduction):
     src = torch.tensor([5, 1, 7, 2, 3, 2, 1, 3]).float()
     index = torch.tensor([0, 0, 1, 0, 2, 2, 3, 3]).long()
     axsz = torch.max(index).item() + 1
+    axis = 0
+    group_size = 2 if grouped else 1
+
     if grouped:
         src_2nd_group = torch.tensor([6, 2, 8, 3, 4, 3, 2, 4]).float()
         index_2nd_group = torch.tensor([1, 1, 0, 1, 3, 3, 2, 2]).long()
 
-    def torch_scatter_reduce(out, reduction):
-        # Note this can be removed once we can move to torch 1.13 or later.
-        # As of June 22 2022 the pytorch scatter_reduce method is in beta.
-        if reduction == "sum":
-            ref = out.scatter_add(dim=0, index=index, src=src)
-            if grouped:
-                ref_2nd_group = out.scatter_add(
-                    dim=0, index=index_2nd_group, src=src_2nd_group
-                )
-                ref = torch.stack([ref, ref_2nd_group])
-            return ref
-
-        reducer = None
-        if reduction == "min":
-            reducer = torch.amin
-        elif reduction == "max":
-            reducer = torch.amax
-        elif reduction == "mul":
-            reducer = torch.prod
-
-        if grouped:
-            out_2nd = out.clone().detach()
-        for idx in index.unique():
-            out[idx] = reducer(src[index == idx])
-            if grouped:
-                out_2nd[idx] = reducer(src_2nd_group[index_2nd_group == idx])
-        if grouped:
-            out = torch.stack([out, out_2nd])
-        return out
+    index_group = [index] if group_size == 1 else [index, index_2nd_group]
+    src_group = [src] if group_size == 1 else [src, src_2nd_group]
 
     def init_builder(builder):
-        if grouped:
-            D = builder.addInputTensor(torch.stack([src, src_2nd_group]).numpy())
-            I = builder.addInputTensor(
-                torch.stack([index, index_2nd_group]).numpy().astype(np.uint32)
-            )
-            out = builder.aiGraphcore.groupedscatterreduce(
-                [D, I],
-                axis_size=axsz,
-                reduction=reduction_map[reduction],
-                axis=1,
-                group_size=2,
-            )
-        else:
-            D = builder.addInputTensor(src.numpy())
-            I = builder.addInputTensor(index.numpy().astype(np.uint32))
-            out = builder.aiGraphcore.scatterreduce(
-                [D, I], axis_size=axsz, reduction=reduction_map[reduction]
-            )
-        builder.addOutputTensor(out)
-        return [
-            out,
-            popart.reservedGradientPrefix() + D,
-            popart.reservedGradientPrefix() + out,
-        ]
+        return scatter_reduce_builder(
+            builder,
+            src_group,
+            index_group,
+            dim=axis,
+            dim_size=axsz,
+            reduce=reduction,
+            group_size=group_size,
+            backward=True,
+        )
 
     def reference(ref_data):
-        src.requires_grad_()
-        if grouped:
-            src_2nd_group.requires_grad_()
-        ref = torch.zeros(axsz)
-        ref = torch_scatter_reduce(ref, reduction)
         d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
-        ref.backward(d__o)
-        src_grad = src.grad
-        if grouped:
-            src_grad = torch.stack([src_grad, src_2nd_group.grad])
-        return [ref, src_grad, d__o]
+
+        return scatter_reduce_reference_backward(
+            d__o,
+            src_group,
+            index_group,
+            dim=axis,
+            dim_size=axsz,
+            reduce=reduction,
+            group_size=group_size,
+        )
 
     op_tester.run(init_builder, reference, "train")
 
@@ -332,192 +492,113 @@ def test_scatterreduce_axis(
     src = src.contiguous()
 
     index = torch.tensor([0, 1, 0, 1, 2, 1]).long()
-    index_vec = index
     axsz = int(torch.max(index)) + 1
+    group_size = 2 if grouped else 1
 
     init_func = torch.rand if init_values else torch.zeros
     initial_values = init_func(axsz, 10, 64)
     initial_values.transpose_(0, axis)
     initial_values = initial_values.contiguous()
 
-    if broadcast:
+    def broadcast_index():
         sz = 3 * [1]
         sz[axis] = -1
-        index = index.view(sz).expand_as(src).contiguous()
+        return index.view(sz).expand_as(src).contiguous()
+
+    expanded_index = broadcast_index()
+    if broadcast:
+        index = expanded_index
+
     if grouped:
         grouped_axis = axis
         if axis >= 0:
             grouped_axis = grouped_axis + 1
 
-    def torch_reference(src, initials):
-        # Note this can be removed once we can move to torch 1.13 or later.
-        # As of June 22 2022 the pytorch scatter_reduce method is in beta.
-        index = index_vec
-        if reduction == "sum":
-            return initials.index_add(dim=axis, index=index, source=src)
-
-        operation = None
-        if reduction == "min":
-            operation = torch.amin
-        elif reduction == "max":
-            operation = torch.amax
-        elif reduction == "mul":
-            operation = torch.prod
-
-        reducer = lambda x: operation(x, dim=0, keepdim=True)
-
-        src = torch.transpose(src, 0, axis)
-        out = torch.transpose(initials.clone(), 0, axis)
-
-        if init_values:
-            index = torch.cat((torch.arange(0, axsz), index))
-            src = torch.vstack((out, src))
-
-        for idx in index.unique():
-            out[idx, :, :] = reducer(src[index == idx, :, :])
-
-        return torch.transpose(out, axis, 0)
+    src_group = [src] if group_size == 1 else [src, src.clone().detach()]
+    initial_group = None
+    if init_values:
+        initial_group = (
+            [initial_values]
+            if group_size == 1
+            else [initial_values, initial_values.clone().detach()]
+        )
 
     def init_builder(builder):
-        if grouped:
-            D = builder.addInputTensor(torch.stack([src, src]).numpy())
-            I = builder.addInputTensor(
-                torch.stack([index, index]).numpy().astype(np.uint32)
-            )
-        else:
-            D = builder.addInputTensor(src.numpy())
-            I = builder.addInputTensor(index.numpy().astype(np.uint32))
-
-        if init_values:
-            if grouped:
-                V = builder.addInputTensor(
-                    torch.stack([initial_values, initial_values]).numpy()
-                )
-                out = builder.aiGraphcore.groupedscatterreduce(
-                    [D, I, V],
-                    axis=grouped_axis,
-                    axis_size=axsz,
-                    group_size=2,
-                    reduction=reduction_map[reduction],
-                )
-            else:
-                V = builder.addInputTensor(initial_values.numpy())
-                out = builder.aiGraphcore.scatterreduce(
-                    [D, I, V],
-                    axis=axis,
-                    axis_size=axsz,
-                    reduction=reduction_map[reduction],
-                )
-            builder.addOutputTensor(out)
-            return [
-                out,
-                popart.reservedGradientPrefix() + D,
-                popart.reservedGradientPrefix() + V,
-                popart.reservedGradientPrefix() + out,
-            ]
-        if grouped:
-            out = builder.aiGraphcore.groupedscatterreduce(
-                [D, I],
-                axis=grouped_axis,
-                axis_size=axsz,
-                group_size=2,
-                reduction=reduction_map[reduction],
-            )
-        else:
-            out = builder.aiGraphcore.scatterreduce(
-                [D, I], axis=axis, axis_size=axsz, reduction=reduction_map[reduction]
-            )
-        builder.addOutputTensor(out)
-        return [
-            out,
-            popart.reservedGradientPrefix() + D,
-            popart.reservedGradientPrefix() + out,
-        ]
+        index_group = [index] * group_size
+        return scatter_reduce_builder(
+            builder,
+            src_group,
+            index_group,
+            dim=axis,
+            out_group=initial_group,
+            dim_size=axsz,
+            reduce=reduction,
+            group_size=group_size,
+            backward=True,
+        )
 
     def reference(ref_data):
-        src.requires_grad_()
-        initial_values.requires_grad_()
-        ref = torch_reference(src, initial_values)
-        if grouped:
-            src_2nd_group = src.clone().detach()
-            src_2nd_group.requires_grad_()
-            initial_values_2nd_group = initial_values.clone().detach()
-            initial_values_2nd_group.requires_grad_()
-            ref_2nd_group = torch_reference(src_2nd_group, initial_values_2nd_group)
-            ref = torch.stack([ref, ref_2nd_group])
+        index_group = [expanded_index] * group_size
 
-        d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
-        ref.backward(d__o)
-
-        if grouped:
-            src_grad = torch.stack([src.grad, src_2nd_group.grad])
-            initial_values_grad = torch.stack(
-                [initial_values.grad, initial_values_2nd_group.grad]
-            )
-        else:
-            initial_values_grad = initial_values.grad
-            src_grad = src.grad
-
-        if init_values:
-            return [ref, src_grad, initial_values_grad, d__o]
-        return [ref, src_grad, d__o]
+        return scatter_reduce_reference_backward(
+            torch.tensor(ref_data.getOutputTensorGrad(0)),
+            src_group,
+            index_group,
+            dim=axis,
+            out_group=initial_group,
+            dim_size=axsz,
+            reduce=reduction,
+            group_size=group_size,
+            use_torch_scatter_as_reference=not init_values,
+        )
 
     op_tester.run(init_builder, reference, "train")
 
 
 @pytest.mark.parametrize("grouped", [True, False])
-def test_scatterreduce_indices_data_different_shape(op_tester, grouped):
+@pytest.mark.parametrize("reduction", reductions)
+@pytest.mark.parametrize("axsz", [2, 5])
+def test_scatterreduce_indices_data_different_shape(
+    op_tester, grouped, reduction, axsz
+):
+    if reduction in ["max", "min"]:
+        pytest.skip("Wrongly calculated gradient, when reduced values are equal.")
+
+    if axsz == 2:
+        pytest.skip("Segfault in min max strategy.")
+
     # Note how aiGraphcore.scatterreduce differs from the torch implementation,
     # i.e. for the torch op, we need to expand the indices explicitly.
     src = torch.ones((6, 3))
-    index = torch.tensor([[0, 1, 2, 3, 4, 0]]).T
+    index = torch.tensor([[0, 1, 1, 3, 2, 0]]).T
+    axis = 0
+    axsz = axsz
+    group_size = 2 if grouped else 1
+    src_group = [src] if group_size == 1 else [src, src.clone().detach()]
+    index_group = [index.expand_as(src_tensor) for src_tensor in src_group]
 
     def init_builder(builder):
-        if grouped:
-            data = builder.addInputTensor(torch.stack([src, src]).numpy())
-            idx = builder.addInputTensor(
-                torch.stack([index, index]).numpy().astype(np.uint32)
-            )
-        else:
-            data = builder.addInputTensor(src.numpy())
-            idx = builder.addInputTensor(index.numpy().astype(np.uint32))
-        if grouped:
-            out = builder.aiGraphcore.groupedscatterreduce(
-                [data, idx], axis=1, axis_size=5, group_size=2
-            )
-        else:
-            out = builder.aiGraphcore.scatterreduce(
-                [data, idx],
-                axis=0,
-                axis_size=5,
-            )
-        builder.addOutputTensor(out)
-        return [
-            out,
-            popart.reservedGradientPrefix() + data,
-            popart.reservedGradientPrefix() + out,
-        ]
+        return scatter_reduce_builder(
+            builder,
+            src_group,
+            index_group,
+            dim=axis,
+            dim_size=axsz,
+            reduce=reduction,
+            group_size=group_size,
+            backward=True,
+        )
 
     def reference(ref_data):
-        src.requires_grad = True
-        if grouped:
-            src_2nd_group = src.clone().detach()
-            src_2nd_group.requires_grad = True
-        out = torch.zeros((5, 3))
-        out = out.scatter_add(src=src, index=index.expand_as(src), dim=0)
-        if grouped:
-            out_2nd_group = torch.zeros((5, 3))
-            out_2nd_group = out_2nd_group.scatter_add(
-                src=src_2nd_group, index=index.expand_as(src_2nd_group), dim=0
-            )
-            out = torch.stack([out, out_2nd_group])
-        d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
-        out.backward(d__o)
-        if grouped:
-            src_grad = torch.stack([src.grad, src_2nd_group.grad])
-        else:
-            src_grad = src.grad
-        return [out, src_grad, d__o]
+        return scatter_reduce_reference_backward(
+            torch.tensor(ref_data.getOutputTensorGrad(0)),
+            src_group,
+            index_group,
+            dim=axis,
+            dim_size=axsz,
+            reduce=reduction,
+            group_size=group_size,
+        )
 
     op_tester.run(init_builder, reference, "train")
 
@@ -603,60 +684,41 @@ def test_scatterreduce_partial_broadcasting(op_tester):
 def test_scatterreduce_none(op_tester, grouped):
     num_updates = 16
     num_channels = 32
+    axis = 0
     axsz = 100
+    group_size = 2 if grouped else 1
+
     src = torch.zeros(num_updates, num_channels)
-    index = torch.arange(0, num_updates)
+    index = torch.arange(0, num_updates).view(16, 1).expand(16, 32)
     t = torch.ones(axsz, num_channels)
-    if grouped:
-        grouped_src = torch.stack([src, src])
-        grouped_index = torch.stack([index, index])
-        grouped_t = torch.stack([t, t])
+
+    src_group = [src] if group_size == 1 else [src, src.clone().detach()]
+    initial_group = [t] if group_size == 1 else [t, t.clone().detach()]
+    index_group = [index] if group_size == 1 else [index, index.clone().detach()]
 
     def init_builder(builder):
-        if grouped:
-            D = builder.addInputTensor(grouped_src.numpy())
-            I = builder.addInputTensor(grouped_index.numpy().astype(np.uint32))
-            T = builder.addInputTensor(grouped_t.numpy())
-            out = builder.aiGraphcore.groupedscatterreduce(
-                [D, I, T],
-                axis_size=axsz,
-                axis=1,
-                group_size=2,
-                reduction=reduction_map["none"],
-            )
-        else:
-            D = builder.addInputTensor(src.numpy())
-            I = builder.addInputTensor(index.numpy().astype(np.uint32))
-            T = builder.addInputTensor(t.numpy())
-            out = builder.aiGraphcore.scatterreduce(
-                [D, I, T], axis_size=axsz, axis=0, reduction=reduction_map["none"]
-            )
-        builder.addOutputTensor(out)
-        return [
-            out,
-            popart.reservedGradientPrefix() + D,
-            popart.reservedGradientPrefix() + T,
-            popart.reservedGradientPrefix() + out,
-        ]
+        return scatter_reduce_builder(
+            builder,
+            src_group,
+            index_group,
+            dim=axis,
+            out_group=initial_group,
+            dim_size=axsz,
+            reduce="none",
+            group_size=group_size,
+            backward=True,
+        )
 
     def reference(ref_data):
-        if grouped:
-            # Skip first grad to to avoid double accumulation
-            t_updated_2d = torch.index_put(t, (index,), src)
-        src.requires_grad_()
-        t.requires_grad_()
-        t_updated = torch.index_put(t, (index,), src)
-        if grouped:
-            t_updated = torch.stack([t_updated, t_updated_2d])
-        d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
-        t_updated.backward(d__o)
-        if grouped:
-            return [
-                t_updated,
-                torch.stack([src.grad, src.grad]),
-                torch.stack([t.grad, t.grad]),
-                d__o,
-            ]
-        return [t_updated, src.grad, t.grad, d__o]
+        return scatter_reduce_reference_backward(
+            torch.tensor(ref_data.getOutputTensorGrad(0)),
+            src_group,
+            index_group,
+            dim=axis,
+            out_group=initial_group,
+            dim_size=axsz,
+            reduce="none",
+            group_size=group_size,
+        )
 
     op_tester.run(init_builder, reference, "train")

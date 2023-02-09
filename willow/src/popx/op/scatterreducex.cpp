@@ -882,12 +882,6 @@ public:
                       prog,
                       plan,
                       poplar::OptionFlags());
-
-    if (!opx.hasInput(ScatterReduceOp::initialValuesInIndex())) {
-      // TODO(T65173): make this an operator option since it can be unnecessary.
-      // Replace any non-updated values with zero
-      maskedFillOutput(opx, target, update, indices, prog, plan, isGrouped);
-    }
   }
 
   std::vector<poplar::Tensor>
