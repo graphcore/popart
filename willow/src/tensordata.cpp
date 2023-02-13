@@ -189,11 +189,11 @@ void WeightsIO::insert(TensorId id, MutableVoidData mvd) {
   weights.insert({id, mvd});
 }
 
-ConstVoidData StepIOCallback::in(TensorId id, int64_t, bool prefetch) {
+ConstVoidData StepIOCallback::in(TensorId id, int64_t, bool prefetch, bool) {
   return inputCb(id, prefetch);
 }
 
-void StepIOCallback::inComplete(TensorId id, int64_t) {
+void StepIOCallback::inComplete(TensorId id, int64_t, bool) {
   return inputCompleteCb(id);
 }
 

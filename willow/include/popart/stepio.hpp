@@ -95,7 +95,7 @@ public:
    *
    * This function should not be called directly.
    */
-  ConstVoidData in(TensorId id, int64_t numElements, bool prefetch)final;
+  ConstVoidData in(TensorId id, int64_t numElements, bool prefetch, bool)final;
 
   /**
    * This function is called by PopART when a StepIOCallback instance is
@@ -104,7 +104,7 @@ public:
    *
    * This function should not be called directly.
    */
-  void inComplete(TensorId id, int64_t numElements) final;
+  void inComplete(TensorId id, int64_t numElements, bool) final;
 
   /**
    * This function is called by PopART when a StepIOCallback instance is

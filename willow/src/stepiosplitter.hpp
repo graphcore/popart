@@ -40,9 +40,13 @@ public:
   // Destructor.
   virtual ~StepIOSplitterAdapter() = default;
   // Get next data element for reading from adapter.
-  virtual ConstVoidData in(TensorId id, int64_t numElements, bool prefetch);
+  virtual ConstVoidData in(TensorId id,
+                           int64_t numElements,
+                           bool prefetch,
+                           const bool isBroadcast = false);
   // Move on to next data element.
-  virtual void inComplete(TensorId id, int64_t numElements);
+  virtual void
+  inComplete(TensorId id, int64_t numElements, const bool isBroadcast = false);
   // Get next data element for writing from adapter.
   virtual MutableVoidData out(TensorId id, int64_t numElements);
   // Move on to next data element.
@@ -163,7 +167,8 @@ public:
   void getInData(TensorId id,
                  int64_t numElements,
                  unsigned replicationIndex,
-                 bool prefetch);
+                 bool prefetch,
+                 const bool isBroadcast = false);
   // Fetch output buffer from upstream for a specific replica (getting data for
   // preceding replicas first, if necessary, to avoid calling the upstream
   // IStepIO out of order).
@@ -180,7 +185,8 @@ public:
   // Give the splitter a change to call inComplete upstream.
   virtual void inCompletionCallback(TensorId id,
                                     int64_t numElements,
-                                    unsigned replicationIndex);
+                                    unsigned replicationIndex,
+                                    const bool isBroadcast = false);
   // Give the splitter a change to call outComplete upstream.
   virtual void outCompletionCallback(TensorId id, unsigned replicationIndex);
 

@@ -215,7 +215,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch, bool)final {
     py::gil_scoped_acquire acquire;
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
@@ -239,7 +239,7 @@ public:
     return data;
   }
 
-  void inComplete(TensorId id, int64_t) final {
+  void inComplete(TensorId id, int64_t, bool) final {
     py::gil_scoped_acquire acquire;
     inputCompleteCb(id);
     inDict[py::str(id)] = py::none();

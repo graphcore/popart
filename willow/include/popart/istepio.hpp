@@ -91,7 +91,10 @@ public:
    * \return The input buffer for this tensor (or nullptr on failure) returned
    *     as a ConstVoidData object.
    */
-  virtual ConstVoidData in(TensorId id, int64_t numElements, bool prefetch) = 0;
+  virtual ConstVoidData in(TensorId id,
+                           int64_t numElements,
+                           bool prefetch,
+                           const bool isBroadcast = false) = 0;
 
   /**
    * Notify the user (running a PopART program) that a previously retrieved
@@ -100,7 +103,9 @@ public:
    * \param id The ID of the tensor to return data for.
    * \param numElements The number of elements in the tensor.
    */
-  virtual void inComplete(TensorId id, int64_t numElements) = 0;
+  virtual void inComplete(TensorId id,
+                          int64_t numElements,
+                          const bool isBroadcast = false) = 0;
 
   /**
    * Request a new output data buffer.

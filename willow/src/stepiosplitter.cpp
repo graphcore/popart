@@ -32,8 +32,10 @@ StepIOSplitterAdapter::StepIOSplitterAdapter(StepIOSplitter *splitter_,
       numOutIncompleteDownstream(0u),
       numOutIncompleteUpstream(0u), emptyVoidData{nullptr, info} {}
 
-ConstVoidData
-StepIOSplitterAdapter::in(TensorId id, int64_t numElements, bool prefetch) {
+ConstVoidData StepIOSplitterAdapter::in(TensorId id,
+                                        int64_t numElements,
+                                        bool prefetch,
+                                        const bool isBroadcast) {
 
   if (id != adapterId) {
     throw runtime_error("StepIOSplitterAdapter was created for tensor {} but "
@@ -47,7 +49,8 @@ StepIOSplitterAdapter::in(TensorId id, int64_t numElements, bool prefetch) {
   if (inData.empty()) {
     inLog("Received Poplar callback 'in' with no input buffer from IStepIO "
           "already cached");
-    splitter->getInData(id, numElements, replicationIndex, prefetch);
+    splitter->getInData(
+        id, numElements, replicationIndex, prefetch, isBroadcast);
   } else {
     inLog("Received Poplar callback 'in' with input buffer from IStepIO "
           "already cached");
@@ -70,7 +73,9 @@ StepIOSplitterAdapter::in(TensorId id, int64_t numElements, bool prefetch) {
   }
 }
 
-void StepIOSplitterAdapter::inComplete(TensorId id, int64_t numElements) {
+void StepIOSplitterAdapter::inComplete(TensorId id,
+                                       int64_t numElements,
+                                       const bool isBroadcast) {
 
   if (id != adapterId) {
     throw runtime_error("StepIOSplitterAdapter was created for tensor {} but "
@@ -84,7 +89,8 @@ void StepIOSplitterAdapter::inComplete(TensorId id, int64_t numElements) {
     numInIncompleteDownstream--;
     numInIncompleteUpstream++;
     inLog("Received Poplar callback to 'inComplete'");
-    splitter->inCompletionCallback(id, numElements, replicationIndex);
+    splitter->inCompletionCallback(
+        id, numElements, replicationIndex, isBroadcast);
   } else {
     throw runtime_error("StepIOSplitterAdapter no data to complete for tensor "
                         "{}",
@@ -312,7 +318,8 @@ void StepIOSplitter::setUpstreamIo(IStepIO *upstreamIo_) {
 void StepIOSplitter::getInData(TensorId id,
                                int64_t numElements,
                                unsigned replicationIndex,
-                               bool prefetch) {
+                               bool prefetch,
+                               const bool isBroadcast) {
 
   // Check we have an upstream step io.
   if (!upstreamIo) {
@@ -367,8 +374,9 @@ void StepIOSplitter::getInData(TensorId id,
           // Store the data.
           adapter->addInBuffer(data);
           // Update inData.
-          splitIoTensorInfo.inIndex =
-              (splitIoTensorInfo.inIndex + 1) % replicationFactor;
+          if (!isBroadcast)
+            splitIoTensorInfo.inIndex =
+                (splitIoTensorInfo.inIndex + 1) % replicationFactor;
         } else {
           // If we didn't get data it's an error unless we are prefetching.
           if (!isPrefetch) {
@@ -511,7 +519,8 @@ IStepIO *StepIOSplitter::getDownstreamStepIO(TensorId id,
 
 void StepIOSplitter::inCompletionCallback(TensorId id,
                                           int64_t numElements,
-                                          unsigned replicationIndex) {
+                                          unsigned replicationIndex,
+                                          const bool isBroadcast) {
   // Check we have an upstream step io.
   if (!upstreamIo) {
     throw runtime_error("Upstream StepIO not set.");
@@ -551,7 +560,8 @@ void StepIOSplitter::inCompletionCallback(TensorId id,
     }
 
     // Try the next index.
-    inCompleteIndex = (inCompleteIndex + 1) % replicationFactor;
+    if (!isBroadcast)
+      inCompleteIndex = (inCompleteIndex + 1) % replicationFactor;
   }
 }
 

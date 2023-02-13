@@ -63,7 +63,8 @@ public:
 
   virtual ~TestStepIO() = default;
 
-  virtual ConstVoidData in(TensorId id, int64_t numElements, bool prefetch) {
+  virtual ConstVoidData
+  in(TensorId id, int64_t numElements, bool prefetch, bool) {
     // Remember call (so we can use it in tests).
     inCallHistory.push_back(InCallParams{id, numElements, prefetch});
     BOOST_REQUIRE(!inReturnValues.empty());
@@ -77,7 +78,7 @@ public:
     return res;
   }
 
-  virtual void inComplete(TensorId id, int64_t numElements) {
+  virtual void inComplete(TensorId id, int64_t numElements, bool) {
     // Remember call (so we can use it in tests).
     inCompleteCallHistory.push_back(InCompleteCallParams{id, numElements});
     logging::debug("upstream -   inComplete({},{})", id, numElements);

@@ -97,8 +97,10 @@ void Devicex::PrefetchCallback::complete() {
 void Devicex::InputDatastream::read(void *ptr) {
   POPART_TRACEPOINT();
   if (io) {
-
-    ConstVoidData data = io->in(getTensorId(), tensor->info.nelms(), false);
+    const bool isBroadcast =
+        tensor->getReplicatedStreamMode() == ReplicatedStreamMode::Broadcast;
+    ConstVoidData data =
+        io->in(getTensorId(), tensor->info.nelms(), false, isBroadcast);
 
     const void *srcAddr = data.data;
     void *dstAddr       = ptr;
@@ -155,7 +157,10 @@ bool Devicex::InputDatastream::readPrefetch(void *ptr) {
   POPART_TRACEPOINT();
   if (io) {
 
-    ConstVoidData data = io->in(getTensorId(), tensor->info.nelms(), true);
+    const bool isBroadcast =
+        tensor->getReplicatedStreamMode() == ReplicatedStreamMode::Broadcast;
+    ConstVoidData data =
+        io->in(getTensorId(), tensor->info.nelms(), true, isBroadcast);
 
     if (data.data == nullptr) {
       return false;
@@ -212,7 +217,9 @@ bool Devicex::InputDatastream::readPrefetch(void *ptr) {
 void Devicex::InputDatastream::readComplete() {
   POPART_TRACEPOINT();
   if (io) {
-    io->inComplete(getTensorId(), tensor->info.nelms());
+    const bool isBroadcast =
+        tensor->getReplicatedStreamMode() == ReplicatedStreamMode::Broadcast;
+    io->inComplete(getTensorId(), tensor->info.nelms(), isBroadcast);
   }
 }
 
@@ -1392,6 +1399,10 @@ void Devicex::loadEngineAndConnectStreams() {
       auto replicationFactor = getReplicationFactor();
       for (auto replicationIndex = 0; replicationIndex < replicationFactor;
            ++replicationIndex) {
+        if (tensor->getReplicatedStreamMode() ==
+                ReplicatedStreamMode::Broadcast &&
+            replicationIndex != 0)
+          break;
 
         logging::devicex::debug(
             "Connecting input stream {}@{}", tensor->id, replicationIndex);
@@ -1406,11 +1417,6 @@ void Devicex::loadEngineAndConnectStreams() {
         this->inputStreams[std::make_tuple(tensor->id, replicationIndex)] = ds;
 
         auto callback = std::make_unique<PrefetchCallback>(ds);
-
-        if (tensor->getReplicatedStreamMode() ==
-                ReplicatedStreamMode::Broadcast &&
-            replicationIndex != 0)
-          break;
 
         pEngine->connectStreamToCallback(
             streamId, replicationIndex, std::move(callback));
