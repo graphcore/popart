@@ -12,6 +12,12 @@
 
 #include "popart/names.hpp"
 
+namespace poprithms {
+namespace ndarray {
+class Shape;
+} // namespace ndarray
+} // namespace poprithms
+
 namespace popart {
 class OpSerialiserBase;
 struct OperatorIdentifier;
@@ -25,6 +31,7 @@ public:
                   int64_t axis_size_,
                   ScatterReduction reduction_,
                   int64_t group_size_,
+                  bool enable_index_broadcast_,
                   const nonstd::optional<float> &available_memory_proportion_,
                   const Op::Settings &settings_);
 
@@ -61,8 +68,10 @@ public:
   static ScatterReduction reductionFromString(const std::string &reductionStr);
 
   bool indexBroadcasted() const { return index_broadcasted; }
+  bool indexBroadcastEnabled() const;
 
 private:
+  void setupOutputInfo();
   void checkIndexBroadcasted();
 
   Shape backward_shape;
@@ -72,6 +81,7 @@ private:
   int64_t group_size;
   nonstd::optional<float> available_memory_proportion;
   bool index_broadcasted;
+  bool index_broadcast_enabled;
 };
 
 class ScatterReduceGradOp : public Op {
@@ -112,6 +122,7 @@ public:
   }
 
   bool indexBroadcasted() const { return index_broadcasted; }
+  bool indexBroadcastEnabled() const { return index_broadcast_enabled; }
 
   bool hasInitialValues() const { return has_initial_values; }
 
@@ -124,8 +135,20 @@ private:
   int64_t group_size;
   nonstd::optional<float> available_memory_proportion;
   bool index_broadcasted;
+  bool index_broadcast_enabled;
   bool has_initial_values;
 };
+
+poprithms::ndarray::Shape
+expandIndicesBcastNdShape(const poprithms::ndarray::Shape &indicesShape,
+                          const poprithms::ndarray::Shape &dataShape,
+                          unsigned int axis,
+                          bool withGroups);
+std::vector<std::size_t>
+expandIndicesBcastShape(const std::vector<std::size_t> &indicesShape,
+                        const std::vector<std::size_t> &dataShape,
+                        unsigned int axis,
+                        bool withGroups);
 
 } // namespace popart
 

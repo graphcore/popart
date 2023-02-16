@@ -13,6 +13,7 @@
 
 #include "popart/error.hpp"
 #include "popart/names.hpp"
+#include "popart/op/scatterreduce.hpp"
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/tensorinfo.hpp"
 #include "popart/vendored/optional.hpp"
@@ -155,6 +156,28 @@ poplar::Tensor createDataTensor(poplar::Graph &graph,
   return alignToAxis(poplar::Tensor{out}, dataInfo.shape(), axis, group_size);
 }
 
+namespace {
+
+static std::size_t updateTensorNumLookups(const popart::TensorInfo &dataInfo,
+                                          const popart::TensorInfo &indicesInfo,
+                                          unsigned int axis,
+                                          unsigned int groupSize,
+                                          bool broadcasted) {
+
+  if (broadcasted) {
+    return static_cast<size_t>(indicesInfo.nelms()) / groupSize;
+  }
+
+  const bool withGroups   = groupSize > 1;
+  const auto dataShape    = dataInfo.shape_szt();
+  const auto indicesShape = expandIndicesBcastShape(
+      indicesInfo.shape_szt(), dataShape, axis, withGroups);
+
+  return std::max(dataShape.at(axis), indicesShape.at(axis));
+}
+
+} // namespace
+
 poplar::Tensor createUpdateTensor(poplar::Graph &graph,
                                   const popart::TensorInfo &dataInfo,
                                   const popart::TensorInfo &indicesInfo,
@@ -171,7 +194,9 @@ poplar::Tensor createUpdateTensor(poplar::Graph &graph,
     outputSize = (dataInfo.nelms() / numSlices) / group_size;
   }
 
-  auto numLookups      = static_cast<size_t>(indicesInfo.nelms()) / group_size;
+  const auto numLookups = updateTensorNumLookups(
+      dataInfo, indicesInfo, axis, group_size, broadcasted);
+
   const bool isGrouped = group_size > 1;
   auto out             = isGrouped
                  ? popops::createGroupedSliceTensor(graph,

@@ -3,6 +3,7 @@
 #include <ext/new_allocator.h>
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -134,7 +135,7 @@ public:
                poplar::program::Sequence &prog,
                const popops::SlicePlan &plan) const {
     const bool isGrouped = group_size > 1;
-    if (op.indexBroadcasted()) {
+    if (op.indexBroadcasted() || !op.indexBroadcastEnabled()) {
       prepMultiUpdateBroadcastedTensors(
           opx, output, data, indices, axis, group_size, prog);
     } else {
@@ -160,31 +161,47 @@ public:
     //   * permute dims of data and indices and output so that slice axis == 0
     //   * indices are linearized into a 1-d coordinate system
     //   * flatten the remaining dims
-    if (indices.rank() != data.rank()) {
+    const auto indicesRank = indices.rank();
+
+    if (indicesRank != data.rank()) {
       // Expect this to be handled in ScatterReduceOp::checkIndexBroadcasted
       throw error(
           "Partial broadcasting of indices is not currently supported.");
     }
     const bool isGrouped        = group_size > 1;
     const unsigned startAxisDim = isGrouped ? 1 : 0;
-    output                      = output.dimRoll(axis, startAxisDim);
-    data                        = data.dimRoll(axis, startAxisDim);
-    indices                     = indices.dimRoll(axis, startAxisDim);
 
-    if (indices.rank() < 2) {
+    const auto &outputShape = output.shape();
+    const auto &dataShape   = data.shape();
+    const auto &indicesShape =
+        expandIndicesBcastShape(indices.shape(), dataShape, axis, isGrouped);
+
+    if (shouldShrinkTensor(dataShape, indicesShape))
+      data = shrinkTensorToFitShape(data, indicesShape);
+
+    if (shouldShrinkTensor(outputShape, indicesShape, axis))
+      output = shrinkTensorToFitShape(output, indicesShape, axis);
+
+    output  = output.dimRoll(axis, startAxisDim);
+    data    = data.dimRoll(axis, startAxisDim);
+    indices = indices.dimRoll(axis, startAxisDim);
+
+    if (indicesRank < 2) {
       output  = output.expand({1});
       indices = indices.expand({1});
       data    = data.expand({1, 1});
     } else {
+      const int numDataCols = calcNumDataCols(output, startAxisDim);
+      indices               = scatterutilx::linearizeIndices(
+          opx, prog, indices, numDataCols, group_size);
+
       output = output.flatten();
       output = output.expand({1});
       if (isGrouped)
         output = output.reshapePartial(
             0, 1, {group_size, output.dim(0) / group_size});
-      data             = data.flatten(isGrouped ? 2 : 1, data.rank());
-      auto numDataCols = static_cast<int>(data.dim(startAxisDim + 1));
-      indices          = scatterutilx::linearizeIndices(
-          opx, prog, indices, numDataCols, group_size);
+
+      data = data.flatten(isGrouped ? 2 : 1, data.rank());
       data = data.flatten();
       data = data.expand({1, 1});
       if (isGrouped)
@@ -196,6 +213,50 @@ public:
     indices = indices.reinterpret(poplar::UNSIGNED_INT);
   }
 
+  int calcNumDataCols(const poplar::Tensor &tensor, const int startDim) const {
+    const auto shape = tensor.shape();
+
+    return std::accumulate(
+        shape.cbegin() + startDim + 1, shape.cend(), 1, std::multiplies<int>());
+  }
+
+  bool
+  shouldShrinkTensor(const std::vector<std::size_t> &tensorShape,
+                     const std::vector<std::size_t> &shrinkShape,
+                     const nonstd::optional<std::size_t> skipAxis = {}) const {
+    const auto rank = shrinkShape.size();
+
+    for (std::size_t i = 0; i < rank; ++i) {
+      if (i == skipAxis)
+        continue;
+
+      if (shrinkShape.at(i) < tensorShape.at(i))
+        return true;
+    }
+    return false;
+  }
+
+  poplar::Tensor shrinkTensorToFitShape(
+      const poplar::Tensor &tensor,
+      const std::vector<std::size_t> &shape,
+      const nonstd::optional<std::size_t> skipAxis = {}) const {
+
+    const auto rank = shape.size();
+    const std::vector<std::size_t> begin(rank, 0);
+    std::vector<std::size_t> end = tensor.shape();
+
+    for (std::size_t i = 0; i < rank; ++i) {
+      if (i == skipAxis)
+        continue;
+
+      if (const auto idim = shape.at(i); idim < tensor.dim(i)) {
+        end[i] = idim;
+      }
+    }
+
+    return tensor.slice(begin, end);
+  }
+
   void prepMultiUpdateTensors(poplar::Tensor &output,
                               poplar::Tensor &data,
                               poplar::Tensor &indices,
@@ -203,6 +264,12 @@ public:
                               size_t group_size) const {
     const bool isGrouped        = group_size > 1;
     const unsigned startAxisDim = isGrouped ? 1 : 0;
+
+    const auto dataShape = data.shape();
+
+    if (shouldShrinkTensor(output.shape(), dataShape, axis))
+      output = shrinkTensorToFitShape(output, dataShape, axis);
+
     // Place the reduction axis at the front
     output = output.dimRoll(axis, startAxisDim);
     data   = data.dimRoll(axis, startAxisDim);
@@ -229,7 +296,7 @@ public:
                                        size_t group_size,
                                        poplar::program::Sequence &prog,
                                        const popops::SlicePlan &plan) const {
-    if (op.indexBroadcasted()) {
+    if (op.indexBroadcasted() || !op.indexBroadcastEnabled()) {
       prepMultiSliceBroadcastedTensors(
           opx, gradIn, indices, axis, group_size, prog);
     } else {
@@ -1113,9 +1180,15 @@ ScatterReduceGradOpx::ScatterReduceGradOpx(Op *op, Devicex *devicex)
 }
 
 void ScatterReduceGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto &srop   = getOp<ScatterReduceGradOp>();
-  auto gradIn        = getInTensor(ScatterReduceGradOp::gradInIndex());
-  auto indices       = getInTensor(ScatterReduceGradOp::indicesInIndex());
+  const auto &srop = getOp<ScatterReduceGradOp>();
+  auto gradIn      = getInTensor(ScatterReduceGradOp::gradInIndex());
+  auto indices     = getInTensor(ScatterReduceGradOp::indicesInIndex());
+
+  if (!srop.indexBroadcastEnabled() && !srop.indexBroadcasted()) {
+    throw error("ScatterReduceGradOpx: The backward pass is implemented only "
+                "for src.shape == index.shape.");
+  }
+
   const auto gradOut = strategy->backward(
       srop, *this, gradIn, indices, axis, group_size, prog, plan);
 

@@ -29,7 +29,8 @@ def grouped_scatter_reduce(
     initial_values: Optional[Tensor] = None,
     axis: int = 0,
     axis_size: Optional[int] = None,
-    group_size: Optional[int] = 1,
+    group_size: int = 1,
+    enable_index_broadcast: bool = True,
     available_memory_proportion: Optional[float] = None,
 ) -> Tensor:
 
@@ -77,6 +78,7 @@ def grouped_scatter_reduce(
         group_size_=group_size,
         available_memory_proportion_=available_memory_proportion,
         reduction_=reduction_type,
+        enable_index_broadcast_=enable_index_broadcast,
         settings=settings,
     )
 
@@ -91,6 +93,7 @@ def scatter_reduce(
     initial_values: Optional[Tensor] = None,
     axis: int = 0,
     axis_size: Optional[int] = None,
+    enable_index_broadcast: int = True,
     available_memory_proportion: Optional[float] = None,
 ) -> Tensor:
     return grouped_scatter_reduce(
@@ -101,5 +104,6 @@ def scatter_reduce(
         axis,
         axis_size,
         1,
+        enable_index_broadcast,
         available_memory_proportion,
     )

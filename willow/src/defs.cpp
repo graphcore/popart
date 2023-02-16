@@ -544,15 +544,15 @@ void ScatterReduceShapeInference(InferenceContext &ctx) {
 
   // The output shape is same as the data source tensor.
   // Except in the scatter axis is equal to the axis_size
-  auto axis     = getIntAttribute(ctx, "axis");
-  auto axisSize = getIntAttribute(ctx, "axis_size");
+  const auto axis     = getIntAttribute(ctx, "axis");
+  const auto axisSize = getIntAttribute(ctx, "axis_size");
 
   auto &inputShape  = getInputShape(ctx, 0);
-  auto rank         = inputShape.dim_size();
+  const auto rank   = inputShape.dim_size();
   auto *outputShape = getOutputShape(ctx, 0);
 
   for (int i = 0; i < rank; i++) {
-    auto value = i == axis ? axisSize : inputShape.dim(i).dim_value();
+    const auto value = i == axis ? axisSize : inputShape.dim(i).dim_value();
     outputShape->add_dim()->set_dim_value(value);
   }
 }
@@ -1578,6 +1578,12 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               "The group size (default = 1) of the data.",
               AttributeProto::INT,
               static_cast<int64_t>(1))
+        .Attr("enable_index_broadcast",
+              "Boolean flag (default = 1). If `1` index will be broadcasted to "
+              "match `data` tensor size, otherwise (`0`) its size will "
+              "remain unchanged.",
+              AttributeProto::INT,
+              static_cast<int64_t>(1))
         .TypeAndShapeInferenceFunction(ScatterReduceShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
@@ -1622,6 +1628,12 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               "Reduction applied to the scatter operation (default = \"sum\")",
               AttributeProto::STRING,
               "sum")
+        .Attr("enable_index_broadcast",
+              "Boolean flag (default = 1). If `1` index will be broadcasted to "
+              "match `data` tensor size, otherwise (`0`) its size will "
+              "remain unchanged.",
+              AttributeProto::INT,
+              static_cast<int64_t>(1))
         .TypeAndShapeInferenceFunction(ScatterReduceShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(

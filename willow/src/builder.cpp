@@ -1271,13 +1271,16 @@ AiGraphcoreOpset1::groupedscatterreduce(const std::vector<TensorId> &args,
                                         Attributes::Int axis,
                                         ScatterReduction reduction,
                                         Attributes::Int group_size,
+                                        Attributes::Int enable_index_broadcast,
                                         const DebugContext &debugContext) {
   auto reductionStr = ScatterReduceOp::reductionToString(reduction);
 
-  std::map<std::string, popart::any> attributes = {{"axis", axis},
-                                                   {"axis_size", axis_size},
-                                                   {"reduction", reductionStr},
-                                                   {"group_size", group_size}};
+  std::map<std::string, popart::any> attributes = {
+      {"axis", axis},
+      {"axis_size", axis_size},
+      {"reduction", reductionStr},
+      {"group_size", group_size},
+      {"enable_index_broadcast", enable_index_broadcast}};
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
   attributes.insert({sDebugInfoId, di.getId()});
 
@@ -1291,13 +1294,20 @@ AiGraphcoreOpset1::groupedscatterreduce(const std::vector<TensorId> &args,
   return outputs.at(0);
 }
 
-TensorId AiGraphcoreOpset1::scatterreduce(const std::vector<TensorId> &args,
-                                          Attributes::Int axis_size,
-                                          Attributes::Int axis,
-                                          ScatterReduction reduction,
-                                          const DebugContext &debugContext) {
-  return groupedscatterreduce(
-      args, axis_size, axis, reduction, 1, debugContext);
+TensorId
+AiGraphcoreOpset1::scatterreduce(const std::vector<TensorId> &args,
+                                 Attributes::Int axis_size,
+                                 Attributes::Int axis,
+                                 ScatterReduction reduction,
+                                 Attributes::Int enable_index_broadcast,
+                                 const DebugContext &debugContext) {
+  return groupedscatterreduce(args,
+                              axis_size,
+                              axis,
+                              reduction,
+                              1,
+                              enable_index_broadcast,
+                              debugContext);
 }
 
 TensorId AiGraphcoreOpset1::groupedgather(const std::vector<TensorId> &args,

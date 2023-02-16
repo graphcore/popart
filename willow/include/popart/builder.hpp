@@ -1099,16 +1099,37 @@ public:
    * \param reduction The type of reduction to apply. Default =
    *      `ScatterReduction::Sum`.
    * \param group_size The number of groups to reduce. Default = 1.
+   * \param enable_index_broadcast If `1` index will be broadcasted to match"
+   *      `data` tensor size, otherwise (`0`) its size will remain unchanged."
+   *       Default = 1.
    * \param debugContext Optional debug information.
    * \return The tensor id of the result tensor.
    */
+  TensorId groupedscatterreduce(const std::vector<TensorId> &args,
+                                Attributes::Int axis_size,
+                                Attributes::Int axis,
+                                ScatterReduction reduction,
+                                Attributes::Int group_size,
+                                Attributes::Int enable_index_broadcast,
+                                const DebugContext &debugContext = {});
+
   TensorId
   groupedscatterreduce(const std::vector<TensorId> &args,
                        Attributes::Int axis_size,
                        Attributes::Int axis             = -1,
                        ScatterReduction reduction       = ScatterReduction::Sum,
                        Attributes::Int group_size       = 1,
-                       const DebugContext &debugContext = {});
+                       const DebugContext &debugContext = {}) {
+    static const Attributes::Int enable_index_broadcast = 1;
+
+    return groupedscatterreduce(args,
+                                axis_size,
+                                axis,
+                                reduction,
+                                group_size,
+                                enable_index_broadcast,
+                                debugContext);
+  };
 
   /**
    * Add a scatterreduce operation to the model.
@@ -1135,15 +1156,29 @@ public:
    * \param axis The axis to reduce along. Default = -1.
    * \param reduction The type of reduction to apply. Default =
    *      `ScatterReduction::Sum`.
+   * \param enable_index_broadcast If `1` index will be broadcasted to match"
+   *      `data` tensor size, otherwise (`0`) its size will remain unchanged."
+   *       Default = 1.
    * \param debugContext Optional debug information.
    * \return The tensor id of the result tensor.
    */
   TensorId scatterreduce(const std::vector<TensorId> &args,
                          Attributes::Int axis_size,
-                         Attributes::Int axis       = -1,
-                         ScatterReduction reduction = ScatterReduction::Sum,
+                         Attributes::Int axis,
+                         ScatterReduction reduction,
+                         Attributes::Int enable_index_broadcast,
                          const DebugContext &debugContext = {});
 
+  TensorId scatterreduce(const std::vector<TensorId> &args,
+                         Attributes::Int axis_size,
+                         Attributes::Int axis       = -1,
+                         ScatterReduction reduction = ScatterReduction::Sum,
+                         const DebugContext &debugContext = {}) {
+
+    static const Attributes::Int enable_index_broadcast = 1;
+    return scatterreduce(
+        args, axis_size, axis, reduction, enable_index_broadcast, debugContext);
+  }
   /**
    * Add a swish operation to the model.
    *
