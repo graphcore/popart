@@ -1698,6 +1698,10 @@ PYBIND11_MODULE(popart_core, m) {
         "throwIfLog2ScaleTensorNotInRange",
         &SessionOptions::throwIfLog2ScaleTensorNotInRange,
         DOC(popart, SessionOptions, throwIfLog2ScaleTensorNotInRange));
+    cls.def_readwrite(
+        "enableConstantFoldingOfMultipleConsumers",
+        &SessionOptions::enableConstantFoldingOfMultipleConsumers,
+        DOC(popart, SessionOptions, enableConstantFoldingOfMultipleConsumers));
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel", DOC(popart, PatternsLevel));

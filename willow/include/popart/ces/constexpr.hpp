@@ -66,6 +66,14 @@ public:
   //   1) all the inputs are Const Tensors
   static bool isComputable(Op *, Graph &);
 
+  // Determine if an op should be folded.
+  // The rule for determining if an op should be folded:
+  // For all eval, infer and training, an op should be folded only if
+  // it meets one of the following conditions:
+  //   1). enableConstantFoldingOfMultipleConsumers = true
+  //   2). All the inputs have only one consumer.
+  static bool shouldBeFolded(Op *, Graph &);
+
   // process a ConstExprOp "op", modfying the Ir pointed to by "ir"
   static void processOp(Op *op, Graph &);
 

@@ -367,7 +367,8 @@ void Graph::constructFromOnnxGraph(
       // Reshape requires a const input tensor at creation time
       // if const folding is left till after the ir is completly constructed
       // then Reshape may not get a const input tensor at creation time
-      if (ConstExprUtil::isComputable(op, *this)) {
+      if (ConstExprUtil::isComputable(op, *this) &&
+          ConstExprUtil::shouldBeFolded(op, *this)) {
         ConstExprUtil::processOp(op, *this);
       }
     }

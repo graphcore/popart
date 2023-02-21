@@ -80,7 +80,7 @@ void ConstExprUtil::foldConstants(Graph &graph) {
   std::set<Op *, POpCmp> computable_ops;
   for (auto &id_op : graph.getOps()) {
     auto &op = id_op.second;
-    if (isComputable(op.get(), graph)) {
+    if (isComputable(op.get(), graph) && shouldBeFolded(op.get(), graph)) {
       computable_ops.insert(op.get());
     }
   }
@@ -97,7 +97,7 @@ void ConstExprUtil::foldConstants(Graph &graph) {
     processOp(op, graph);
     auto out_tensor = graph.getTensors().get(out_id);
     for (auto consumer : out_tensor->consumers.getOps()) {
-      if (isComputable(consumer, graph)) {
+      if (isComputable(consumer, graph) && shouldBeFolded(consumer, graph)) {
         computable_ops.insert(consumer);
       }
     }
@@ -141,6 +141,22 @@ bool ConstExprUtil::isComputable(Op *op, Graph &graph) {
   return std::all_of(inputs.begin(), inputs.end(), [](Tensor *t) {
     return t->tensorType() == TensorType::Const;
   });
+}
+
+bool ConstExprUtil::shouldBeFolded(Op *op, Graph &graph) {
+  if (graph.getIr()
+          .getSessionOptions()
+          .enableConstantFoldingOfMultipleConsumers) {
+    return true;
+  }
+
+  auto inputs = op->input->tensors();
+  for (auto &input : inputs) {
+    if (input->consumers.getOps().size() > 1) {
+      return false;
+    }
+  }
+  return true;
 }
 
 ConstExprOpManager::ConstExprOpManager() { registerConstOps(); }

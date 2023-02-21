@@ -1699,6 +1699,14 @@ struct SessionOptions {
    */
   bool throwIfLog2ScaleTensorNotInRange = true;
 
+  /**
+   * If set to `false`, disable constant folding on ops if any input have
+   * multiple consumers.
+   *
+   * Default=`true`.
+   */
+  bool enableConstantFoldingOfMultipleConsumers = true;
+
   /// Constructor for SessionOptions.
   SessionOptions() {
     // Automatically set `enableEngineCaching` and `cachePath` if the

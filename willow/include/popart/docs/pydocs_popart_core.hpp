@@ -14788,6 +14788,10 @@ static const char *__doc_popart_SessionOptions_throwIfLog2ScaleTensorNotInRange 
 is not in the 6-bit signed integer range [-32, 31). Setting this option to false will not throw an error, however may lead to undefined behaviour
 if the value of the log2 scale tensor is outside the range. Default :code:`true` (enabled).)doc";
 
+static const char
+    *__doc_popart_SessionOptions_enableConstantFoldingOfMultipleConsumers =
+        R"doc(Specify whether to enable constant folding on ops that inputs have multiple consumers. Default :code:`true` (enabled).)doc";
+
 static const char *__doc_popart_SessionOptions_timeLimitScheduler =
     R"doc(The maximum allowed time (in seconds) that can be spent searching for a
 good graph schedule before a solution must be returned.)doc";
