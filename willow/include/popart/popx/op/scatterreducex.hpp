@@ -20,21 +20,28 @@ class Op;
 
 namespace popx {
 class Devicex;
-class ReductionStrategy;
+
+namespace scatterreduceutilx {
+class IScatterReductionStrategy;
+} // namespace scatterreduceutilx
 
 class ScatterReduceOpx : public Opx {
 public:
   ScatterReduceOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
-  poplar::Tensor createInput(InIndex index,
-                             const poplar::DebugNameAndId &dnai) const final;
+  ~ScatterReduceOpx();
+  void grow(poplar::program::Sequence &) const override final;
+  poplar::Tensor
+  createInput(InIndex index,
+              const poplar::DebugNameAndId &dnai) const override final;
 
-  InputCreatorType getInputCreatorType(InIndex index) const final;
+  InputCreatorType getInputCreatorType(InIndex index) const override final;
 
-  std::set<TensorId> mustExistBeforeCreate(InIndex) const final { return {}; }
+  std::set<TensorId> mustExistBeforeCreate(InIndex) const override final {
+    return {};
+  }
 
 private:
-  std::unique_ptr<ReductionStrategy> strategy;
+  std::unique_ptr<scatterreduceutilx::IScatterReductionStrategy> strategy;
   popops::SlicePlan plan;
   size_t axis;
   size_t group_size;
@@ -43,17 +50,21 @@ private:
 class ScatterReduceGradOpx : public Opx {
 public:
   ScatterReduceGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  ~ScatterReduceGradOpx();
+  void grow(poplar::program::Sequence &) const override final;
 
-  poplar::Tensor createInput(InIndex index,
-                             const poplar::DebugNameAndId &dnai) const final;
+  poplar::Tensor
+  createInput(InIndex index,
+              const poplar::DebugNameAndId &dnai) const override final;
 
-  InputCreatorType getInputCreatorType(InIndex index) const final;
+  InputCreatorType getInputCreatorType(InIndex index) const override final;
 
-  std::set<TensorId> mustExistBeforeCreate(InIndex) const final { return {}; }
+  std::set<TensorId> mustExistBeforeCreate(InIndex) const override final {
+    return {};
+  }
 
 private:
-  std::unique_ptr<ReductionStrategy> strategy;
+  std::unique_ptr<scatterreduceutilx::IScatterReductionStrategy> strategy;
   popops::SlicePlan plan;
   size_t axis;
   size_t group_size;
