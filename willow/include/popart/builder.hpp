@@ -1105,31 +1105,14 @@ public:
    * \param debugContext Optional debug information.
    * \return The tensor id of the result tensor.
    */
-  TensorId groupedscatterreduce(const std::vector<TensorId> &args,
-                                Attributes::Int axis_size,
-                                Attributes::Int axis,
-                                ScatterReduction reduction,
-                                Attributes::Int group_size,
-                                Attributes::Int enable_index_broadcast,
-                                const DebugContext &debugContext = {});
-
   TensorId
   groupedscatterreduce(const std::vector<TensorId> &args,
                        Attributes::Int axis_size,
-                       Attributes::Int axis             = -1,
-                       ScatterReduction reduction       = ScatterReduction::Sum,
-                       Attributes::Int group_size       = 1,
-                       const DebugContext &debugContext = {}) {
-    static const Attributes::Int enable_index_broadcast = 1;
-
-    return groupedscatterreduce(args,
-                                axis_size,
-                                axis,
-                                reduction,
-                                group_size,
-                                enable_index_broadcast,
-                                debugContext);
-  };
+                       Attributes::Int axis       = -1,
+                       ScatterReduction reduction = ScatterReduction::Sum,
+                       Attributes::Int group_size = 1,
+                       Attributes::Int enable_index_broadcast = 1,
+                       const DebugContext &debugContext       = {});
 
   /**
    * Add a scatterreduce operation to the model.
@@ -1164,21 +1147,11 @@ public:
    */
   TensorId scatterreduce(const std::vector<TensorId> &args,
                          Attributes::Int axis_size,
-                         Attributes::Int axis,
-                         ScatterReduction reduction,
-                         Attributes::Int enable_index_broadcast,
-                         const DebugContext &debugContext = {});
-
-  TensorId scatterreduce(const std::vector<TensorId> &args,
-                         Attributes::Int axis_size,
                          Attributes::Int axis       = -1,
                          ScatterReduction reduction = ScatterReduction::Sum,
-                         const DebugContext &debugContext = {}) {
+                         Attributes::Int enable_index_broadcast = 1,
+                         const DebugContext &debugContext       = {});
 
-    static const Attributes::Int enable_index_broadcast = 1;
-    return scatterreduce(
-        args, axis_size, axis, reduction, enable_index_broadcast, debugContext);
-  }
   /**
    * Add a swish operation to the model.
    *
