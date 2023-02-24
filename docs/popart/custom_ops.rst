@@ -4,7 +4,7 @@ Custom operators
 ================
 
 This section explains how to implement a custom operator (op) in PopART. Code
-from the :tutorials-repo:`Leaky ReLU custom op example <feature_examples/popart/custom_operators/leaky_relu_example>` in the Graphcore GitHub repository will be used to illustrate the concepts.
+from the :tutorials-repo:`Leaky ReLU custom op example <feature_examples/pytorch/custom_op/leaky_relu_example>` in the Graphcore GitHub repository will be used to illustrate the concepts.
 
 Overview
 --------
@@ -88,20 +88,20 @@ dynamically linked into a Python program at runtime, as shown below:
 
   ctypes.cdll.LoadLibrary(so_path)
 
-You can see how this is done in the :tutorials-repo:`LeakyReLU example <feature_examples/popart/custom_operators/leaky_relu_example/run_leaky_relu.py#L63>`.
+You can see how this is done in the :tutorials-repo:`LeakyReLU example <feature_examples/pytorch/custom_op/leaky_relu_example/run_leaky_relu.py#L63>`.
 
 .. _sec_implement_custom_op:
 
 Implementing a custom op
 ------------------------
 
-Some of the examples in the :tutorials-repo:`GitHub repository <feature_examples/popart/custom_operators>`
+Some of the examples in the :tutorials-repo:`GitHub repository <feature_examples/pytorch/custom_op>`
 have a single C++ file that defines all of the classes for a custom op. Although
 this can make it easier to see everything in one place, it can be more difficult
 to follow. So, in this section the main elements of the ``LeakyRelu`` example
 are extracted with detailed descriptions of each method.
 
-.. note:: It is good practice in C++ to put your code inside of a namespace (to avoid conflicts and for hierarchical organisation). However, this should be your own namespace, for example, ``my_custom_op``, and specifically NOT the ``popart`` namespace. Creating an op in the ``popart`` namespace can cause conflicts with members defined inside the PopART code itself.
+.. note:: It is good practice in C++ to put your code inside a namespace (to avoid conflicts and for hierarchical organisation). However, this should be your own namespace, for example ``my_custom_op``, and specifically **not** the ``popart`` namespace. Creating an op in the ``popart`` namespace can cause conflicts with members defined inside the PopART code itself.
 
 .. _sec_op_class:
 
@@ -369,7 +369,7 @@ PopART or by a reference to the op in an ONNX file.
 
 :cpp:class:`~popart::OperatorIdentifier` is a structure with the components ``domain``, ``opName`` and ``opVersion``.
 
-For the ``LeakyRelu`` example, from :tutorials-repo:`leaky_relu_custom_op.cpp <feature_examples/popart/custom_operators/leaky_relu_example/leaky_relu_custom_op.cpp#L13>` we have:
+For the ``LeakyRelu`` example, from :tutorials-repo:`leaky_relu_custom_op.cpp <feature_examples/pytorch/custom_op/leaky_relu_example/leaky_relu_custom_op.cpp#L13>` we have:
 
 .. code-block:: cpp
 
@@ -601,7 +601,7 @@ In your application, the compiled library can be loaded from Python using the ``
   import ctypes
   ctypes.cdll.LoadLibrary(so_path) # path to compiled shared library
 
-The op can be referenced, using the values in the ``OpIdentifier`` object, in a Python program using the ``builder``. For example, from :tutorials-repo:`run_leaky_relu.py <feature_examples/popart/custom_operators/leaky_relu_example/run_leaky_relu.py>`:
+The op can be referenced, using the values in the ``OpIdentifier`` object, in a Python program using the ``builder``. For example, from :tutorials-repo:`run_leaky_relu.py <feature_examples/pytorch/custom_op/leaky_relu_example/run_leaky_relu.py>`:
 
 .. code-block:: python
 
