@@ -556,7 +556,7 @@ NoneReductionStrategy::calcGradient(const ScatterReduceGradOp &op,
   }
 
   // Scatter of zeros into the gradIn
-  const auto dataInfo    = opx.inInfo(ScatterReduceGradOp::dataInIndex());
+  const auto dataInfo    = opx.inInfo(ScatterReduceGradOp::srcDataInIndex());
   const auto indicesInfo = opx.inInfo(ScatterReduceGradOp::indicesInIndex());
 
   auto numSlices  = static_cast<size_t>(dataInfo.nelms()) / group_size;
@@ -694,7 +694,7 @@ void MaxReductionStrategy::applyReduction(const Opx &opx,
                     plan,
                     poplar::OptionFlags());
 
-  if (!opx.hasInput(ScatterReduceOp::initialValuesInIndex())) {
+  if (!opx.hasInput(opx.getOp<ScatterReduceOp>().initialValuesInIndex())) {
     // TODO(T65173): make this an operator option since it can be unnecessary.
     // Replace any non-updated values with zero
     maskedFillOutput(opx, target, update, indices, prog, plan, isGrouped);
@@ -761,7 +761,7 @@ MaxReductionStrategy::calcGradient(const ScatterReduceGradOp &op,
   outputs      = alignToAxis(outputs, gradDataInfo.shape(), axis, group_size);
 
   // gradDataOut * (data == outputs)
-  const auto &data = opx.getInTensor(ScatterReduceGradOp::dataInIndex());
+  const auto &data = opx.getInTensor(ScatterReduceGradOp::srcDataInIndex());
   const auto dtype = gradData.elementType();
   const auto expr = pe::Mul(pe::_1, pe::Cast(pe::Equal(pe::_2, pe::_3), dtype));
 
@@ -800,7 +800,7 @@ void MinReductionStrategy::applyReduction(const Opx &opx,
                                           const bool isGrouped) const {
   auto &graph = opx.graph();
 
-  if (opx.hasInput(ScatterReduceOp::initialValuesInIndex())) {
+  if (opx.hasInput(opx.getOp<ScatterReduceOp>().initialValuesInIndex())) {
     popops::negInPlace(graph, target, prog, "negTarget");
   }
 
@@ -914,7 +914,7 @@ MulReductionStrategy::calcGradient(const ScatterReduceGradOp &op,
   outputs      = alignToAxis(outputs, gradDataInfo.shape(), axis, group_size);
 
   // gradDataOut * (fwdOutputs / data)
-  const auto &data = opx.getInTensor(ScatterReduceGradOp::dataInIndex());
+  const auto &data = opx.getInTensor(ScatterReduceGradOp::srcDataInIndex());
   const auto dtype = gradData.elementType();
   const auto expr =
       pe::Mul(pe::_1, pe::Mul(pe::Cast(pe::_2, dtype), pe::Inv(pe::_3)));

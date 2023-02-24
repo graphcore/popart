@@ -92,7 +92,7 @@ std::vector<std::unique_ptr<Op>> ScatterReduceOp::getGradOps() {
 }
 
 void ScatterReduceOp::setup() {
-  const auto dataInfo    = inInfo(dataInIndex());
+  const auto dataInfo    = inInfo(srcDataInIndex());
   const int64_t dataRank = static_cast<int64_t>(dataInfo.shape().size());
 
   if (-dataRank > axis || axis > dataRank - 1) {
@@ -113,11 +113,12 @@ void ScatterReduceOp::setup() {
 }
 
 void ScatterReduceOp::setupOutputInfo() {
-  const auto dataInfo = inInfo(dataInIndex());
+  const auto dataInfo = inInfo(srcDataInIndex());
   backward_shape      = dataInfo.shape();
 
   if (hasInput(initialValuesInIndex())) {
-    outInfo(outIndex()) = inInfo(initialValuesInIndex());
+    const auto initial_values_info = inInfo(initialValuesInIndex());
+    outInfo(outIndex())            = initial_values_info;
     return;
   }
 
@@ -148,7 +149,36 @@ void ScatterReduceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("index_broadcasted", index_broadcasted);
 }
 
-bool ScatterReduceOp::indexBroadcastEnabled() const {
+int64_t ScatterReduceOp::getAxis() const noexcept { return axis; }
+int64_t ScatterReduceOp::getGroupSize() const noexcept { return group_size; }
+
+ScatterReduction ScatterReduceOp::getReduction() const noexcept {
+  return reduction;
+}
+
+const Shape &ScatterReduceOp::getBackwardShape() const noexcept {
+  return backward_shape;
+}
+
+float ScatterReduceOp::getSubgraphValue() const {
+  return getLowSubgraphValue();
+}
+
+nonstd::optional<float> ScatterReduceOp::getAvailableMemoryProportion() const
+    noexcept {
+  return available_memory_proportion;
+}
+
+void ScatterReduceOp::setAvailableMemoryProportion(
+    const nonstd::optional<float> &v) {
+  available_memory_proportion = v;
+}
+
+bool ScatterReduceOp::indexBroadcasted() const noexcept {
+  return this->index_broadcasted;
+}
+
+bool ScatterReduceOp::indexBroadcastEnabled() const noexcept {
   return this->index_broadcast_enabled;
 }
 
@@ -160,7 +190,7 @@ void ScatterReduceOp::checkIndexBroadcasted() {
   // the index is provided as a vector. Further complicating matters is the
   // possibility of partial broadcasting which is not currently supported.
   namespace nd                 = poprithms::ndarray;
-  const nd::Shape dataShape    = inShape(dataInIndex());
+  const nd::Shape dataShape    = inShape(srcDataInIndex());
   const nd::Shape indicesShape = inShape(indicesInIndex());
 
   if (dataShape == indicesShape) {
@@ -205,38 +235,34 @@ ScatterReduceGradOp::ScatterReduceGradOp(const ScatterReduceOp &op)
       has_initial_values(op.hasInput(op.initialValuesInIndex())) {
 
   // The GradInOutMapper depends on the reduction used.
-  mapper.emplace_back(
-      gradInIndex(), ScatterReduceOp::outIndex(), GradOpInType::GradOut);
-  mapper.emplace_back(
-      indicesInIndex(), ScatterReduceOp::indicesInIndex(), GradOpInType::In);
+  mapper.emplace_back(gradInIndex(), op.outIndex(), GradOpInType::GradOut);
+  mapper.emplace_back(indicesInIndex(), op.indicesInIndex(), GradOpInType::In);
 
   // min/max reduction needs to know the data source for masking the gradient
   if (reduction == ScatterReduction::Max ||
       reduction == ScatterReduction::Min ||
       reduction == ScatterReduction::Mul) {
     mapper.emplace_back(
-        dataInIndex(), ScatterReduceOp::dataInIndex(), GradOpInType::In);
-    mapper.emplace_back(
-        fwdOutInIndex(), ScatterReduceOp::outIndex(), GradOpInType::Out);
+        srcDataInIndex(), op.srcDataInIndex(), GradOpInType::In);
+    mapper.emplace_back(fwdOutInIndex(), op.outIndex(), GradOpInType::Out);
 
     if (hasInitialValues()) {
-      mapper.emplace_back(initialValuesInIndex(),
-                          ScatterReduceOp::initialValuesInIndex(),
-                          GradOpInType::In);
+      mapper.emplace_back(
+          initialValuesInIndex(), op.initialValuesInIndex(), GradOpInType::In);
     }
   }
 
   // none reduction needs the data source to apply a scatter of zeros
   if (reduction == ScatterReduction::None) {
     mapper.emplace_back(
-        dataInIndex(), ScatterReduceOp::dataInIndex(), GradOpInType::In);
+        srcDataInIndex(), op.srcDataInIndex(), GradOpInType::In);
   }
 
-  grad_out_info.emplace(gradDataOutIndex(), ScatterReduceOp::dataInIndex());
+  grad_out_info.emplace(gradDataOutIndex(), op.srcDataInIndex());
 
   if (hasInitialValues()) {
     grad_out_info.emplace(gradInitialValuesOutIndex(),
-                          ScatterReduceOp::initialValuesInIndex());
+                          op.initialValuesInIndex());
   }
 }
 
@@ -264,6 +290,45 @@ void ScatterReduceGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
                      available_memory_proportion);
   os.appendAttribute("index_broadcasted", index_broadcasted);
   os.appendAttribute("has_initial_values", has_initial_values);
+}
+
+float ScatterReduceGradOp::getSubgraphValue() const {
+  return getLowSubgraphValue();
+}
+
+nonstd::optional<float>
+ScatterReduceGradOp::getAvailableMemoryProportion() const noexcept {
+  return available_memory_proportion;
+}
+
+const std::vector<GradInOutMapper> &ScatterReduceGradOp::gradInputInfo() const {
+  return mapper;
+}
+
+const std::map<int, int> &ScatterReduceGradOp::gradOutToNonGradIn() const {
+  return grad_out_info;
+}
+
+int64_t ScatterReduceGradOp::getAxis() const noexcept { return axis; }
+
+int64_t ScatterReduceGradOp::getGroupSize() const noexcept {
+  return group_size;
+}
+
+ScatterReduction ScatterReduceGradOp::getReduction() const noexcept {
+  return reduction;
+}
+
+bool ScatterReduceGradOp::indexBroadcasted() const noexcept {
+  return index_broadcasted;
+}
+
+bool ScatterReduceGradOp::indexBroadcastEnabled() const noexcept {
+  return index_broadcast_enabled;
+}
+
+bool ScatterReduceGradOp::hasInitialValues() const noexcept {
+  return has_initial_values;
 }
 
 namespace {
@@ -329,12 +394,11 @@ static OpCreator<ScatterReduceOp> ScatterReduceOpCreator(
       const auto reduction =
           info.attributes.getAttribute<Attributes::String>("reduction", "sum");
 
-      nonstd::optional<float> available_memory_proportion;
-
-      if (info.attributes.hasAttribute(sAvailMemAttribute)) {
-        available_memory_proportion =
-            info.attributes.getAttribute<Attributes::Float>(sAvailMemAttribute);
-      }
+      const nonstd::optional<float> available_memory_proportion =
+          info.attributes.hasAttribute(sAvailMemAttribute)
+              ? info.attributes.getAttribute<Attributes::Float>(
+                    sAvailMemAttribute)
+              : nonstd::optional<float>{};
 
       const int64_t enable_index_broadcast =
           info.attributes.getAttribute<Attributes::Int>(

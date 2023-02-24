@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 #include <popart/op.hpp>
+#include <popart/op/scatterreduce.hpp>
 #include <popart/vendored/optional.hpp>
 
 #include "popart/names.hpp"
@@ -15,7 +16,7 @@ namespace popart {
 class OpSerialiserBase;
 struct OperatorIdentifier;
 
-class ScatterOp : public Op {
+class ScatterOp : public ScatterReduceOp {
 public:
   ScatterOp(const OperatorIdentifier &_opid,
             int64_t axis_,
@@ -23,33 +24,19 @@ public:
             const nonstd::optional<float> &available_memory_proportion_ =
                 nonstd::nullopt);
 
-  std::unique_ptr<Op> clone() const final;
-  std::vector<std::unique_ptr<Op>> getGradOps() final;
-  void setup() final;
-
-  // Which axis to scatter on.
-  int64_t getAxis() const;
-
   static InIndex dataInIndex() { return 0; }
   static InIndex indicesInIndex() { return 1; }
   static InIndex updatesInIndex() { return 2; }
   static OutIndex outIndex() { return 0; }
+  // The position of the corresponding tensors differs between scatter and
+  // scatter reduce ops.
+  InIndex srcDataInIndex() const noexcept override;
+  InIndex initialValuesInIndex() const noexcept override;
+
+  std::unique_ptr<Op> clone() const override final;
+  std::vector<std::unique_ptr<Op>> getGradOps() override final;
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
-
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
-  nonstd::optional<float> getAvailableMemoryProportion() const {
-    return available_memory_proportion;
-  }
-
-  void setAvailableMemoryProportion(const nonstd::optional<float> v) {
-    available_memory_proportion = v;
-  }
-
-private:
-  int64_t axis = 0;
-  nonstd::optional<float> available_memory_proportion;
 };
 
 // This is a scatter of zeros into the grad input. This is because these
@@ -58,25 +45,19 @@ class ScatterDataGradOp : public Op {
 public:
   ScatterDataGradOp(const ScatterOp &op, int64_t axis);
 
-  std::unique_ptr<Op> clone() const final;
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
-  const std::map<int, int> &gradOutToNonGradIn() const final;
-  void setup() final;
-
-  // Which axis the forward op scattered on.
-  int64_t getAxis() const;
-
   static InIndex gradInIndex() { return 0; }
   static InIndex indicesInIndex() { return 1; }
   static OutIndex gradOutIndex() { return 0; }
 
+  std::unique_ptr<Op> clone() const override final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const override final;
+  const std::map<int, int> &gradOutToNonGradIn() const override final;
+  void setup() override final;
   void appendOutlineAttributes(OpSerialiserBase &) const override;
+  float getSubgraphValue() const override final;
 
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
-  nonstd::optional<float> getAvailableMemoryProportion() const {
-    return available_memory_proportion;
-  }
+  int64_t getAxis() const noexcept;
+  nonstd::optional<float> getAvailableMemoryProportion() const noexcept;
 
 private:
   int64_t axis;
@@ -89,25 +70,19 @@ class ScatterUpdateGradOp : public Op {
 public:
   ScatterUpdateGradOp(const ScatterOp &op, int64_t axis);
 
-  std::unique_ptr<Op> clone() const final;
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
-  const std::map<int, int> &gradOutToNonGradIn() const final;
-  void setup() final;
-
-  // Which axis the forward op scattered on.
-  int64_t getAxis() const;
-
   static InIndex gradInIndex() { return 0; }
   static InIndex indicesInIndex() { return 1; }
   static OutIndex gradOutIndex() { return 0; }
 
+  std::unique_ptr<Op> clone() const override final;
+  void setup() override final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const override final;
+  const std::map<int, int> &gradOutToNonGradIn() const override final;
   void appendOutlineAttributes(OpSerialiserBase &) const override;
+  float getSubgraphValue() const override final;
 
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
-  nonstd::optional<float> getAvailableMemoryProportion() const {
-    return available_memory_proportion;
-  }
+  int64_t getAxis() const noexcept;
+  nonstd::optional<float> getAvailableMemoryProportion() const noexcept;
 
 private:
   int64_t axis;

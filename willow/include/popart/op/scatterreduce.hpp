@@ -35,40 +35,28 @@ public:
                   const nonstd::optional<float> &available_memory_proportion_,
                   const Op::Settings &settings_);
 
-  std::unique_ptr<Op> clone() const final;
-  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  virtual InIndex srcDataInIndex() const noexcept { return 0; }
+  InIndex indicesInIndex() const noexcept { return 1; }
+  virtual InIndex initialValuesInIndex() const noexcept { return 2; }
+  OutIndex outIndex() const noexcept { return 0; }
+
   void setup() final;
-
-  // Which axis to scatter reduce on.
-  int64_t getAxis() const { return axis; }
-  int64_t getGroupSize() const { return group_size; }
-
-  ScatterReduction getReduction() const { return reduction; }
-
-  const Shape &getBackwardShape() const { return backward_shape; }
-
-  static InIndex dataInIndex() { return 0; }
-  static InIndex indicesInIndex() { return 1; }
-  static InIndex initialValuesInIndex() { return 2; }
-  static OutIndex outIndex() { return 0; }
-
+  std::unique_ptr<Op> clone() const override;
+  std::vector<std::unique_ptr<Op>> getGradOps() override;
   void appendOutlineAttributes(OpSerialiserBase &) const override;
+  float getSubgraphValue() const override final;
 
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
-  nonstd::optional<float> getAvailableMemoryProportion() const {
-    return available_memory_proportion;
-  }
-
-  void setAvailableMemoryProportion(const nonstd::optional<float> v) {
-    available_memory_proportion = v;
-  }
+  int64_t getAxis() const noexcept;
+  int64_t getGroupSize() const noexcept;
+  ScatterReduction getReduction() const noexcept;
+  const Shape &getBackwardShape() const noexcept;
+  bool indexBroadcasted() const noexcept;
+  bool indexBroadcastEnabled() const noexcept;
+  nonstd::optional<float> getAvailableMemoryProportion() const noexcept;
+  void setAvailableMemoryProportion(const nonstd::optional<float> &v);
 
   static std::string reductionToString(ScatterReduction reduction);
   static ScatterReduction reductionFromString(const std::string &reductionStr);
-
-  bool indexBroadcasted() const { return index_broadcasted; }
-  bool indexBroadcastEnabled() const;
 
 private:
   void setupOutputInfo();
@@ -88,43 +76,28 @@ class ScatterReduceGradOp : public Op {
 public:
   ScatterReduceGradOp(const ScatterReduceOp &op);
 
-  std::unique_ptr<Op> clone() const final;
-
-  const std::vector<GradInOutMapper> &gradInputInfo() const final {
-    return mapper;
-  }
-
-  const std::map<int, int> &gradOutToNonGradIn() const final {
-    return grad_out_info;
-  }
-  void setup() final;
-
-  int64_t getAxis() const { return axis; }
-  int64_t getGroupSize() const { return group_size; }
-
-  ScatterReduction getReduction() const { return reduction; }
-
   static InIndex gradInIndex() { return 0; }
   static InIndex indicesInIndex() { return 1; }
-  static InIndex dataInIndex() { return 2; }
+  static InIndex srcDataInIndex() { return 2; }
   static InIndex fwdOutInIndex() { return 3; }
   static InIndex initialValuesInIndex() { return 4; }
-
   static OutIndex gradDataOutIndex() { return 0; }
   static OutIndex gradInitialValuesOutIndex() { return 1; }
 
+  void setup() override final;
+  std::unique_ptr<Op> clone() const override final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const override final;
+  const std::map<int, int> &gradOutToNonGradIn() const override final;
   void appendOutlineAttributes(OpSerialiserBase &) const override;
+  float getSubgraphValue() const override final;
 
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
-  nonstd::optional<float> getAvailableMemoryProportion() const {
-    return available_memory_proportion;
-  }
-
-  bool indexBroadcasted() const { return index_broadcasted; }
-  bool indexBroadcastEnabled() const { return index_broadcast_enabled; }
-
-  bool hasInitialValues() const { return has_initial_values; }
+  int64_t getAxis() const noexcept;
+  int64_t getGroupSize() const noexcept;
+  ScatterReduction getReduction() const noexcept;
+  bool indexBroadcasted() const noexcept;
+  bool indexBroadcastEnabled() const noexcept;
+  bool hasInitialValues() const noexcept;
+  nonstd::optional<float> getAvailableMemoryProportion() const noexcept;
 
 private:
   std::vector<GradInOutMapper> mapper;

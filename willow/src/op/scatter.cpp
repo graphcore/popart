@@ -27,8 +27,14 @@ ScatterOp::ScatterOp(
     int64_t axis_,
     const Op::Settings &settings_,
     const nonstd::optional<float> &available_memory_proportion_)
-    : Op(_opid, settings_), axis(axis_),
-      available_memory_proportion(available_memory_proportion_) {}
+    : ScatterReduceOp(_opid,
+                      axis_,
+                      -1,
+                      ScatterReduction::None,
+                      1 /*group_size_*/,
+                      false /*enable_index_broadcast*/,
+                      available_memory_proportion_,
+                      settings_) {}
 
 std::unique_ptr<Op> ScatterOp::clone() const {
   return std::make_unique<ScatterOp>(*this);
@@ -36,37 +42,24 @@ std::unique_ptr<Op> ScatterOp::clone() const {
 
 std::vector<std::unique_ptr<Op>> ScatterOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> result;
-
+  const auto axis = getAxis();
   result.push_back(std::make_unique<ScatterDataGradOp>(*this, axis));
   result.push_back(std::make_unique<ScatterUpdateGradOp>(*this, axis));
 
   return result;
 }
 
-int64_t ScatterOp::getAxis() const { return axis; }
-
-void ScatterOp::setup() {
-  int64_t axis_min = -static_cast<int64_t>(inShape(dataInIndex()).size());
-  int64_t axis_max = inShape(dataInIndex()).size() - 1;
-  if (axis_min > axis || axis > axis_max) {
-    throw error(
-        "ScatterOp::setup axis = {} is outside the acceptable range [{}, {}]",
-        axis,
-        axis_min,
-        axis_max);
-  }
-
-  if (inShape(indicesInIndex()) != inShape(updatesInIndex())) {
-    throw error("ScatterOp::setup Mismatched indices and updates shape");
-  }
-
-  outInfo(outIndex()) = inInfo(dataInIndex());
-}
-
 void ScatterOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendAttribute("axis", axis);
-  os.appendAttribute(sAvailMemAttribute, available_memory_proportion);
+  os.appendAttribute("axis", getAxis());
+  os.appendAttribute(sAvailMemAttribute, getAvailableMemoryProportion());
+}
+
+InIndex ScatterOp::srcDataInIndex() const noexcept {
+  return ScatterOp::updatesInIndex();
+}
+InIndex ScatterOp::initialValuesInIndex() const noexcept {
+  return ScatterOp::dataInIndex();
 }
 
 ScatterDataGradOp::ScatterDataGradOp(const ScatterOp &op, int64_t axis_)
@@ -96,12 +89,21 @@ void ScatterDataGradOp::setup() {
   outInfo(gradOutIndex()) = inInfo(gradInIndex());
 }
 
-int64_t ScatterDataGradOp::getAxis() const { return axis; }
+int64_t ScatterDataGradOp::getAxis() const noexcept { return axis; }
 
 void ScatterDataGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
   os.appendAttribute(sAvailMemAttribute, available_memory_proportion);
+}
+
+float ScatterDataGradOp::getSubgraphValue() const {
+  return getLowSubgraphValue();
+}
+
+nonstd::optional<float> ScatterDataGradOp::getAvailableMemoryProportion() const
+    noexcept {
+  return available_memory_proportion;
 }
 
 ScatterUpdateGradOp::ScatterUpdateGradOp(const ScatterOp &op, int64_t axis_)
@@ -132,12 +134,21 @@ void ScatterUpdateGradOp::setup() {
   outInfo(gradOutIndex()) = TensorInfo(type, inShape(indicesInIndex()));
 }
 
-int64_t ScatterUpdateGradOp::getAxis() const { return axis; }
+int64_t ScatterUpdateGradOp::getAxis() const noexcept { return axis; }
 
 void ScatterUpdateGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
   os.appendAttribute(sAvailMemAttribute, available_memory_proportion);
+}
+
+float ScatterUpdateGradOp::getSubgraphValue() const {
+  return getLowSubgraphValue();
+}
+
+nonstd::optional<float>
+ScatterUpdateGradOp::getAvailableMemoryProportion() const noexcept {
+  return available_memory_proportion;
 }
 
 namespace {
@@ -170,7 +181,8 @@ static OpCreator<ScatterOp> ScatterOpCreator(
         // {Onnx::Operators::Scatter_11, scatterOpDef}
     }),
     [](const OpCreatorInfo &info) {
-      int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", 0);
+      const int64_t axis =
+          info.attributes.getAttribute<Attributes::Int>("axis", 0);
 
       nonstd::optional<float> available_memory_proportion;
 

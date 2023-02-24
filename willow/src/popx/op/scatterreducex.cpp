@@ -12,6 +12,7 @@
 #include <popart/popx/opxmanager.hpp>
 
 #include "popart/graphcoreoperators.hpp"
+#include "popart/operators.hpp"
 
 namespace pe = popops::expr;
 
@@ -47,7 +48,10 @@ createStrategy(const ScatterReduction &reduction) {
 
 ScatterReduceOpx::ScatterReduceOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex), strategy(), plan(), axis() {
-  verifyOp<ScatterReduceOp>(op, {Onnx::CustomOperators::ScatterReduce});
+  verifyOp<ScatterReduceOp>(op,
+                            {Onnx::CustomOperators::ScatterReduce,
+                             Onnx::Operators::Scatter_9,
+                             Onnx::Operators::Scatter_11});
 
   const auto &srop   = getOp<ScatterReduceOp>();
   strategy           = createStrategy(srop.getReduction());
@@ -73,20 +77,22 @@ ScatterReduceOpx::~ScatterReduceOpx() = default;
 
 void ScatterReduceOpx::grow(poplar::program::Sequence &prog) const {
   const auto &srop    = getOp<ScatterReduceOp>();
-  const auto &data    = getInTensor(ScatterReduceOp::dataInIndex());
-  const auto &indices = getInTensor(ScatterReduceOp::indicesInIndex());
+  const auto &data    = getInTensor(srop.srcDataInIndex());
+  const auto &indices = getInTensor(srop.indicesInIndex());
 
+  const auto outIdx = srop.outIndex();
   poplar::Tensor out =
       createDataTensor(graph(),
-                       outInfo(ScatterReduceOp::outIndex()),
+                       outInfo(outIdx),
                        plan,
                        axis,
                        group_size,
                        srop.indexBroadcasted(),
                        getDebugNameAndId("scatterreduceOutput"));
+  const auto initialValuesIdx = srop.initialValuesInIndex();
 
-  if (srop.hasInput(ScatterReduceOp::initialValuesInIndex())) {
-    const auto &t = getInTensor(ScatterReduceOp::initialValuesInIndex());
+  if (srop.hasInput(initialValuesIdx)) {
+    const auto &t = getInTensor(initialValuesIdx);
     prog.add(poplar::program::Copy(
         t, out, false, debugContext("copyToScatterReduce")));
   } else {
@@ -94,23 +100,25 @@ void ScatterReduceOpx::grow(poplar::program::Sequence &prog) const {
   }
   strategy->forward(
       srop, *this, out, data, indices, axis, group_size, prog, plan);
-  setOutTensor(ScatterReduceOp::outIndex(), out);
+  setOutTensor(outIdx, out);
 }
 
 poplar::Tensor
 ScatterReduceOpx::createInput(InIndex index,
                               const poplar::DebugNameAndId &dnai) const {
-  if (index != ScatterReduceOp::dataInIndex() &&
-      index != ScatterReduceOp::indicesInIndex()) {
+  auto &srop            = getOp<ScatterReduceOp>();
+  const auto srcDataIdx = srop.srcDataInIndex();
+  const auto indicesIdx = srop.indicesInIndex();
+
+  if (index != srcDataIdx && index != indicesIdx) {
     throw error("ScatterReduceOpx::createInput : Invalid index = {}", index);
   }
 
   logging::debug("ScatterReduceOpx::createInput index={}", index);
 
-  auto &srop             = getOp<ScatterReduceOp>();
-  const auto indicesInfo = inInfo(ScatterReduceOp::indicesInIndex());
+  const auto indicesInfo = inInfo(indicesIdx);
 
-  if (index == ScatterReduceOp::indicesInIndex()) {
+  if (index == indicesIdx) {
     return createIndicesTensor(graph(),
                                indicesInfo,
                                plan,
@@ -121,7 +129,7 @@ ScatterReduceOpx::createInput(InIndex index,
   }
 
   return createUpdateTensor(graph(),
-                            inInfo(ScatterReduceOp::dataInIndex()),
+                            inInfo(srcDataIdx),
                             indicesInfo,
                             plan,
                             axis,
@@ -131,8 +139,9 @@ ScatterReduceOpx::createInput(InIndex index,
 }
 
 InputCreatorType ScatterReduceOpx::getInputCreatorType(InIndex index) const {
-  if (index == ScatterReduceOp::dataInIndex() ||
-      index == ScatterReduceOp::indicesInIndex()) {
+  const auto &srop = getOp<ScatterReduceOp>();
+
+  if (index == srop.srcDataInIndex() || index == srop.indicesInIndex()) {
     return InputCreatorType::CanCreate;
   }
 

@@ -1,6 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import numpy as np
 import popart
+import torch
 
 
 def test_scatter_0(op_tester):
@@ -93,6 +94,28 @@ def test_scatter_2(op_tester):
             [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [1.0, 1.0, 1.0]]
         ).astype(np.float32)
         return [output, data_grad, np.ones_like(updates)]
+
+    op_tester.lossReduction = popart.ReductionType.Sum
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")
+
+
+def test_scatter_3(op_tester):
+    updates = torch.arange(1, 11).reshape((2, 5)).float()
+    data = torch.zeros(3, 5, dtype=updates.dtype)
+    indices = torch.tensor([[0, 1, 2, 0]]).long()
+    axis = 0
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(data.numpy())
+        i2 = builder.addInputTensor(indices.numpy().astype(np.uint32))
+        i3 = builder.addInputTensor(updates.numpy())
+        o = builder.aiOnnx.scatter([i1, i2, i3], axis)
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(_):  # ref_data is an unused argument
+        return [data.scatter_(0, indices, updates)]
 
     op_tester.lossReduction = popart.ReductionType.Sum
     op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)

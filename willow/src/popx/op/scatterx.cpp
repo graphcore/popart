@@ -41,70 +41,7 @@ namespace popart {
 namespace popx {
 
 ScatterOpx::ScatterOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex), plan(), axis() {
-  verifyOp<ScatterOp>(
-      op, {Onnx::Operators::Scatter_9, Onnx::Operators::Scatter_11});
-  auto &sop    = getOp<ScatterOp>();
-  axis         = sop.getAxis();
-  auto options = createSlicePlanOptions(SlicePlanUsedFor::Update,
-                                        sop.getAvailableMemoryProportion());
-  plan         = createSlicePlan(graph(),
-                         inInfo(sop.dataInIndex()),
-                         inInfo(sop.indicesInIndex()),
-                         options);
-
-  inputCreatorPriority = std::numeric_limits<double>::max();
-}
-
-void ScatterOpx::grow(poplar::program::Sequence &prog) const {
-  auto scatterOut =
-      scatterutilx::growScatter(*this,
-                                prog,
-                                graph(),
-                                getInTensor(ScatterOp::dataInIndex()),
-                                getInTensor(ScatterOp::updatesInIndex()),
-                                getInTensor(ScatterOp::indicesInIndex()),
-                                inInfo(ScatterOp::dataInIndex()),
-                                plan,
-                                static_cast<unsigned>(axis));
-
-  setOutTensor(ScatterOp::outIndex(), scatterOut);
-}
-
-poplar::Tensor
-ScatterOpx::createInput(InIndex index,
-                        const poplar::DebugNameAndId &dnai) const {
-  if (index != ScatterOp::indicesInIndex() &&
-      index != ScatterOp::updatesInIndex()) {
-    throw error("ScatterOpx::createInput : Invalid index = {}", index);
-  }
-
-  auto indicesInfo = inInfo(ScatterOp::indicesInIndex());
-  auto uaxis       = static_cast<unsigned>(axis);
-
-  if (index == ScatterOp::indicesInIndex()) {
-    return createIndicesTensor(
-        graph(), indicesInfo, plan, uaxis, 1U, true, dnai);
-  }
-
-  return createUpdateTensor(graph(),
-                            inInfo(ScatterOp::dataInIndex()),
-                            indicesInfo,
-                            plan,
-                            uaxis,
-                            1U,
-                            /*broadcasted=*/true,
-                            dnai);
-}
-
-InputCreatorType ScatterOpx::getInputCreatorType(InIndex index) const {
-  if (index == ScatterOp::indicesInIndex() ||
-      index == ScatterOp::updatesInIndex()) {
-    return InputCreatorType::CanCreate;
-  }
-
-  return Opx::getInputCreatorType(index);
-}
+    : ScatterReduceOpx(op, devicex) {}
 
 ScatterDataGradOpx::ScatterDataGradOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {

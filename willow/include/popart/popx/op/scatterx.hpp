@@ -7,6 +7,7 @@
 #include <poplar/Tensor.hpp>
 #include <popops/DynamicSlice.hpp>
 #include <popart/names.hpp>
+#include <popart/popx/op/scatterreducex.hpp>
 #include <popart/popx/opx.hpp>
 
 #include "popart/popx/debugcontextx.hpp"
@@ -23,20 +24,9 @@ class Op;
 namespace popx {
 class Devicex;
 
-class ScatterOpx : public Opx {
+class ScatterOpx : public ScatterReduceOpx {
 public:
   ScatterOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
-  poplar::Tensor createInput(InIndex index,
-                             const poplar::DebugNameAndId &dnai) const final;
-
-  InputCreatorType getInputCreatorType(InIndex index) const final;
-
-  std::set<TensorId> mustExistBeforeCreate(InIndex) const final { return {}; }
-
-private:
-  popops::SlicePlan plan;
-  int64_t axis;
 };
 
 class ScatterDataGradOpx : public Opx {
