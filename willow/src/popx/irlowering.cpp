@@ -67,6 +67,7 @@
 #include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/loop.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/subgraph.hpp>
 #include <popart/op/varupdate.hpp>
@@ -771,10 +772,37 @@ IrLowering::getCreatorEndpoints(const Tensor *startTensor,
     std::vector<OpxInAndOutIndex> pathFromInput = tensorAndPath.second;
     searchStack.pop_back();
 
+    // The rules to select candidate creators for constant tensors:
+    //   1. not consumed by LoopOp, keep it as it is
+    //   2. consumed by LoopOp and other non-LoopOp ops, use the LoopOp
+    //   3. consumed by multiple LoopOp ops, use the one whose trip count
+    //      is biggest
+    auto consumers = tensor->consumers.getOps();
+    if (ir().getSessionOptions().useLoopCandidateCreator &&
+        (!tensor->hasProducer())) {
+      if (std::find_if(consumers.begin(), consumers.end(), [](Op *op) {
+            return op->isConvertibleTo<LoopOp>();
+          }) != consumers.end()) {
+        consumers.erase(std::remove_if(consumers.begin(),
+                                       consumers.end(),
+                                       [](Op *op) {
+                                         return !op->isConvertibleTo<LoopOp>();
+                                       }),
+                        consumers.end());
+
+        std::sort(consumers.begin(), consumers.end(), [](Op *opA, Op *opB) {
+          auto loopA = dynamic_cast<LoopOp *>(opA);
+          auto loopB = dynamic_cast<LoopOp *>(opB);
+          return loopA->getTripCountValue() >= loopB->getTripCountValue();
+        });
+        consumers.erase(consumers.begin() + 1, consumers.end());
+      }
+    }
+
     // Check if any of the consumers can extend the path
-    for (Op *op : tensor->consumers.getOps()) {
-      auto conOpId   = op->id;
-      const Opx *opx = getOpx(conOpId);
+    for (Op *op : consumers) {
+      auto conOpId    = op->id;
+      const auto *opx = getOpx(conOpId);
 
       for (InIndex inIndex : op->input->indices(ir().getTensor(tensor->id))) {
         auto f_create = [&]() {

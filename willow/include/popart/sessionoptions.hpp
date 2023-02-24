@@ -1707,6 +1707,13 @@ struct SessionOptions {
    */
   bool enableConstantFoldingOfMultipleConsumers = true;
 
+  /**
+   * Use loop candidate creator for constant if one exsits.
+   *
+   * Default=`false`.
+   */
+  bool useLoopCandidateCreator = false;
+
   /// Constructor for SessionOptions.
   SessionOptions() {
     // Automatically set `enableEngineCaching` and `cachePath` if the

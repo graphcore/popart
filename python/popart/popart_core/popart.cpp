@@ -1702,6 +1702,9 @@ PYBIND11_MODULE(popart_core, m) {
         "enableConstantFoldingOfMultipleConsumers",
         &SessionOptions::enableConstantFoldingOfMultipleConsumers,
         DOC(popart, SessionOptions, enableConstantFoldingOfMultipleConsumers));
+    cls.def_readwrite("useLoopCandidateCreator",
+                      &SessionOptions::useLoopCandidateCreator,
+                      DOC(popart, SessionOptions, useLoopCandidateCreator));
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel", DOC(popart, PatternsLevel));
