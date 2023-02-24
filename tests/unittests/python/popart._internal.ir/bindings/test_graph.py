@@ -151,3 +151,18 @@ def test_graph_get_graph_string():
 
     assert ir.getMainGraph().getGraphString() == "the main graph"
     assert g1.getGraphString() == "subgraph 'g1'"
+
+
+def test_canBeRecursivelyAutodiffed():
+    """Test if we can set and get canBeRecursivelyAutodiffed attribute."""
+    ir = _ir.Ir()
+    g1Id = _ir.GraphId("g1")
+    g1 = ir.createGraph(g1Id)
+
+    assert g1.canBeRecursivelyAutodiffed()
+
+    g1.setCanBeRecursivelyAutodiffed(False)
+    assert not g1.canBeRecursivelyAutodiffed()
+
+    g1.setCanBeRecursivelyAutodiffed(value=True)
+    assert g1.canBeRecursivelyAutodiffed()

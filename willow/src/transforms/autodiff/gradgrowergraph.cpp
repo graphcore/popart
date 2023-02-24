@@ -73,6 +73,17 @@ FwdGraphToBwdGraphInfo GradGrowerGraph::growBackwardsGraph(
       // autodiff.
       checkForModifyingOps(fwdGraph);
 
+      // Check if marked as unsafe to recursively autodiff and is not the top
+      // calling graph
+      if (!fwdGraph.canBeRecursivelyAutodiffed() &&
+          (fwdGraph.id != fwdGraphId)) {
+        throw error("The graph contains a call to another graph {} which has "
+                    "been marked as unsafe to autodiff. Please provide a "
+                    "gradient graph via `called_graphs_grad_info` in PopXL or "
+                    "`FwdGraphToBwdGraphInfo` in C++.",
+                    fwdGraph.id);
+      }
+
       // Create a fresh ID.
       GraphId bwdGraphId = bwdGraphCreator.genNewBwdGraphId(fwdGraph.id);
 

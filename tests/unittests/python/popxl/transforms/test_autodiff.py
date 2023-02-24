@@ -196,3 +196,33 @@ def test_modifying_ops(subgraph: Callable, willraise: bool):
             )
         else:
             _ = popxl.transforms.autodiff(fwd_graph)
+
+
+def test_AutodiffRecursiveSafe():
+    ir = popxl.Ir()
+    with ir.main_graph:
+        a = popxl.variable([1], name="a")
+        b = popxl.variable([1], name="b")
+
+        def graph1(a, b):
+            return a + b
+
+        graph1_fwd = ir.create_graph(graph1, a.spec, b.spec)
+        graph1_grad = popxl.transforms.autodiff(graph1_fwd)
+
+        # Prevent recursive autodiff on graph1
+        graph1_fwd._pb_graph.setCanBeRecursivelyAutodiffed(False)
+
+        def graph2(a, b):
+            return ops.call(graph1_fwd, a, b)
+
+        graph2_fwd = ir.create_graph(graph2, a.spec, b.spec)
+
+        # Cant recursively autodiff graph2->graph1
+        with pytest.raises(Exception, match="has been marked as unsafe to autodiff"):
+            popxl.transforms.autodiff(graph2_fwd)
+
+        # Can provide fwd->grad graph map
+        popxl.transforms.autodiff(
+            graph2_fwd, called_graphs_grad_info={graph1_fwd: graph1_grad}
+        )

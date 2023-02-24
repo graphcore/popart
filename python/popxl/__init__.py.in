@@ -4,7 +4,7 @@ __version__ = "@VERSION@"
 
 __all__ = [
     # context.py
-    "get_current_graph", "get_main_graph", "gcg", "gmg",
+    "get_current_graph", "get_main_graph", "get_ir", "gcg", "gmg", "gir",
     "in_sequence", "name_scope", "ipu", "io_tiles",
     # dtypes.py
     "dtype", "bool", "int8", "int16", "int32", "int64", "uint8", "uint16",
@@ -37,7 +37,7 @@ __all__ = [
 
 _import_exc = None
 try:
-    from .context import (get_current_graph, get_main_graph, gcg, gmg,
+    from .context import (get_current_graph, get_main_graph, get_ir, gcg, gmg, gir,
         in_sequence, name_scope, ipu, io_tiles)
     from .dtypes import (dtype, bool, int8, int16, int32, int64, uint8,
         uint16, uint32, uint64, half, float8_143, float8_152, float16,

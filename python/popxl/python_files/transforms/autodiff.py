@@ -425,7 +425,7 @@ def autodiff(
         _ir.GraphId(graph.name),
         [t.id for t in grads_provided],
         _ir.OptionalTensors([t.id for t in grads_required]),
-        {k: v._pb_bwd_info for k, v in called_graphs_grad_info.items()},
+        {k._pb_graph.id: v._pb_bwd_info for k, v in called_graphs_grad_info.items()},
     )
 
     result: Mapping[Graph, GradGraphInfo] = {}

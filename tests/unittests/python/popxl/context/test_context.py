@@ -16,10 +16,12 @@ def test_context_manager():
     with main:
         assert popxl.gcg() == main
         assert popxl.gmg() == main
+        assert popxl.gir() == ir
         sg = ir.create_empty_graph("sg")
         with sg:
             assert popxl.gcg() == sg
             assert popxl.gmg() == main
+            assert popxl.gir() == ir
             assert sg.main_graph == main
 
     with pytest.raises(RuntimeError):
@@ -27,6 +29,9 @@ def test_context_manager():
 
     with pytest.raises(RuntimeError):
         popxl.gmg()
+
+    with pytest.raises(RuntimeError):
+        popxl.gir()
 
 
 def test_nested_irs():

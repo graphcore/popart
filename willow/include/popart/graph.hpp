@@ -372,6 +372,17 @@ public:
                                retainConstTensors);
   }
 
+  /**
+   * If this graph X is called in graph Y, when applying autodiff to Y,
+   * is it safe to autodiff X?
+   */
+  bool canBeRecursivelyAutodiffed() const {
+    return canBeRecursivelyAutodiffed_;
+  }
+  void setCanBeRecursivelyAutodiffed(bool value) {
+    canBeRecursivelyAutodiffed_ = value;
+  }
+
 private:
   std::vector<Op *>
   growGradOps(Op *nonGradOp, const std::map<TensorId, TensorId> &gradTensorMap);
@@ -382,6 +393,7 @@ private:
   std::vector<TensorId> graph_outputs;
   std::unique_ptr<Scheduler> scheduler;
   std::unique_ptr<onnxpasses::IOnnxToOnnx> onnxToOnnx;
+  bool canBeRecursivelyAutodiffed_ = true;
 
   Ir &ir;
   TensorId loss;

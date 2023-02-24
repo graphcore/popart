@@ -200,7 +200,11 @@ void bindGraph(py::module &m) {
       .def(
           "copyFrom",
           [](Graph &self, const Graph &other) { self.copyFrom(other); },
-          py::arg("other"));
+          py::arg("other"))
+      .def("canBeRecursivelyAutodiffed", &Graph::canBeRecursivelyAutodiffed)
+      .def("setCanBeRecursivelyAutodiffed",
+           &Graph::setCanBeRecursivelyAutodiffed,
+           py::arg("value"));
 
   bindCreateOpFunctionToGraphClass(g);
 

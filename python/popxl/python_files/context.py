@@ -25,6 +25,7 @@ import popart._internal.ir as _ir
 if TYPE_CHECKING:
     from popxl.graph import Graph
     from popxl.tensor import Tensor
+    from popxl.ir import Ir
 
 InSequenceKey = Tuple[_ir.GraphId, _ir.ExecutionContext]
 
@@ -119,6 +120,17 @@ class Context:
                 "`popxl.Ir().create_graph()`"
             )
         return self._graphs[0].main_graph
+
+    @property
+    def ir(self):
+        if len(self._graphs) == 0:
+            raise RuntimeError(
+                "Trying to access the ir, but no graph has been selected. Hint - "
+                "try performing the operations in a context manager (for example "
+                "`with graph_instance:`) or inside a function that's called by "
+                "`popxl.Ir().create_graph()`"
+            )
+        return self._graphs[0].main_graph.ir
 
     @property
     def in_sequence(self):
@@ -276,9 +288,23 @@ def get_main_graph() -> "Graph":
     return get_current_context().main_graph
 
 
-# Alias for get_current_graph() and get_main_graph()
+def get_ir() -> "Ir":
+    """Get the Ir from the current context.
+
+    Raises:
+        RuntimeError:
+            If the stack is empty.
+
+    Returns:
+        Ir: The current Ir.
+    """
+    return get_current_context().ir
+
+
+# Alias for get_current_graph(), get_main_graph() and get_ir()
 gcg = get_current_graph
 gmg = get_main_graph
+gir = get_ir
 
 
 @contextmanager
