@@ -7,8 +7,8 @@ import popxl
 from popxl.utils import (
     to_numpy,
     downcast_np_dtypes,
-    host_pow2scale_then_cast,
-    host_cast_then_pow2scale,
+    host_pow2scale_cast_to_fp8,
+    host_pow2scale_cast_from_fp8,
     host_calculate_pow2scale,
 )
 from popxl.dtypes import _NP_TO_POPXL, _PT_TO_POPXL
@@ -46,7 +46,7 @@ from popxl.dtypes import _NP_TO_POPXL, _PT_TO_POPXL
     [0.1, popxl.float8_143, False, popxl.dtypes.np_dtype_float8_143], # Float8 cast
     [0.2, popxl.float8_152, False, popxl.dtypes.np_dtype_float8_152], # Float8 cast
     # Already converted float8 input.
-    [host_pow2scale_then_cast(np.arange(4, dtype='float32'), popxl.float8_143), popxl.float8_143, False, popxl.dtypes.np_dtype_float8_143], # Float8 cast
+    [host_pow2scale_cast_to_fp8(np.arange(4, dtype='float32'), popxl.float8_143), popxl.float8_143, False, popxl.dtypes.np_dtype_float8_143], # Float8 cast
 ])
 def test_to_numpy(x, dtype, downcast, exp_type):
     """ Test to_numpy output types are correct. """
@@ -148,9 +148,9 @@ def test_host_calculate_pow2scale(dtype_from, dtype_to, shape):
     [np.array([0.75,0.1875,1.5], np.float32).reshape((1,3,1)), popxl.float8_143,  0, False, np.array([0b00111100, 0b00101100, 0b01000100], popxl.dtypes.np_dtype_float8_143).reshape(1,3,1)],
     # pylint: enable=too-many-function-args
 ])
-def test_host_pow2scale_then_cast(src, dtype, log2_scale, nan_on_overflow, exp_vals):
+def test_host_pow2scale_cast_to_fp8(src, dtype, log2_scale, nan_on_overflow, exp_vals):
     """ Test host_cast_pow2scale conversion for float8. """
-    out = host_pow2scale_then_cast(src, dtype, log2_scale=log2_scale, nan_on_overflow=nan_on_overflow)
+    out = host_pow2scale_cast_to_fp8(src, dtype, log2_scale=log2_scale, nan_on_overflow=nan_on_overflow)
     assert isinstance(out, np.ndarray)
     assert np.array_equal(out, exp_vals)
 
@@ -158,19 +158,19 @@ def test_host_pow2scale_then_cast(src, dtype, log2_scale, nan_on_overflow, exp_v
 @pytest.mark.parametrize("dtype_to", [popxl.float8_143, popxl.float8_152])
 @pytest.mark.parametrize("shape", [(1, 5), (16,),  (3, 4), (1,), (2, 9, 2, 1)])
 @pytest.mark.parametrize("log2_scale", [-1, 0, 1])
-def test_host_cast_then_pow2scale(dtype_from, dtype_to, shape, log2_scale):
-    """ Test cast_then_pow2scale by generating random data, converting it to
+def test_host_pow2scale_cast_from_fp8(dtype_from, dtype_to, shape, log2_scale):
+    """ Test pow2scale_cast_from_fp8 by generating random data, converting it to
         float8, then converting it back again and checking the result is
-        close-ish. Effectively we're testing cast_then_pow2scale is the
-        inverse of host_pow2scale_then_cast.
+        close-ish. Effectively we're testing pow2scale_cast_from_fp8 is the
+        inverse of host_pow2scale_cast_to_fp8.
     """
     # Generate some random data.
     x = np.random.random(size=np.prod(shape)).reshape(shape).astype(dtype_from.as_numpy())
     # Convert to float8 data (this is tested already in
-    # test_host_pow2scale_then_cast).
-    y = host_pow2scale_then_cast(x, dtype=dtype_to, log2_scale=log2_scale, nan_on_overflow=False)
+    # test_host_pow2scale_cast_to_fp8).
+    y = host_pow2scale_cast_to_fp8(x, dtype=dtype_to, log2_scale=log2_scale, nan_on_overflow=False)
     # Convert it back again (negate the scale).
-    z = host_cast_then_pow2scale(y, dtype_from, log2_scale=-log2_scale)
+    z = host_pow2scale_cast_from_fp8(y, dtype_from, log2_scale=-log2_scale)
     np.testing.assert_allclose(x, z, rtol=0.1, atol=0.06)
 
 @pytest.mark.parametrize("copy", (True, False))

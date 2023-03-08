@@ -9,14 +9,14 @@ import torch
 import torch.nn as nn
 import popart
 
-from popxl.utils import host_cast_then_pow2scale, host_pow2scale_then_cast
+from popxl.utils import host_pow2scale_cast_from_fp8, host_pow2scale_cast_to_fp8
 
 
 def _cast_to_float8_and_back(x, fmt):
     """Cast a numpy array to float8, and then back to float16 to
     reduce rounding error when performing fused ops later"""
-    temp = host_pow2scale_then_cast(x, fmt, 0, False)
-    return host_cast_then_pow2scale(temp, popxl.float32, 0).astype(np.float16)
+    temp = host_pow2scale_cast_to_fp8(x, fmt, 0, False)
+    return host_pow2scale_cast_from_fp8(temp, popxl.float32, 0).astype(np.float16)
 
 
 @pytest.mark.parametrize("format_", [popxl.float8_143, popxl.float8_152])
@@ -62,10 +62,10 @@ def test_conv_pow2scaled(format_, log2_scale):
         b = ops.host_load(input1, "b")
 
         # Cast to fp8 on device before conv
-        a_fp8 = ops.pow2scale_then_cast(
+        a_fp8 = ops.pow2scale_cast_to_fp8(
             a, data_type=format_, log2_scale=popxl.constant(0)
         )
-        b_fp8 = ops.pow2scale_then_cast(
+        b_fp8 = ops.pow2scale_cast_to_fp8(
             b, data_type=format_, log2_scale=popxl.constant(0)
         )
 
@@ -133,10 +133,10 @@ def test_conv_transpose_pow2scaled(format_, log2_scale):
         log2_scale_t = popxl.constant(log2_scale, dtype=popxl.int32, name="log2_scale")
 
         # Cast the input and kernel tensors to float8 on the device
-        input_float8 = ops.pow2scale_then_cast(
+        input_float8 = ops.pow2scale_cast_to_fp8(
             input_t, popxl.constant(0), data_type=format_
         )
-        kernel_float8 = ops.pow2scale_then_cast(
+        kernel_float8 = ops.pow2scale_cast_to_fp8(
             kernel_t, popxl.constant(0), data_type=format_
         )
 

@@ -438,7 +438,7 @@ class Session:
                     raise TypeError(
                         f"Data for variable {tensor.id} must be passed in as an"
                         f" np.array with dtype {tensor.dtype.as_numpy()} (see"
-                        f" popxl.utils.host_pow2scale_then_cast)"
+                        f" popxl.utils.host_pow2scale_cast_to_fp8)"
                     )
                 data = np.array(data).astype(tensor.dtype.as_numpy())
             if data.dtype != tensor.dtype.as_numpy():

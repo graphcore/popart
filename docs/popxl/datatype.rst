@@ -153,16 +153,16 @@ functions and operations for 8-bit floats.
    * - API function
      - Description
 
-   * - :py:func:`~popxl.utils.host_pow2scale_then_cast`
+   * - :py:func:`~popxl.utils.host_pow2scale_cast_to_fp8`
      - Host-based conversion from 16/32/64-bit floating point data to a 8-bit floating point representation.
 
-   * - :py:func:`~popxl.utils.host_cast_then_pow2scale`
+   * - :py:func:`~popxl.utils.host_pow2scale_cast_from_fp8`
      - Host-based conversion from a 8-bit floating point representation back to 16/32/64-bit floating point data.
 
-   * - :py:func:`~popxl.utils.pow2scale_then_cast`
+   * - :py:func:`~popxl.utils.pow2scale_cast_to_fp8`
      - Operation to convert from 16-bit floating point to 8-bit floating point.
 
-   * - :py:func:`~popxl.utils.cast_then_pow2scale`
+   * - :py:func:`~popxl.utils.pow2scale_cast_from_fp8`
      - Operation to convert from 8-bit floating point to 16-bit floating point.
 
    * - :py:func:`~popxl.utils.matmul_pow2scaled`
@@ -178,7 +178,7 @@ can change this scaling at runtime if you so desire.
 An example of using float8 tensors in an inference graph is shown in the example 
 :download:`float8_inference.py <files/float8_inference.py>`. 
 The float16 input data is loaded onto the device as-is, then cast to float8 on the
-device with a :py:func:`~popxl.ops.pow2scale_then_cast` operator. 
+device with a :py:func:`~popxl.ops.pow2scale_cast_to_fp8` operator. 
 After this we do the cast on the host of the trained weight data (in this example 
 the weights are randomly generated), then creating the :py:func:`popxl.variable` for the float8 weights.
 

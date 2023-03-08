@@ -27,7 +27,9 @@ def test_float8_var(dtype, use_literal, log2_scale, variable_type):
     x_vals = [[1.0, 2.0], [3.0, 4.0]]
     # Some values to load on the device as uint8s.
     x_vals_as_uint8 = [
-        popxl.utils.host_pow2scale_then_cast(x_val, dtype=dtype, log2_scale=log2_scale)
+        popxl.utils.host_pow2scale_cast_to_fp8(
+            x_val, dtype=dtype, log2_scale=log2_scale
+        )
         for x_val in x_vals
     ]
 

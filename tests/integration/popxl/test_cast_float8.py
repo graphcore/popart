@@ -4,7 +4,7 @@ import popxl
 import popxl.ops as ops
 import pytest
 from popxl import float8_143, float8_152
-from popxl.utils import host_cast_then_pow2scale, host_pow2scale_then_cast
+from popxl.utils import host_pow2scale_cast_from_fp8, host_pow2scale_cast_to_fp8
 from utils import get_float8_data, get_representable_float_8_np_array
 
 import popart
@@ -18,7 +18,7 @@ import popart
     "log2_scale",
     [-4, -1, 0, 1, 4],
 )
-def test_pow2scale_then_cast(float8_format: popxl.dtype, log2_scale: int):
+def test_pow2scale_cast_to_fp8(float8_format: popxl.dtype, log2_scale: int):
     """Test casting float16 to float8 on device vs host.
 
     Args:
@@ -49,7 +49,7 @@ def test_pow2scale_then_cast(float8_format: popxl.dtype, log2_scale: int):
         input_ = ops.host_load(input0, "input_")
         log2_scale_tensor = ops.host_load(input1, "log2_scale_tensor")
 
-        cast = ops.pow2scale_then_cast(input_, log2_scale_tensor, float8_format)
+        cast = ops.pow2scale_cast_to_fp8(input_, log2_scale_tensor, float8_format)
 
         o_d2h = popxl.d2h_stream(cast.shape, cast.dtype, name="out_stream")
         ops.host_store(o_d2h, cast)
@@ -64,7 +64,7 @@ def test_pow2scale_then_cast(float8_format: popxl.dtype, log2_scale: int):
                 # 1. uint32 tensor returned from device, converted to popxl float8 numpy type
                 array_1 = outputs[o_d2h]
                 # 2. Original fp32 data converted on the host as popxl float8 numpy type
-                array_2 = host_pow2scale_then_cast(
+                array_2 = host_pow2scale_cast_to_fp8(
                     d1.astype(np.float32),
                     float8_format,
                     log2_scale,
@@ -86,7 +86,7 @@ def test_pow2scale_then_cast(float8_format: popxl.dtype, log2_scale: int):
     "log2_scale",
     [-4, -1, 0, 1, 4],
 )
-def test_cast_then_pow2scale(float8_format: popxl.dtype, log2_scale: int):
+def test_pow2scale_cast_from_fp8(float8_format: popxl.dtype, log2_scale: int):
     """Test casting float8 to float16 on device vs host.
 
     Args:
@@ -121,7 +121,7 @@ def test_cast_then_pow2scale(float8_format: popxl.dtype, log2_scale: int):
         input_ = ops.host_load(input0, "input_")
         log2_scale_tensor = ops.host_load(input1, "log2_scale_tensor")
 
-        cast = ops.cast_then_pow2scale(input_, log2_scale_tensor, popxl.float16)
+        cast = ops.pow2scale_cast_from_fp8(input_, log2_scale_tensor, popxl.float16)
 
         o_d2h = popxl.d2h_stream(cast.shape, cast.dtype, name="out_stream")
         ops.host_store(o_d2h, cast)
@@ -135,7 +135,7 @@ def test_cast_then_pow2scale(float8_format: popxl.dtype, log2_scale: int):
                 # 1. Float16 data returned to the host from device
                 array_1 = outputs[o_d2h].astype(np.float32)
                 # 2. The float8 array converted back to float32 on host.
-                array_2 = host_cast_then_pow2scale(
+                array_2 = host_pow2scale_cast_from_fp8(
                     d1_float8, popxl.float32, -log2_scale
                 )
                 np.testing.assert_equal(array_1, array_2)
@@ -148,8 +148,8 @@ def test_cast_then_pow2scale(float8_format: popxl.dtype, log2_scale: int):
 @pytest.mark.parametrize(
     "cast_op_and_types",
     [
-        (ops.cast_then_pow2scale, float8_143, popxl.float16),
-        (ops.pow2scale_then_cast, popxl.float16, float8_143),
+        (ops.pow2scale_cast_from_fp8, float8_143, popxl.float16),
+        (ops.pow2scale_cast_to_fp8, popxl.float16, float8_143),
     ],
 )
 @pytest.mark.parametrize("log2_scale", [-50, 100])

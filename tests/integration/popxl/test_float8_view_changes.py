@@ -1,7 +1,7 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 import popxl
 import popxl.ops as ops
-from popxl.utils import host_pow2scale_then_cast
+from popxl.utils import host_pow2scale_cast_to_fp8
 import numpy as np
 import pytest
 
@@ -29,7 +29,7 @@ class TestFloat8ViewChanges:
     def test_float8_slice(self, dtype, inplace):
         """Test you can inplace/outplace slice a float8 tensor."""
         data_in = np.random.random([4, 4, 4])
-        data_float8 = host_pow2scale_then_cast(data_in, dtype, 0, True)
+        data_float8 = host_pow2scale_cast_to_fp8(data_in, dtype, 0, True)
         ir = popxl.Ir()
         with ir.main_graph:
             t = popxl.variable(data_float8, dtype=dtype)
@@ -52,7 +52,7 @@ class TestFloat8ViewChanges:
 
         axes = [1]
         sizes = [3]
-        data_float8 = host_pow2scale_then_cast(data_in, dtype, 0, True)
+        data_float8 = host_pow2scale_cast_to_fp8(data_in, dtype, 0, True)
         ir = popxl.Ir()
         with ir.main_graph:
 
@@ -72,7 +72,7 @@ class TestFloat8ViewChanges:
         """Test you can concat 2 float8 tensors of the same type (even inplace),
         and get back the same sliced tensor."""
         data_in = np.random.random([4, 4, 4])
-        data_float8 = host_pow2scale_then_cast(data_in, dtype, 0, True)
+        data_float8 = host_pow2scale_cast_to_fp8(data_in, dtype, 0, True)
         ir = popxl.Ir()
         with ir.main_graph:
             t = popxl.variable(data_float8, dtype=dtype)
@@ -98,11 +98,11 @@ class TestFloat8ViewChanges:
     def test_float8_slice_concat_different_dtypes(self, dtype):
         """Test that you cannot concat 2 different float8 dtypes"""
         data_in = np.random.random([4, 4, 4])
-        data_float8 = host_pow2scale_then_cast(data_in, dtype, 0, True)
+        data_float8 = host_pow2scale_cast_to_fp8(data_in, dtype, 0, True)
         alternate_dtype = (
             popxl.float8_143 if dtype == popxl.float8_152 else popxl.float8_152
         )
-        data_float8_alternate = host_pow2scale_then_cast(
+        data_float8_alternate = host_pow2scale_cast_to_fp8(
             data_in, alternate_dtype, 0, True
         )
         ir = popxl.Ir()
@@ -128,7 +128,7 @@ class TestFloat8ViewChanges:
     def test_float8_reshape(self, dtype, inplace):
         """Test you can inplace/outplace reshape a float8 tensor."""
         data_in = np.random.random([4, 4, 4])
-        data_float8 = host_pow2scale_then_cast(data_in, dtype, 0, True)
+        data_float8 = host_pow2scale_cast_to_fp8(data_in, dtype, 0, True)
         ir = popxl.Ir()
         with ir.main_graph:
             t = popxl.variable(data_float8, dtype=dtype)
@@ -149,7 +149,7 @@ class TestFloat8ViewChanges:
     def test_float8_transpose(self, dtype, inplace):
         """Test you can inplace/outplace transpose a float8 tensor."""
         data_in = np.random.random([1, 2, 3])
-        data_float8 = host_pow2scale_then_cast(data_in, dtype, 0, True)
+        data_float8 = host_pow2scale_cast_to_fp8(data_in, dtype, 0, True)
         ir = popxl.Ir()
         with ir.main_graph:
             t = popxl.variable(data_float8, dtype=dtype)
@@ -169,7 +169,7 @@ class TestFloat8ViewChanges:
     def test_float8_gather(self, dtype):
         """Test you can gather a float8 tensor."""
         data_in = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9]).astype(np.float32)
-        data_float8 = host_pow2scale_then_cast(data_in, dtype, 0, True)
+        data_float8 = host_pow2scale_cast_to_fp8(data_in, dtype, 0, True)
         indices = np.arange(2, dtype=np.int32)
         ir = popxl.Ir()
         with ir.main_graph:
@@ -189,7 +189,7 @@ class TestFloat8ViewChanges:
         """Test you can subsample a float8 tensor."""
         shape = [50, 24]
         data_in = np.random.random(shape).astype(np.float32)
-        data_float8 = host_pow2scale_then_cast(data_in, dtype, 0, True)
+        data_float8 = host_pow2scale_cast_to_fp8(data_in, dtype, 0, True)
         slices = np.array([2, 4], dtype=np.int32)
         ir = popxl.Ir()
         with ir.main_graph:

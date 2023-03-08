@@ -166,7 +166,7 @@ def to_numpy(
                     "Please use float16, float32 or float64 types."
                 )
 
-            x = host_pow2scale_then_cast(x, dtype, log2_scale, nan_on_overflow)
+            x = host_pow2scale_cast_to_fp8(x, dtype, log2_scale, nan_on_overflow)
 
         if copy:
             x = x.copy()
@@ -214,7 +214,7 @@ def to_numpy(
     return x
 
 
-def host_pow2scale_then_cast(
+def host_pow2scale_cast_to_fp8(
     src: np.ndarray,
     dtype: "dtypes.dtype" = None,
     log2_scale: int = 0,
@@ -284,7 +284,7 @@ def host_pow2scale_then_cast(
     return res
 
 
-def host_cast_then_pow2scale(
+def host_pow2scale_cast_from_fp8(
     src: np.ndarray, dtype: "dtypes.dtype" = None, log2_scale: int = 0
 ):
     """

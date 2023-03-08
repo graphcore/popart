@@ -3,7 +3,7 @@ import popart._internal.ir as _ir
 import popxl
 import popxl.ops as ops
 from utils import contains_op_of_type
-from popxl.utils import host_pow2scale_then_cast
+from popxl.utils import host_pow2scale_cast_to_fp8
 import pytest
 import numpy as np
 
@@ -24,7 +24,7 @@ class TestCast:
         assert b.id.count(a.id) == 1
 
     @pytest.mark.parametrize("dtype", [popxl.float8_143, popxl.float8_152])
-    def test_pow2scale_then_cast(self, dtype):
+    def test_pow2scale_cast_to_fp8(self, dtype):
         """Cast fp32 to fp8"""
         ir = popxl.Ir()
         g = ir.main_graph
@@ -32,7 +32,7 @@ class TestCast:
         with g:
             a = popxl.variable(1, popxl.float16, name="t0")
             log2_scale = popxl.constant(0, popxl.int32, name="log2_scale")
-            b = ops.pow2scale_then_cast(a, log2_scale, dtype)
+            b = ops.pow2scale_cast_to_fp8(a, log2_scale, dtype)
 
         assert b.dtype == dtype
         assert len(g.tensors) == 3  # in, log2_scale, out
@@ -42,7 +42,7 @@ class TestCast:
 
     @pytest.mark.parametrize("from_dtype", [popxl.float8_143, popxl.float8_152])
     @pytest.mark.parametrize("to_dtype", [popxl.float16, popxl.float32])
-    def test_cast_then_pow2scale(self, from_dtype, to_dtype):
+    def test_pow2scale_cast_from_fp8(self, from_dtype, to_dtype):
         """Cast fp8 to fp32/fp64"""
         ir = popxl.Ir()
         g = ir.main_graph
@@ -54,10 +54,10 @@ class TestCast:
                 from_dtype,
                 name="in_stream_0",
             )
-            data = host_pow2scale_then_cast(data, from_dtype, 0)
+            data = host_pow2scale_cast_to_fp8(data, from_dtype, 0)
             a = ops.host_load(input0, "a")
             log2_scale = popxl.constant(0, popxl.int32, name="log2_scale")
-            b = ops.cast_then_pow2scale(a, log2_scale, to_dtype)
+            b = ops.pow2scale_cast_from_fp8(a, log2_scale, to_dtype)
 
         assert b.dtype == to_dtype
         print(g.tensors)

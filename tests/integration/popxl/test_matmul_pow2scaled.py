@@ -6,7 +6,7 @@ import pytest
 import popxl
 import popxl.ops as ops
 
-from popxl.utils import host_pow2scale_then_cast
+from popxl.utils import host_pow2scale_cast_to_fp8
 
 
 @pytest.mark.parametrize("format_", [popxl.float8_143, popxl.float8_152])
@@ -32,8 +32,8 @@ def test_fp8_matmul(format_, log2_scale):
     # Create the float8 data on host before moving it to device.
     # Note here we do not scale during the cast, as the only scaling
     # is preformed during the matmul.
-    x8_host_lhs = host_pow2scale_then_cast(x32_lhs, format_, 0, False)
-    x8_host_rhs = host_pow2scale_then_cast(x32_rhs, format_, 0, False)
+    x8_host_lhs = host_pow2scale_cast_to_fp8(x32_lhs, format_, 0, False)
+    x8_host_rhs = host_pow2scale_cast_to_fp8(x32_rhs, format_, 0, False)
 
     with main_graph:
         instream0 = popxl.h2d_stream(shape, format_, "instream0")
@@ -130,8 +130,8 @@ def test_raise_on_log2scale_not_in_range(log2_scale):
     x32_lhs: np.ndarray = np.random.rand(*shape)
     x32_rhs: np.ndarray = np.random.rand(*shape)
 
-    x8_host_lhs = host_pow2scale_then_cast(x32_lhs, format_, 0, False)
-    x8_host_rhs = host_pow2scale_then_cast(x32_rhs, format_, 0, False)
+    x8_host_lhs = host_pow2scale_cast_to_fp8(x32_lhs, format_, 0, False)
+    x8_host_rhs = host_pow2scale_cast_to_fp8(x32_rhs, format_, 0, False)
 
     with main_graph:
         instream0 = popxl.h2d_stream(shape, format_, "instream0")

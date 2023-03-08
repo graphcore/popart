@@ -28,12 +28,21 @@ def cast(t: Tensor, data_type: dtype) -> Tensor:
             The tensor to be cast.
         data_type (popxl.dtypes.dtype):
             The dtype to cast to.
+
+    Raises:
+        TypeError: If `data_type` is of type float8_143 or float8_152.
+
     Returns:
         Tensor: The tensor cast to the specified type.
     """
     ctx = get_current_context()
     g = ctx.graph
     pb_g = g._pb_graph
+
+    if data_type in [float8_143, float8_152]:
+        raise TypeError(
+            f"Data type {data_type} not supported for {__name__}, please consider pow2scale_cast_to_fp8 or pow2scale_cast_from_fp8"
+        )
 
     check_in_graph(g, t=t)
 
@@ -50,7 +59,7 @@ def cast(t: Tensor, data_type: dtype) -> Tensor:
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
-def pow2scale_then_cast(t: Tensor, log2_scale: Tensor, data_type: dtype) -> Tensor:
+def pow2scale_cast_to_fp8(t: Tensor, log2_scale: Tensor, data_type: dtype) -> Tensor:
     """Add a fused operation `cast(src * pow2(log2_scale), dtype)` to cast to floating point 8 data type.
 
     See the PopXL documentation on floating point 8 types for more details.
@@ -76,7 +85,7 @@ def pow2scale_then_cast(t: Tensor, log2_scale: Tensor, data_type: dtype) -> Tens
 
     check_in_graph(g, t=t, log2_scale=log2_scale)
 
-    settings = ctx._get_op_settings("pow2scale_then_cast")
+    settings = ctx._get_op_settings("pow2scale_cast_to_fp8")
     opid = _ir.OperatorIdentifier(
         "ai.graphcore", "Pow2ScaleThenCast", 1, _ir.NumInputs(2, 2), 1
     )
@@ -91,7 +100,7 @@ def pow2scale_then_cast(t: Tensor, log2_scale: Tensor, data_type: dtype) -> Tens
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
-def cast_then_pow2scale(t: Tensor, log2_scale: Tensor, data_type: dtype):
+def pow2scale_cast_from_fp8(t: Tensor, log2_scale: Tensor, data_type: dtype):
     """Add a fused operation `cast(X, dtype) * pow2(log2_scale)` to cast from floating point 8 type.
 
     See the PopXL documentation on floating point 8 types for more details.
@@ -116,7 +125,7 @@ def cast_then_pow2scale(t: Tensor, log2_scale: Tensor, data_type: dtype):
     _check_float8_cast_log2scale_properties(log2_scale)
     check_in_graph(g, t=t, log2_scale=log2_scale)
 
-    settings = ctx._get_op_settings("cast_then_pow2scale")
+    settings = ctx._get_op_settings("pow2scale_cast_from_fp8")
     opid = _ir.OperatorIdentifier(
         "ai.graphcore", "CastThenPow2Scale", 1, _ir.NumInputs(2, 2), 1
     )

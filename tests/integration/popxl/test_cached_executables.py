@@ -14,7 +14,7 @@ import numpy as np
 import popart
 from pathlib import Path
 import popxl.ops as ops
-from popxl.utils import host_pow2scale_then_cast
+from popxl.utils import host_pow2scale_cast_to_fp8
 from utils import get_representable_float_8_np_array
 
 # `import test_util` requires adding to sys.path
@@ -49,8 +49,8 @@ def create_ir_with_copy_var_update(
         # Create the float8 data on host before moving it to device.
         # Note here we do not scale during the cast, as the only scaling
         # is performed during the matmul.
-        lhs = host_pow2scale_then_cast(lhs, dtype, 0, True)
-        rhs = host_pow2scale_then_cast(rhs, dtype, 0, True)
+        lhs = host_pow2scale_cast_to_fp8(lhs, dtype, 0, True)
+        rhs = host_pow2scale_cast_to_fp8(rhs, dtype, 0, True)
 
     with ir.main_graph:
         lhs_t = popxl.variable(lhs, name="lhs", dtype=dtype)
@@ -94,7 +94,7 @@ def run_and_compare(
         input_array = tensor_dict[input_tensor]
 
         if dtype in [popxl.float8_143, popxl.float8_152]:
-            input_val = host_pow2scale_then_cast(input_val, dtype, 0, True)
+            input_val = host_pow2scale_cast_to_fp8(input_val, dtype, 0, True)
 
         np.testing.assert_equal(input_array, input_val)
         # There will be slight loss of precision for float8 types as the inputs

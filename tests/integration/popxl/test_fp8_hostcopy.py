@@ -5,8 +5,8 @@ import pytest
 import popxl
 import popxl.ops as ops
 from popxl.utils import (
-    host_cast_then_pow2scale,
-    host_pow2scale_then_cast,
+    host_pow2scale_cast_from_fp8,
+    host_pow2scale_cast_to_fp8,
 )
 from popxl.dtypes import np_dtype_float8_143, np_dtype_float8_152
 
@@ -31,7 +31,7 @@ def test_fp8_host_load_and_store(shape, log2_scale, format_, np_fp8_dtype):
     main_graph = ir.main_graph
     x32 = np.random.rand(*shape)
 
-    x8_host = host_pow2scale_then_cast(x32, format_, log2_scale, False)
+    x8_host = host_pow2scale_cast_to_fp8(x32, format_, log2_scale, False)
     with main_graph:
         instream0 = popxl.h2d_stream(x8_host.shape, format_, "instream0")
 
@@ -48,7 +48,7 @@ def test_fp8_host_load_and_store(shape, log2_scale, format_, np_fp8_dtype):
     x8_result = outputs[outstream]
     assert x8_result.dtype == np_fp8_dtype
     np.testing.assert_array_equal(x8_result, x8_host)
-    x32_result = host_cast_then_pow2scale(x8_result, popxl.float32, -log2_scale)
+    x32_result = host_pow2scale_cast_from_fp8(x8_result, popxl.float32, -log2_scale)
 
     # There is loss of accuracy whenever converting from FP8 due to round off
     # error so we tolerate some difference.

@@ -7,7 +7,7 @@ import random
 import numpy as np
 import popxl
 from popxl import float8_143, float8_152
-from popxl.utils import host_pow2scale_then_cast
+from popxl.utils import host_pow2scale_cast_to_fp8
 
 
 def get_float8_data(
@@ -16,7 +16,7 @@ def get_float8_data(
     """Generate some random float8 data."""
     d1 = get_representable_float_8_np_array(shape, float8_format, log2_scale)
 
-    d1_float8 = host_pow2scale_then_cast(
+    d1_float8 = host_pow2scale_cast_to_fp8(
         d1.astype(np.float32),
         float8_format,
         log2_scale,

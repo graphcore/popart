@@ -7,7 +7,7 @@ from typing import Tuple
 import numpy as np
 import popxl
 import popxl.ops as ops
-from popxl.utils import host_pow2scale_then_cast
+from popxl.utils import host_pow2scale_cast_to_fp8
 import argparse
 
 # ConvFloat8 begin
@@ -103,14 +103,14 @@ def run_main(opts_: argparse.Namespace) -> None:
         # Cast begin
         # Cast to fp8 on device before conv layer
         # Note we not not scale here, as scaling is done within the conv op.
-        a_fp8 = ops.pow2scale_then_cast(
+        a_fp8 = ops.pow2scale_cast_to_fp8(
             a, data_type=popxl.float8_143, log2_scale=popxl.constant(0)
         )
 
         conv_ = ConvFloat8(opts_)
         # Convert the weight data on the host.
         # Note we not not scale here, as scaling is done within the conv op.
-        weight_fp8 = host_pow2scale_then_cast(weight, popxl.float8_143, 0, False)
+        weight_fp8 = host_pow2scale_cast_to_fp8(weight, popxl.float8_143, 0, False)
 
         W_t = popxl.variable(weight_fp8, popxl.float8_143)
         conv_graph_0 = ir.create_graph(conv_, a_fp8, log2_scale_t)
