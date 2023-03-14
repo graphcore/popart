@@ -151,6 +151,7 @@ const static AiGraphcoreOpIdV1 Atan2Inplace("Atan2Inplace");
 const static AiGraphcoreOpIdV1 AtanInplace("AtanInplace");
 const static AiGraphcoreOpIdV1 AutoLossScaleProxy("AutoLossScaleProxy", 1, 1);
 const static AiGraphcoreOpIdV1 BatchNormalization_1("BatchNormalization", 5, 5);
+const static AiGraphcoreOpIdV1 Bucketize("Bucketize", 2, 1);
 const static AiGraphcoreOpIdV1 Call_1("Call");
 const static AiGraphcoreOpIdV1 CeilInplace("CeilInplace");
 const static AiGraphcoreOpIdV1 ClipInplace("ClipInplace");
@@ -384,6 +385,7 @@ const static OperatorIdentifier ScatterReduce = CustomOperators::ScatterReduce;
 const static OperatorIdentifier Swish         = CustomOperators::Swish;
 const static OperatorIdentifier AllReduce     = CustomOperators::AllReduce;
 const static OperatorIdentifier TensorRemap   = CustomOperators::TensorRemap_1;
+const static OperatorIdentifier Bucketize     = CustomOperators::Bucketize;
 } // namespace OpSet1
 } // namespace AiGraphcore
 

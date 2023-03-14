@@ -8,6 +8,7 @@ add_popart_py_unit_test(batchnorm_test)
 add_popart_py_unit_test(batchnorm_pytorch_fp16_test VARIANTS Hw)
 add_popart_py_unit_test(binaryop_error_test)
 add_popart_py_unit_test(boolean_test)
+add_popart_py_unit_test(bucketize_test)
 add_popart_py_unit_test(call_test)
 add_popart_py_unit_test(call_test_ipu_model VARIANTS IpuModel2)
 add_popart_py_unit_test(cast_test_py VARIANTS Hw) # Run on Hw, because float16 is not accurately modelled on IpuModel.

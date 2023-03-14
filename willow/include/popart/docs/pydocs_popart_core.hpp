@@ -817,6 +817,25 @@ Args:
 Returns:
  The tensor id of the result tensor.)doc";
 
+static const char *__doc_popart_AiGraphcoreOpset1_bucketize =
+    R"doc(Add a bucketize operation to the model.
+
+The operation returns the indices of the buckets to which each value in the input tensor belongs. The ranges of each bucket are defined by the boundaries tensor. The returned index satisfies the following rules:
+
+right == 1: boundaries[i-1] <= input[m][n]...[l][x] < boundaries[i]
+right == 0: boundaries[i-1] < input[m][n]...[l][x] <= boundaries[i]
+
+Args:
+ args: A vector of tensor IDs containing [`input`, `boundaries`]. Where
+    * `input` is an N-D tensor or a scalar containing the search values
+    * `boundaries` is a 1-D tensor defining ranges of the buckets. This must contain a monotonically increasing sequence.
+
+ right: If 0 (default) then the left boundary is closed.
+ debugContext: Optional debug information.
+
+Returns:
+  The tensor ID of the result tensor. The result tensor has the same size and shape as the input tensor.)doc";
+
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_bitwisexnor =
     R"doc(Add a bitwise XNOR operation to the model. The operation computes the bitwise XNOR of two integer tensors. Args: args: Two broadcastable input tensors of type integer. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 

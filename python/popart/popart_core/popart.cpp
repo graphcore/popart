@@ -2681,6 +2681,12 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args")         = pybind11::list(),
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, bitwisexnor));
+    cls.def("bucketize",
+            &AiGraphcoreOpset1::bucketize,
+            py::arg("args")         = pybind11::list(),
+            py::arg("right")        = 0,
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, bucketize));
     cls.def("reducemedian",
             &AiGraphcoreOpset1::reducemedian,
             py::arg("args"),
@@ -2695,7 +2701,8 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("axis")                   = -1,
             py::arg("reduction")              = ScatterReduction::Sum,
             py::arg("enable_index_broadcast") = 1,
-            py::arg("debugContext")           = std::string());
+            py::arg("debugContext")           = std::string(),
+            DOC(popart, AiGraphcoreOpset1, scatterreduce));
     cls.def("groupedscatterreduce",
             &AiGraphcoreOpset1::groupedscatterreduce,
             py::arg("args") = pybind11::list(),

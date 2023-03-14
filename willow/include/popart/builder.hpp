@@ -1180,6 +1180,31 @@ public:
                         Attributes::Float increment,
                         Attributes::Float modulus,
                         const DebugContext &debugContext = {});
+
+  /**
+   * Add a bucketize operation to the model.
+   *
+   * The operation returns the indices of the buckets to which each value in the
+   * input tensor belongs. The ranges of each bucket are defined by the
+   * boundaries tensor. The returned index satisfies the following rules:
+   *
+   * right == 1: boundaries[i-1] <= input[m][n]...[l][x] < boundaries[i]
+   * right == 0: boundaries[i-1] < input[m][n]...[l][x] <= boundaries[i]
+   *
+   * \param args A vector of tensor IDs containing [`input`, `boundaries`].
+   * Where
+   *      * `input` is an N-D tensor or a scalar containing the search values
+   *      * `boundaries` is a 1-D tensor defining ranges of the buckets.
+   *      This must contain a monotonically increasing sequence.
+   *
+   *
+   * \param right If 0 (default) then the left boundary is closed.
+   * \return The tensor ID of the result tensor. The result tensor has the same
+   *       size and shape as the input tensor.
+   */
+  TensorId bucketize(const std::vector<TensorId> &args,
+                     Attributes::Int right            = 0,
+                     const DebugContext &debugContext = {});
 };
 
 /**

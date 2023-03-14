@@ -581,6 +581,7 @@ Available Ops (Op class)
 .. doxygenclass:: popart::BitwiseBinaryOp
 .. doxygenclass:: popart::BitwiseNotOp
 .. doxygenclass:: popart::BoundaryOp
+.. doxygenclass:: popart::BucketizeOp
 .. doxygenclass:: popart::CallGradOp
 .. doxygenclass:: popart::CallOp
 .. doxygenclass:: popart::CastGradOp

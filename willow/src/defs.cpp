@@ -72,6 +72,7 @@ void CtcLossShapeInference(InferenceContext &ctx);
 void ReduceMedianShapeInference(InferenceContext &ctx);
 void CopyVarUpdateShapeInference(InferenceContext &ctx);
 void SwishShapeInference(InferenceContext &ctx);
+void BucketizeShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -557,6 +558,14 @@ void ScatterReduceShapeInference(InferenceContext &ctx) {
   }
 }
 
+void BucketizeShapeInference(InferenceContext &ctx) {
+  auto &&outputMutableType = ctx.getOutputType(0)->mutable_tensor_type();
+
+  outputMutableType->set_elem_type(TensorProto::INT32);
+  *outputMutableType->mutable_shape() =
+      ctx.getInputType(0)->tensor_type().shape();
+}
+
 void RemainderShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
 
@@ -749,6 +758,7 @@ extern size_t dbg_count_check_BitwiseXor_AiGraphcore_ver1;
 extern size_t dbg_count_check_BitwiseXnor_AiGraphcore_ver1;
 extern size_t dbg_count_check_CopyVarUpdate_AiGraphcore_ver1;
 extern size_t dbg_count_check_Swish_AiGraphcore_ver1;
+extern size_t dbg_count_check_Bucketize_AiGraphcore_ver1;
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
 
@@ -1971,6 +1981,70 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
                         "Constrain input and output types to float tensors.")
         .TypeAndShapeInferenceFunction(SwishShapeInference))
 
+/**
+ * Add a bucketize operation to the model.
+ *
+ * The operation returns the indices of the buckets to which each value in the
+ * input tensor belongs. The ranges of each bucket are defined by the
+ * boundaries tensor. The returned index satisfies the following rules:
+ *
+ * right = 1  - boundaries[i-1] <= input[m][n]...[l][x] < boundaries[i]
+ * right = 0  - boundaries[i-1] < input[m][n]...[l][x] <= boundaries[i]
+ *
+ * \param args A vector of tensor IDs containing [`input`, `boundaries`]. Where
+ *      * `input` is an N-D tensor or a scalar containing the search values
+ *      * `boundaries` is a 1-D tensor defining ranges of the bucketes.
+ *      This must contain a monotonically increasing sequence.
+ *
+ *
+ * \param right If 0 (default) then the left boundary is closed.
+ * \return The tensor ID of the result tensor. The result tensor has the same
+ *       size as the input tensor.
+ */
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    Bucketize,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("The operation returns the indices of the buckets to which "
+                "each value in the input tensor belongs. The ranges of each "
+                "bucket are defined by the boundaries tensor. The returned "
+                "index satisfies the following rules:\n"
+                "right == 1: boundaries[i-1] <= input[m][n]...[l][x] "
+                "< boundaries[i]\n"
+                "right == 0: boundaries[i-1] < input[m][n]...[l][x] "
+                "<= boundaries[i]\n")
+        .Input(0,
+               "input",
+               "N-D input tensor or a Scalar containing the search value(s).",
+               "T")
+        .Input(1,
+               "boundaries",
+               "1-D tensor defining ranges of the buckets. "
+               "This must contain a monotonically increasing sequence."
+               "sequence.",
+               "T")
+        .Output(0,
+                "out",
+                "The output tensor, must be the same size and shape as input "
+                "if provided.",
+                "tensor(int32)")
+        .TypeConstraint("T",
+                        {"tensor(uint32)",
+                         "tensor(int32)",
+                         "tensor(float16)",
+                         "tensor(float)"},
+                        "Constrain input and boundaries types to float, "
+                        "float16, int32 and uint32.")
+        .Attr("right",
+              "If 0 (default) then the left boundary is closed.",
+              AttributeProto::INT,
+              true)
+        .TypeAndShapeInferenceFunction(BucketizeShapeInference))
+
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(popart::Domain::ai_graphcore, 1, 1);
@@ -2129,6 +2203,10 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, Swish)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, Bucketize)>());
 
   return true;
 }
