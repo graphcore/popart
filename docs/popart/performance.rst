@@ -14,7 +14,9 @@ parallelizing the execution of model partitions, with each partition operating
 on a separate mini-batch of data. We refer to these partitions here as pipeline
 stages. Refer to the section on :ref:`ipu-programmers-guide:model parallelism and pipelining` in the :doc:`ipu-programmers-guide:index` for a more detailed description of pipelining.
 
-A simple :tutorials-repo:`example of pipelining in PopART <feature_examples/popart/pipelining>` is available in the Graphcore tutorials repository.
+A simple `example of pipelining in PopART <https://github.com/graphcore/tutorials/tree/sdk-release-3.1/feature_examples/popart/pipelining>`__ is available in the Graphcore examples repository.
+
+.. note:: The PopART tutorials are only supported up to Poplar SDK 3.1.
 
 You can split a model into pipeline stages by annotating operations in the
 ONNX model using the ``Builder`` class (:py:class:`Python <popart.builder.Builder>`,
