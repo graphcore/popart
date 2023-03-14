@@ -20,35 +20,36 @@ Documentation
 Running applications in Docker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* You can run PopART applications in Docker on a Linux machine using one or more physical IPU devices. Refer to :doc:`poplar-docker:index` for more information.
+You can run PopART applications in Docker on a Linux machine using one or more physical IPU devices. Refer to :doc:`poplar-docker:index` for more information.
 
 
 Tutorials and simple examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  All tutorials are available from https://github.com/graphcore/tutorials.
+.. important:: The PopART tutorials are only supported up to Poplar SDK 3.1.
 
-  .. note:: You need to checkout the branch of the tutorials repository that corresponds to the version of the Poplar SDK you are using. The links below link to the master branch, which is the same as the latest release branch.
+All tutorials are available from the Graphcore tutorials repository on GitHub. This contains:
 
-  * :tutorials-repo:`Tutorials for PopART <tutorials/popart>`.
+* `Tutorials for PopART <https://github.com/graphcore/tutorials/tree/sdk-release-3.1/tutorials/popart>`__
 
-  * :tutorials-repo:`Simple applications for PopART <simple_applications/popart>`.
+* `Simple applications for PopART <https://github.com/graphcore/tutorials/tree/sdk-release-3.1/simple_applications/popart>`__
 
-  * :tutorials-repo:`Feature examples for PopART <feature_examples/popart>`.
+* `Feature examples for PopART <https://github.com/graphcore/tutorials/tree/sdk-release-3.1/feature_examples/popart>`__
+
+.. note:: You need to check out the branch of the tutorials repository that corresponds to the version of the Poplar SDK you are using.
 
 Application and code examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  * All examples are available from https://github.com/graphcore/examples.
+* Example applications are available in the Graphcore `examples repository <https://github.com/graphcore/examples/>`__.
 
-  .. note:: You need to checkout the branch of the examples repository that corresponds to the version of the Poplar SDK you are using. The links below link to the master branch, which is the same as the latest release branch.
+* Browse the `Graphcore Model Garden <https://www.graphcore.ai/resources/model-garden>`_. You can filter by model type and framework.
 
-  * Browse the `Graphcore Model Garden <https://www.graphcore.ai/resources/model-garden>`_. You can filter by model type and framework.
-
-Other Support
+Other support
 ~~~~~~~~~~~~~
 
-* You can use the tags “ipu”, "poplar" and "popart" when asking questions or looking for answers on StackOverflow.
+* You can use the tag “ipu” when asking questions or looking for answers on StackOverflow.
 
 * Support is available from the Graphcore customer engineering team via the `Graphcore support portal <https://support.graphcore.ai>`_.
 
+* For general help, discussions and announcements, please join our `Graphcore Slack Community <https://www.graphcore.ai/join-community>`__.
