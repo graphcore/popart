@@ -382,11 +382,10 @@ class AiOnnx9(AiOnnx8):
 
 
 class AiOnnx10(AiOnnx9):
-    """Minimal builder interface for ai.onnx version 10.
-    Once ai.onnx version 11 becomes the standard opset,
-    this class must be updated to inherit from AiOnnx11, as
-    described in T12084
-    """
+    """Minimal builder interface for ai.onnx version 10."""
+    #Once ai.onnx version 11 becomes the standard opset,
+    #this class must be updated to inherit from AiOnnx11, as
+    #described in T12084
 
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx10, self).__init__(builder, version)
