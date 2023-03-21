@@ -11,6 +11,8 @@
 #include <popart/popx/op/sliceplanx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include <poputil/TileMapping.hpp>
+
 #include "popart/graphcoreoperators.hpp"
 #include "popart/operators.hpp"
 
@@ -100,7 +102,16 @@ void ScatterReduceOpx::grow(poplar::program::Sequence &prog) const {
   }
   strategy->forward(
       srop, *this, out, data, indices, axis, group_size, prog, plan);
-  setOutTensor(outIdx, out);
+  if (group_size > 1) {
+    const poplar::Tensor remapped_result =
+        graph().addVariable(out.elementType(), out.shape(), "RemappedOutput");
+    for (int g = 0; g < group_size; g++)
+      poputil::mapTensorLinearly(graph(), remapped_result.slice(g, g + 1, 0));
+    prog.add(poplar::program::Copy(out, remapped_result));
+    setOutTensor(outIdx, remapped_result);
+  } else {
+    setOutTensor(outIdx, out);
+  }
 }
 
 poplar::Tensor
@@ -192,8 +203,16 @@ void ScatterReduceGradOpx::grow(poplar::program::Sequence &prog) const {
     throw error("ScatterReduceGradOpx must calculate at least one gradient "
                 " tensor and no more than two.");
   }
-
-  setOutTensor(ScatterReduceGradOp::gradDataOutIndex(), gradOut[0]);
+  if (group_size > 1) {
+    const poplar::Tensor remapped_result = graph().addVariable(
+        gradOut[0].elementType(), gradOut[0].shape(), "RemappedGradOutput");
+    for (int g = 0; g < group_size; g++)
+      poputil::mapTensorLinearly(graph(), remapped_result.slice(g, g + 1, 0));
+    prog.add(poplar::program::Copy(gradOut[0], remapped_result));
+    setOutTensor(ScatterReduceGradOp::gradDataOutIndex(), remapped_result);
+  } else {
+    setOutTensor(ScatterReduceGradOp::gradDataOutIndex(), gradOut[0]);
+  }
 
   if (srop.hasInitialValues()) {
     setOutTensor(ScatterReduceGradOp::gradInitialValuesOutIndex(), gradOut[1]);

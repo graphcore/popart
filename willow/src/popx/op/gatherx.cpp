@@ -15,6 +15,7 @@
 #include <popops/DynamicSlice.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
+#include <poputil/TileMapping.hpp>
 #include <popart/error.hpp>
 #include <popart/op/gather.hpp>
 #include <popart/popx/irlowering.hpp>
@@ -155,7 +156,16 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
   // Reshape into the expected ONNX shape.
   result = result.reshape(outputShape);
 
-  setOutTensor(GatherOp::outIndex(), result);
+  if (isGrouped()) {
+    const poplar::Tensor remapped_result = graph().addVariable(
+        result.elementType(), result.shape(), "RemappedResult");
+    for (int g = 0; g < group_size; g++)
+      poputil::mapTensorLinearly(graph(), remapped_result.slice(g, g + 1, 0));
+    prog.add(poplar::program::Copy(result, remapped_result));
+    setOutTensor(GatherOp::outIndex(), remapped_result);
+  } else {
+    setOutTensor(GatherOp::outIndex(), result);
+  }
 }
 
 std::tuple<poplar::Tensor, poplar::Tensor>
@@ -476,7 +486,16 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
                            poplar::OptionFlags(),
                            debugContext("gatherGrad"));
   }
-  setOutTensor(GatherGradOp::gradOutIndex(), result);
+  if (isGrouped()) {
+    const poplar::Tensor remapped_result = graph().addVariable(
+        result.elementType(), result.shape(), "RemappedGradOut");
+    for (int g = 0; g < group_size; g++)
+      poputil::mapTensorLinearly(graph(), remapped_result.slice(g, g + 1, 0));
+    prog.add(poplar::program::Copy(result, remapped_result));
+    setOutTensor(GatherGradOp::gradOutIndex(), remapped_result);
+  } else {
+    setOutTensor(GatherGradOp::gradOutIndex(), result);
+  }
 }
 
 namespace {
