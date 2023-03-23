@@ -58,7 +58,9 @@ void GatherBaseOpx::setCommonMembersPostVerify(const Op *op) {
 
 GatherOpx::GatherOpx(Op *op, Devicex *devicex) : GatherBaseOpx(op, devicex) {
   verifyOp<GatherOp>(op,
-                     {Onnx::Operators::Gather_1, Onnx::Operators::Gather_11});
+                     {Onnx::Operators::Gather_1,
+                      Onnx::Operators::Gather_11,
+                      Onnx::CustomOperators::GroupedGather});
 
   setCommonMembersPostVerify(op);
 
@@ -281,7 +283,9 @@ std::set<TensorId> GatherBaseOpx::mustExistBeforeCreate(int) const {
 }
 
 GatherGradOpx::GatherGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<GatherGradOp>(op, Onnx::GradOperators::GatherGrad);
+  verifyOp<GatherGradOp>(op,
+                         {Onnx::GradOperators::GatherGrad,
+                          Onnx::CustomGradOperators::GroupedGatherGrad});
 
   auto &gop              = getOp<GatherGradOp>();
   axis                   = gop.getAxis();
@@ -500,8 +504,11 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 OpxCreator<GatherOpx> gatherOpxCreator({Onnx::Operators::Gather_1,
-                                        Onnx::Operators::Gather_11});
-OpxCreator<GatherGradOpx> gatherGradOpxCreator(Onnx::GradOperators::GatherGrad);
+                                        Onnx::Operators::Gather_11,
+                                        Onnx::CustomOperators::GroupedGather});
+OpxCreator<GatherGradOpx>
+    gatherGradOpxCreator({Onnx::GradOperators::GatherGrad,
+                          Onnx::CustomGradOperators::GroupedGatherGrad});
 } // namespace
 
 } // namespace popx

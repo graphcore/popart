@@ -1319,9 +1319,11 @@ TensorId AiGraphcoreOpset1::groupedgather(const std::vector<TensorId> &args,
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
   attributes.insert({sDebugInfoId, di.getId()});
 
-  constexpr int version = 10;
-  auto outputs =
-      impl->op(Onnx::AiOnnx::OpSet10::Gather, version, args, attributes, {di});
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::GroupedGather,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          {di});
 
   di.setOutputs(outputs);
   return outputs.at(0);

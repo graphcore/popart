@@ -194,6 +194,7 @@ const static AiGraphcoreOpIdV1 GetRandomSeed("GetRandomSeed");
 const static AiGraphcoreOpIdV1 GradCopyFromHost("GradCopyFromHost");
 const static AiGraphcoreOpIdV1 GradientAccumulation("GradientAccl");
 const static AiGraphcoreOpIdV1 GroupNormalization_1("GroupNormalization", 3, 3);
+const static AiGraphcoreOpIdV1 GroupedGather("GroupedGather", 2, 1);
 const static AiGraphcoreOpIdV1 HardSigmoidInplace("HardSigmoidInplace");
 const static AiGraphcoreOpIdV1 Histogram("Histogram", 1, 1);
 const static AiGraphcoreOpIdV1 HostSGD0VarUpdate("HostSGD0VarUpdate");
@@ -386,6 +387,8 @@ const static OperatorIdentifier Swish         = CustomOperators::Swish;
 const static OperatorIdentifier AllReduce     = CustomOperators::AllReduce;
 const static OperatorIdentifier TensorRemap   = CustomOperators::TensorRemap_1;
 const static OperatorIdentifier Bucketize     = CustomOperators::Bucketize;
+const static OperatorIdentifier GroupedGather = CustomOperators::GroupedGather;
+
 } // namespace OpSet1
 } // namespace AiGraphcore
 
@@ -401,6 +404,7 @@ const static AiGraphcoreOpIdV1 AddBiasDataGrad("AddBiasDataGrad");
 const static AiGraphcoreOpIdV1 CallGrad("CallGrad");
 const static AiGraphcoreOpIdV1 DynamicSlicePadGrad("DynamicSlicePadGrad");
 const static AiGraphcoreOpIdV1 DynamicZeroGrad("DynamicZeroGrad");
+const static AiGraphcoreOpIdV1 GroupedGatherGrad("GroupedGatherGrad");
 const static AiGraphcoreOpIdV1 IfConditionGrad("IfConditionGrad");
 const static AiGraphcoreOpIdV1 IfGrad("IfGrad");
 const static AiGraphcoreOpIdV1 L1Grad("L1Grad");

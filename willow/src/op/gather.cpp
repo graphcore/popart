@@ -100,8 +100,12 @@ bool GatherOp::canBeReplacedByIdentity() const {
 GatherGradOp::GatherGradOp(const GatherOp &op,
                            int64_t axis_,
                            int64_t group_size_)
-    : Op(Onnx::GradOperators::GatherGrad, op.getSettings()), axis(axis_),
-      group_size(group_size_), fwdDataInfo(op.inInfo(GatherOp::dataInIndex())),
+    : Op((op.opid == Onnx::CustomOperators::GroupedGather
+              ? Onnx::CustomGradOperators::GroupedGatherGrad
+              : Onnx::GradOperators::GatherGrad),
+         op.getSettings()),
+      axis(axis_), group_size(group_size_),
+      fwdDataInfo(op.inInfo(GatherOp::dataInIndex())),
       available_memory_proportion(op.getAvailableMemoryProportion()) {}
 
 std::unique_ptr<Op> GatherGradOp::clone() const {
@@ -159,7 +163,8 @@ static OpDefinition gatherOpDef(
 
 static OpCreator<GatherOp> gatherOpCreator(
     OpDefinitions({{Onnx::Operators::Gather_1, gatherOpDef},
-                   {Onnx::Operators::Gather_11, gatherOpDef}}),
+                   {Onnx::Operators::Gather_11, gatherOpDef},
+                   {Onnx::CustomOperators::GroupedGather, gatherOpDef}}),
     [](const OpCreatorInfo &info) {
       int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", 0);
       int64_t group_size =

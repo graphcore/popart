@@ -558,6 +558,36 @@ void ScatterReduceShapeInference(InferenceContext &ctx) {
   }
 }
 
+void GroupedGatherShapeInference(InferenceContext &ctx) {
+  propagateElemTypeFromInputToOutput(ctx, 0, 0);
+
+  auto axis = getIntAttribute(ctx, "axis");
+
+  const auto &inputShape   = getInputShape(ctx, 0);
+  const auto &indicesShape = getInputShape(ctx, 1);
+  const auto inputRank     = inputShape.dim_size();
+  const auto indicesRank   = indicesShape.dim_size();
+
+  // ONNX allows the axis attribute to be negative
+  axis = axis % inputRank; // axis in the range [-m+1, m-1]
+  axis += inputRank;       // axis in the range [0, 2m-1]
+  axis = axis % inputRank; // axis in the range [0, m-1]
+
+  auto *outputShape = getOutputShape(ctx, 0);
+
+  for (int i = 0; i < axis; i++) {
+    outputShape->add_dim()->set_dim_value(inputShape.dim(i).dim_value());
+  }
+
+  for (int i = 1; i < indicesRank; ++i) {
+    outputShape->add_dim()->set_dim_value(indicesShape.dim(i).dim_value());
+  }
+
+  for (int i = axis + 1; i < inputRank; i++) {
+    outputShape->add_dim()->set_dim_value(inputShape.dim(i).dim_value());
+  }
+}
+
 void BucketizeShapeInference(InferenceContext &ctx) {
   auto &&outputMutableType = ctx.getOutputType(0)->mutable_tensor_type();
 
@@ -759,6 +789,7 @@ extern size_t dbg_count_check_BitwiseXnor_AiGraphcore_ver1;
 extern size_t dbg_count_check_CopyVarUpdate_AiGraphcore_ver1;
 extern size_t dbg_count_check_Swish_AiGraphcore_ver1;
 extern size_t dbg_count_check_Bucketize_AiGraphcore_ver1;
+extern size_t dbg_count_check_GroupedGather_AiGraphcore_ver1;
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
 
@@ -1647,6 +1678,47 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(ScatterReduceShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
+    GroupedGather,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Given data tensor of rank r >= 1, and indices tensor of rank "
+                "q, gather entries of the axis dimension of data"
+                "(by default outer-most one as axis=0) indexed by indices, "
+                "and concatenates them in an output tensor of rank "
+                "q + (r - 1) for each group.")
+        .Input(0, "data", "Input tensor", "T")
+        .Input(1, "indices", "Indices defining the gather operation", "T")
+        .Output(0, "output", "Output tensor", "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(uint8)",
+             "tensor(uint16)",
+             "tensor(uint32)",
+             "tensor(uint64)",
+             "tensor(int8)",
+             "tensor(int16)",
+             "tensor(int32)",
+             "tensor(int64)",
+             "tensor(float16)",
+             "tensor(float)",
+             "tensor(bool)"},
+            "Input and output types can be any type supported by the IPU.")
+        .Attr("axis",
+              "(default = 0 Which axis to gather on. Negative value means  "
+              "dcounting imensions from the back. Accepted range is [-r, r-1] "
+              "where r = rank(data))",
+              AttributeProto::INT,
+              static_cast<int64_t>(-1))
+        .Attr("group_size",
+              "The group size (default = 1) of the data.",
+              AttributeProto::INT,
+              static_cast<int64_t>(1))
+        .TypeAndShapeInferenceFunction(GroupedGatherShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
 
     Init,
     AiGraphcore,
@@ -2207,6 +2279,10 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, Bucketize)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, GroupedGather)>());
 
   return true;
 }
