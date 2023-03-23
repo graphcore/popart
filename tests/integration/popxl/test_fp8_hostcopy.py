@@ -4,7 +4,7 @@ import pytest
 
 import popxl
 import popxl.ops as ops
-from popxl.utils import (
+from popxl.fp8_utils import (
     host_pow2scale_cast_from_fp8,
     host_pow2scale_cast_to_fp8,
 )

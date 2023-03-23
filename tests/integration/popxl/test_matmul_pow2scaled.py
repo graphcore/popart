@@ -6,7 +6,7 @@ import pytest
 import popxl
 import popxl.ops as ops
 
-from popxl.utils import host_pow2scale_cast_to_fp8
+from popxl.fp8_utils import host_pow2scale_cast_to_fp8
 
 
 @pytest.mark.parametrize("format_", [popxl.float8_143, popxl.float8_152])

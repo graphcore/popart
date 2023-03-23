@@ -4,7 +4,7 @@ import popxl
 import popxl.ops as ops
 import pytest
 from popxl import float8_143, float8_152
-from popxl.utils import host_pow2scale_cast_from_fp8, host_pow2scale_cast_to_fp8
+from popxl.fp8_utils import host_pow2scale_cast_from_fp8, host_pow2scale_cast_to_fp8
 from utils import get_float8_data, get_representable_float_8_np_array
 
 import popart

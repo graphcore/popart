@@ -153,19 +153,19 @@ functions and operations for 8-bit floats.
    * - API function
      - Description
 
-   * - :py:func:`~popxl.utils.host_pow2scale_cast_to_fp8`
+   * - :py:func:`~popxl.fp8_utils.host_pow2scale_cast_to_fp8`
      - Host-based conversion from 16/32/64-bit floating point data to a 8-bit floating point representation.
 
-   * - :py:func:`~popxl.utils.host_pow2scale_cast_from_fp8`
+   * - :py:func:`~popxl.fp8_utils.host_pow2scale_cast_from_fp8`
      - Host-based conversion from a 8-bit floating point representation back to 16/32/64-bit floating point data.
 
-   * - :py:func:`~popxl.utils.pow2scale_cast_to_fp8`
+   * - :py:func:`~popxl.fp8_utils.pow2scale_cast_to_fp8`
      - Operation to convert from 16-bit floating point to 8-bit floating point.
 
-   * - :py:func:`~popxl.utils.pow2scale_cast_from_fp8`
+   * - :py:func:`~popxl.fp8_utils.pow2scale_cast_from_fp8`
      - Operation to convert from 8-bit floating point to 16-bit floating point.
 
-   * - :py:func:`~popxl.utils.matmul_pow2scaled`
+   * - :py:func:`~popxl.ops.matmul_pow2scaled`
      - Operation to perform a matmul on 8-bit floating point data resulting in 16-bit floating point output.
 
 Note that for device-based operations that support 8-bit float operands the

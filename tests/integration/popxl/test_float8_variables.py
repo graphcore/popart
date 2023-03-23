@@ -13,10 +13,10 @@ import popxl.ops as ops
 @pytest.mark.parametrize(
     "variable_type",
     [
-        popxl.variable,
-        popxl.remote_variable,
-        popxl.replica_sharded_variable,
-        popxl.remote_replica_sharded_variable,
+        "variable",
+        "remote_variable",
+        "replica_sharded_variable",
+        "remote_replica_sharded_variable",
     ],
 )
 def test_float8_var(dtype, use_literal, log2_scale, variable_type):
@@ -27,7 +27,7 @@ def test_float8_var(dtype, use_literal, log2_scale, variable_type):
     x_vals = [[1.0, 2.0], [3.0, 4.0]]
     # Some values to load on the device as uint8s.
     x_vals_as_uint8 = [
-        popxl.utils.host_pow2scale_cast_to_fp8(
+        popxl.fp8_utils.host_pow2scale_cast_to_fp8(
             x_val, dtype=dtype, log2_scale=log2_scale
         )
         for x_val in x_vals
@@ -48,23 +48,23 @@ def test_float8_var(dtype, use_literal, log2_scale, variable_type):
             x_args = {"dtype": dtype}
 
         # Add a normal float8 variable to the graph.
-        if variable_type == popxl.variable:
+        if variable_type == "variable":
             x = popxl.variable(x_data, **x_args)
             x_on_device = x
 
         # Add a remote float8 variable to the graph.
-        elif variable_type == popxl.remote_variable:
+        elif variable_type == "remote_variable":
             # Create a buffer for the remote variable.
             buffer = popxl.RemoteBuffer(x_shape, dtype, 1)
             x = popxl.remote_variable(x_data, buffer, 0, **x_args)
             x_on_device = ops.remote_load(buffer, 0)
 
         # Add a replica sharded float8 variable to the graph.
-        elif variable_type == popxl.replica_sharded_variable:
+        elif variable_type == "replica_sharded_variable":
             x, shard_x = popxl.replica_sharded_variable(x_data, **x_args)
             x_on_device = ops.collectives.replicated_all_gather(shard_x)
 
-        elif variable_type == popxl.remote_replica_sharded_variable:
+        elif variable_type == "remote_replica_sharded_variable":
             # Create a buffer for the remote variable.
             buffer = popxl.RemoteBuffer(x_shape, dtype, 1)
             x = popxl.remote_replica_sharded_variable(x_data, buffer, 0, **x_args)

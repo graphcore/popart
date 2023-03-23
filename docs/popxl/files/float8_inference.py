@@ -7,7 +7,7 @@ from typing import Tuple
 import numpy as np
 import popxl
 import popxl.ops as ops
-from popxl.utils import host_pow2scale_cast_to_fp8
+from popxl.fp8_utils import host_pow2scale_cast_to_fp8
 import argparse
 
 # ConvFloat8 begin

@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import popart
 
-from popxl.utils import host_pow2scale_cast_from_fp8, host_pow2scale_cast_to_fp8
+from popxl.fp8_utils import host_pow2scale_cast_from_fp8, host_pow2scale_cast_to_fp8
 
 
 def _cast_to_float8_and_back(x, fmt):
