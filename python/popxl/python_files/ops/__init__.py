@@ -27,7 +27,8 @@ from .dynamic_slice import dynamic_slice
 from .dynamic_update import dynamic_update, dynamic_update_
 from .equal import equal
 from .exp import exp, exp_
-from .log import log
+from .floor import floor
+from .log import log, log2
 from .onehot import onehot
 from .topk import topk
 from .fmod import fmod

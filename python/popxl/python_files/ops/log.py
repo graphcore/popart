@@ -1,5 +1,6 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
+import popxl
 from popxl.context import get_current_context, op_debug_context
 from popxl.tensor import Tensor
 from .utils import check_in_graph
@@ -32,3 +33,17 @@ def log(t: Tensor) -> Tensor:
     )
 
     return Tensor._from_pb_tensor(op.outTensor(0))
+
+
+def log2(t: Tensor) -> Tensor:
+    """
+    Compute the base-2 logarithm of input tensor.
+    Args:
+        t (Tensor):
+            Input tensor.
+    Returns:
+        Tensor:
+            Output tensor.
+    """
+
+    return log(t) / log(popxl.constant(2, t.dtype))

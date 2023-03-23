@@ -124,7 +124,6 @@ def calculate_metric_mse(histogram, limits, src_bias_starting_indices, candidate
         # overflow
         for i in range(min_index_src + format_span, len(limits)):
             mse += (limits[index + format_span - 1] - limits[i]) ** 2 * histogram[i + 1]
-        print(f"mse {mse} scaling bias {scaling_bias}")
         mse_index[mse].append(scaling_bias)
 
     lowest_mse = sorted(mse_index)[0]

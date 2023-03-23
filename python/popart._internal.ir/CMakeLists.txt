@@ -36,6 +36,7 @@ list(
   ${popart_op_headers_dir}/mul.hpp
   ${popart_op_headers_dir}/div.hpp
   ${popart_op_headers_dir}/exp.hpp
+  ${popart_op_headers_dir}/floor.hpp
   ${popart_op_headers_dir}/log.hpp
   ${popart_op_headers_dir}/onehot.hpp
   ${popart_op_headers_dir}/topk.hpp
