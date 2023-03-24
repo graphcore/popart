@@ -175,11 +175,9 @@ static OpDefinition scatterOpDef({OpDefinition::Inputs({
                                   OpDefinition::Attributes({{"axis", {"*"}}})});
 
 static OpCreator<ScatterOp> ScatterOpCreator(
-    OpDefinitions({
-        {Onnx::Operators::Scatter_9, scatterOpDef},
-        // There is not a scatter 11, it has been deprecated
-        // {Onnx::Operators::Scatter_11, scatterOpDef}
-    }),
+    OpDefinitions({{Onnx::Operators::Scatter_9, scatterOpDef},
+                   {Onnx::Operators::Scatter_11, scatterOpDef},
+                   {Onnx::Operators::ScatterElements_11, scatterOpDef}}),
     [](const OpCreatorInfo &info) {
       const int64_t axis =
           info.attributes.getAttribute<Attributes::Int>("axis", 0);

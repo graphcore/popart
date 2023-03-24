@@ -171,7 +171,8 @@ ScatterUpdateGradOpx::getInputCreatorType(InIndex index) const {
 
 namespace {
 OpxCreator<ScatterOpx> scatterOpxCreator({Onnx::Operators::Scatter_9,
-                                          Onnx::Operators::Scatter_11});
+                                          Onnx::Operators::Scatter_11,
+                                          Onnx::Operators::ScatterElements_11});
 OpxCreator<ScatterDataGradOpx>
     scatterDataGradOpxCreator(Onnx::GradOperators::ScatterDataGrad);
 OpxCreator<ScatterUpdateGradOpx>

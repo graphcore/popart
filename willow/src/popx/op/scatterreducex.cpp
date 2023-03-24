@@ -53,7 +53,8 @@ ScatterReduceOpx::ScatterReduceOpx(Op *op, Devicex *devicex)
   verifyOp<ScatterReduceOp>(op,
                             {Onnx::CustomOperators::ScatterReduce,
                              Onnx::Operators::Scatter_9,
-                             Onnx::Operators::Scatter_11});
+                             Onnx::Operators::Scatter_11,
+                             Onnx::Operators::ScatterElements_11});
 
   const auto &srop   = getOp<ScatterReduceOp>();
   strategy           = createStrategy(srop.getReduction());
