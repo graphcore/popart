@@ -1113,6 +1113,12 @@ bool Pipeline::checkIsFullRecompute(Graph &graph) {
                            RecomputationType::Pipeline);
 }
 
+bool Pipeline::checkIsFullCheckpoint(Graph &graph) {
+  auto &ir = graph.getIr();
+  return (ir.getExecutionMode() == Ir::ExecutionMode::Inference) &&
+         (ir.getSessionOptions().implicitPipeliningEnabled());
+}
+
 void Pipeline::setFinalFwdStageRecomputation(Graph &graph) {
   // This annotation pass will try to set the Ops between
   // the topologically final Checkpoints and the loss
@@ -1493,9 +1499,10 @@ Pipeline::prepareForStashing(Graph &graph,
   std::set<TensorId> toStashTensors;
   // StashTensorId -> std::pair<StashRefOp, RestoreRefOps>
   std::map<TensorId, std::pair<Op *, std::vector<Op *>>> stashRestoreRefOps;
-  // If there is no recomputation, then the candidates for stashing will all be
-  // stashed.
-  if (!ir.autoRecomputationEnabled()) {
+  // If there is no recomputation or run inference, then the candidates for
+  // stashing will all be stashed.
+  if (!ir.autoRecomputationEnabled() ||
+      Pipeline::checkIsFullCheckpoint(graph)) {
     toStashTensors = toStashCandidateTensors;
   }
 

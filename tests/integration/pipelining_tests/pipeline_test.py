@@ -716,6 +716,65 @@ def test_multiple_stages_per_virtual_graph_inference(explicit):
     assert np.allclose(sessionAnchors, refAnchors)
 
 
+@tu.requires_ipu_model
+def test_multiple_stages_per_virtual_graph_sharing_same_tensor_inference():
+    bps = 4
+    dummy_data = np.random.rand(2, 2).astype(np.float32)
+    data = np.arange(bps * 2 * 2).reshape(bps, 2, 2).astype(np.float32)
+
+    def init_builder(builder):
+        x = builder.addInputTensor(dummy_data, "data0")
+
+        a = builder.aiOnnx.add([x, x])
+        b = builder.aiOnnx.mul([a, a])
+        c = builder.aiOnnx.mul([b, b])
+        rb = builder.reshape_const(builder.aiOnnx, [b], [4])
+        rc = builder.reshape_const(builder.aiOnnx, [c], [4])
+        d = builder.aiOnnx.mul([rb, rc])
+
+        builder.addOutputTensor(d)
+
+        builder.pipelineStage(a, 0)
+        builder.pipelineStage(b, 1)
+        builder.pipelineStage(c, 2)
+        builder.pipelineStage(rb, 3)
+        builder.pipelineStage(rc, 3)
+        builder.pipelineStage(d, 3)
+
+        builder.virtualGraph(a, 0)
+        builder.virtualGraph(b, 1)
+        builder.virtualGraph(c, 0)
+        builder.virtualGraph(rb, 1)
+        builder.virtualGraph(rc, 1)
+        builder.virtualGraph(d, 1)
+
+        return [d]
+
+    def ref():
+        a = data + data
+        b = a * a
+        c = b * b
+        d = b.reshape(bps, -1) * c.reshape(bps, -1)
+
+        return d
+
+    session = PopartTestSession()
+    session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
+    session.options.enablePipelining = True
+    session.options.autoRecomputation = popart.RecomputationType.Pipeline
+    session.batchesPerStep = bps
+
+    with tu.create_test_device(numIpus=2) as device:
+        session.prepare(init_builder, device=device)
+        sessionAnchors = session.run({"data0": data})
+    assert len(sessionAnchors) == 1
+    sessionAnchors = [v for _, v in sessionAnchors.items()][0]
+
+    refAnchors = ref()
+
+    assert np.allclose(sessionAnchors, refAnchors)
+
+
 # run the same model with and without revisiting ipus and compare the resultant weights.
 @tu.requires_ipu_model
 @pytest.mark.parametrize("inputType", [_INT8, _UINT8, None])

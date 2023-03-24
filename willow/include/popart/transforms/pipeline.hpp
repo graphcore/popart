@@ -189,6 +189,8 @@ public:
 
   static bool checkIsFullRecompute(Graph &graph);
 
+  static bool checkIsFullCheckpoint(Graph &graph);
+
   Pipeline() : Transform() {}
   ~Pipeline() override {}
 
