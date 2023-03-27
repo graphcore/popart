@@ -119,22 +119,23 @@ void TopKGradOp::setup() { outInfo(gradOutIndex()) = gradOutInfo; }
 namespace {
 Op *topKFactory(const OpCreatorInfo &info, Graph &graph) {
   // largest is optional
-  bool largest = checkedIntToBool(
+  const bool largest = checkedIntToBool(
       info.attributes.getAttribute<Attributes::Int>("largest", 1));
   // sorted is optional
-  bool sorted = checkedIntToBool(
+  const bool sorted = checkedIntToBool(
       info.attributes.getAttribute<Attributes::Int>("sorted", 1));
 
   // axis is optional
-  int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", -1);
+  const int64_t axis =
+      info.attributes.getAttribute<Attributes::Int>("axis", -1);
 
-  int64_t K;
+  int64_t K = 0;
   if (info.opid.version == 1) {
     // k is required, so has no default value.
     K = info.attributes.getAttribute<Attributes::Int>("k");
   } else if (info.opid.version == 10 || info.opid.version == 11) {
-    int kInIndex = 1;
-    K            = info.getInputScalarValue<int64_t>(kInIndex);
+    static constexpr int kInIndex = 1;
+    K                             = info.getInputScalarValue<int64_t>(kInIndex);
   } else {
     throw error("Unsupported operator version {} for topK", info.opid.version);
   }
