@@ -568,6 +568,11 @@ void GroupedGatherShapeInference(InferenceContext &ctx) {
   const auto inputRank     = inputShape.dim_size();
   const auto indicesRank   = indicesShape.dim_size();
 
+  if (inputRank == 0) {
+    propagateShapeFromInputToOutput(ctx, 0, 0);
+    return;
+  }
+
   // ONNX allows the axis attribute to be negative
   axis = axis % inputRank; // axis in the range [-m+1, m-1]
   axis += inputRank;       // axis in the range [0, 2m-1]
