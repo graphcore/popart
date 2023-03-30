@@ -342,16 +342,24 @@ static OpCreator<LoopOp> loopOpCreator(
       }
 
       std::vector<TensorId> parentScopedImplicitTensorIds;
+      std::map<TensorId, Tensor *> constImplicitTensors;
       auto implicitTensorIds = onnxutil::getImplicitTensorIds(callee);
       for (auto implicitTensorId : implicitTensorIds) {
         auto parentScopedImplicitTensorId =
             addScope(parentGraph, implicitTensorId);
         Tensor *tensor =
             parentGraph.getTensors().get(parentScopedImplicitTensorId);
-        if (std::find(parentScopedImplicitTensorIds.begin(),
-                      parentScopedImplicitTensorIds.end(),
-                      parentScopedImplicitTensorId) ==
-            parentScopedImplicitTensorIds.end()) {
+
+        if (parentGraph.getTensors().getConstIds().contains(
+                parentScopedImplicitTensorId)) {
+          if (constImplicitTensors.count(implicitTensorId) == 0) {
+            constImplicitTensors.insert(
+                std::pair<TensorId, Tensor *>{implicitTensorId, tensor});
+          }
+        } else if (std::find(parentScopedImplicitTensorIds.begin(),
+                             parentScopedImplicitTensorIds.end(),
+                             parentScopedImplicitTensorId) ==
+                   parentScopedImplicitTensorIds.end()) {
           opInputs.push_back({implicitTensorId, tensor->info});
           parentScopedImplicitTensorIds.push_back(parentScopedImplicitTensorId);
         }
@@ -391,6 +399,15 @@ static OpCreator<LoopOp> loopOpCreator(
                            kv.first,
                            scopedTensorId);
         calleeGraph.addInput(scopedTensorId, kv.second);
+      }
+
+      // Add Const Init into subgraph
+      for (const auto &t : constImplicitTensors) {
+        auto scopedTensorId = addScope(calleeGraph, t.first);
+        calleeGraph.addConstInit(
+            scopedTensorId, t.second->info, t.second->tensorData()->data(), "");
+        logging::op::trace(
+            "[LoopOp] Callee: {}, const: {}", callee.name(), scopedTensorId);
       }
 
       int numImplicitScanOutputs =

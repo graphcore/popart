@@ -217,6 +217,17 @@ bool ScanToLoopPattern::apply(Op *op) const {
                            true);
     }
 
+    // Add const implicit tensors
+    for (const auto &constImplcitTensor :
+         scanSubgraph.getTensors().getConstIds().v()) {
+      const Tensor *t = scanSubgraph.getTensors().get(constImplcitTensor);
+      const TensorId loopScopedTensorId =
+          addScope(loopSubgraph, removeScope(scanSubgraph, constImplcitTensor));
+      loopSubgraph.addConstInit(
+          loopScopedTensorId, t->info, t->tensorData()->data(), "");
+      tensorRemap[constImplcitTensor] = loopScopedTensorId;
+    }
+
     // Move over subgraph Ops
     for (Op *scanSgOp :
          scanSubgraph.getOpSchedule({}, RequireOptimalSchedule::No)) {
