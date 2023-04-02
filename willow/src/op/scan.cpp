@@ -230,19 +230,36 @@ static OpCreator<ScanOp> scanOpCreator(
       scanInputAxes.resize(numScanInputs, 0);
 
       std::vector<TensorId> parentScopedImplicitTensorIds;
+      std::vector<Tensor *> constImplicitTensors;
       auto implicitTensorIds = onnxutil::getImplicitTensorIds(callee);
       for (auto implicitTensorId : implicitTensorIds) {
         auto parentScopedImplicitTensorId =
             addScope(parentGraph, implicitTensorId);
         Tensor *tensor =
             parentGraph.getTensors().get(parentScopedImplicitTensorId);
-        if (std::find(parentScopedImplicitTensorIds.begin(),
-                      parentScopedImplicitTensorIds.end(),
-                      parentScopedImplicitTensorId) ==
-            parentScopedImplicitTensorIds.end()) {
+
+        if (parentGraph.getTensors().getConstIds().contains(
+                parentScopedImplicitTensorId)) {
+          if (std::find(constImplicitTensors.begin(),
+                        constImplicitTensors.end(),
+                        tensor) == constImplicitTensors.end()) {
+            constImplicitTensors.push_back(tensor);
+          }
+        } else if (std::find(parentScopedImplicitTensorIds.begin(),
+                             parentScopedImplicitTensorIds.end(),
+                             parentScopedImplicitTensorId) ==
+                   parentScopedImplicitTensorIds.end()) {
           opInputs.push_back({implicitTensorId, tensor->info});
           parentScopedImplicitTensorIds.push_back(parentScopedImplicitTensorId);
         }
+      }
+
+      // Remove constImplicitTensorId from implicitTensorIds
+      for (const auto &constImplicitTensor : constImplicitTensors) {
+        implicitTensorIds.erase(remove(implicitTensorIds.begin(),
+                                       implicitTensorIds.end(),
+                                       constImplicitTensor->id),
+                                implicitTensorIds.end());
       }
 
       logging::op::trace("[ScanOp] Callee: {}, implicit tensors: {}",
@@ -301,6 +318,14 @@ static OpCreator<ScanOp> scanOpCreator(
                            scopedTensorId,
                            info);
         calleeGraph.addInput(scopedTensorId, info);
+      }
+
+      // Add Const Init into subgraph
+      for (const auto *t : constImplicitTensors) {
+        const auto tId = addScope(calleeGraph, removeScope(graph, t->id));
+        calleeGraph.addConstInit(tId, t->info, t->tensorData()->data(), "");
+        logging::op::trace(
+            "[ScanOp] Adding callee const id: {} info: {}", tId, t->info);
       }
 
       Op *op = graph.createOp<ScanOp>(info.opid,

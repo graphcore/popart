@@ -342,16 +342,24 @@ static OpCreator<LoopOp> loopOpCreator(
       }
 
       std::vector<TensorId> parentScopedImplicitTensorIds;
+      std::vector<Tensor *> constImplicitTensors;
       auto implicitTensorIds = onnxutil::getImplicitTensorIds(callee);
       for (auto implicitTensorId : implicitTensorIds) {
         auto parentScopedImplicitTensorId =
             addScope(parentGraph, implicitTensorId);
         Tensor *tensor =
             parentGraph.getTensors().get(parentScopedImplicitTensorId);
-        if (std::find(parentScopedImplicitTensorIds.begin(),
-                      parentScopedImplicitTensorIds.end(),
-                      parentScopedImplicitTensorId) ==
-            parentScopedImplicitTensorIds.end()) {
+        if (parentGraph.getTensors().getConstIds().contains(
+                parentScopedImplicitTensorId)) {
+          if (std::find(constImplicitTensors.begin(),
+                        constImplicitTensors.end(),
+                        tensor) == constImplicitTensors.end()) {
+            constImplicitTensors.push_back(tensor);
+          }
+        } else if (std::find(parentScopedImplicitTensorIds.begin(),
+                             parentScopedImplicitTensorIds.end(),
+                             parentScopedImplicitTensorId) ==
+                   parentScopedImplicitTensorIds.end()) {
           opInputs.push_back({implicitTensorId, tensor->info});
           parentScopedImplicitTensorIds.push_back(parentScopedImplicitTensorId);
         }
@@ -391,6 +399,14 @@ static OpCreator<LoopOp> loopOpCreator(
                            kv.first,
                            scopedTensorId);
         calleeGraph.addInput(scopedTensorId, kv.second);
+      }
+
+      // Add Const Init into subgraph
+      for (const auto *t : constImplicitTensors) {
+        const auto tId = addScope(calleeGraph, removeScope(graph, t->id));
+        calleeGraph.addConstInit(tId, t->info, t->tensorData()->data(), "");
+        logging::op::trace(
+            "[LoopOp] Callee: {}, const: {}", callee.name(), tId);
       }
 
       int numImplicitScanOutputs =

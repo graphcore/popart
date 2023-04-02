@@ -215,3 +215,37 @@ def test_loop_scanout(op_tester):
         return [x, np.asarray(scanx), np.asarray(scany)]
 
     op_tester.run(init_builder, reference, step_type="infer")
+
+
+def test_loop_const_implicit_tensor(op_tester):
+    i1 = np.array([4]).astype(np.float32)
+    trip_count = 10
+
+    def init_builder(builder):
+        builder.setGraphName("main_graph")
+        a = builder.addInputTensor(i1)
+        M = builder.aiOnnx.constant(np.array(trip_count).astype(np.int64))
+        cond = builder.aiOnnx.constant(np.array(True).astype(np.bool), "cond")
+
+        k_in = builder.aiOnnx.constant(np.array([1]).astype(np.int64), "k")
+
+        loop_builder = builder.createSubgraphBuilder()
+        loop_builder.setGraphName("body")
+        # Inputs: [iteration_number, condition_in, a_in]
+        loop_builder.addInputTensor(popart.TensorInfo("INT64", []))
+        keepgoing = loop_builder.addInputTensor(popart.TensorInfo("BOOL", []))
+        a_in = loop_builder.addUntypedInputTensor(a)
+        topk = loop_builder.aiOnnx.topk([a_in, k_in], axis=0)[0]
+
+        # Outputs: [condition_out, a_out]
+        loop_builder.addOutputTensor(keepgoing)
+        loop_builder.addOutputTensor(topk)
+
+        o = builder.aiOnnx.loop([M, cond, a], 1, loop_builder)[0]
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(_):  # ref_data is an unused argument
+        return [np.array([i1[np.argmax(i1)]]).astype(np.float32)]
+
+    op_tester.run(init_builder, reference, step_type="infer")
