@@ -155,3 +155,12 @@ def test_customTransformApplierSettings():
     print("\ncustomTransformApplierSettings dict:")
     for opt, val in opts.experimentalSettings.customTransformApplierSettings.items():
         print("opt:", opt, "val:", val)
+
+
+def test_updatableNamedBuffers_option():
+    opts = popart.SessionOptions()
+    assert len(opts.updatableNamedBuffers) == 0
+    opts.updatableNamedBuffers = ["t1", "t2"]
+    assert len(opts.updatableNamedBuffers) == 2
+    assert opts.updatableNamedBuffers[0] == "t1"
+    assert opts.updatableNamedBuffers[1] == "t2"

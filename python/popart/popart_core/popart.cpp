@@ -1571,6 +1571,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("customCodelets",
                       &SessionOptions::customCodelets,
                       DOC(popart, SessionOptions, customCodelets));
+    cls.def_readwrite("updatableNamedBuffers",
+                      &SessionOptions::updatableNamedBuffers,
+                      DOC(popart, SessionOptions, updatableNamedBuffers));
     cls.def_readwrite("customCodeletCompileFlags",
                       &SessionOptions::customCodeletCompileFlags,
                       DOC(popart, SessionOptions, customCodeletCompileFlags));

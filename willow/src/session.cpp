@@ -505,6 +505,13 @@ void Session::weightsFromHost() {
   weightsFromHostCalled = true;
 }
 
+void Session::buffersFromHost() {
+  POPART_TRACEPOINT();
+  logging::session::trace("Sessions::buffersFromHost");
+
+  device_->buffersFromHost();
+}
+
 void Session::weightsToHost() {
   POPART_TRACEPOINT();
   logging::session::trace("Session::weightsToHost");

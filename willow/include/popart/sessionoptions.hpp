@@ -1389,6 +1389,14 @@ struct SessionOptions {
   std::vector<std::string> customCodelets;
 
   /**
+   * List of model named buffers that can be updated with call to
+   * copyNamedBuffersToDevice(). This allows to update just a subset of model
+   * weights instead of all or them as it happens with
+   * copyWeightsToDevice() call.
+   */
+  std::vector<TensorId> updatableNamedBuffers;
+
+  /**
    * Compile flags for the custom codelets. For example `-g` to generate debug
    * info. See the Poplar documentation for poplar::Engine for more information.
    */

@@ -3069,6 +3069,21 @@ void IrLowering::prepareGraph() {
     }
   }
 
+  // Create optional program for selective update of selected named buffers.
+  // Fail early if incorrect buffer names are set.
+  for (const auto &id : ir().getSessionOptions().updatableNamedBuffers) {
+    Tensor *tensor = nullptr;
+
+    try {
+      tensor = ir().getTensor(id);
+    } catch (error &err) {
+      throw error("Invalid named buffer in updatableNamedBuffers!\n{}",
+                  err.what());
+    }
+
+    tasks.add(fromHostTask(tensor, progs_.namedBuffersCopyFragment(), true));
+  }
+
   // constants:
   // 1) make tensor,
   // 2) set initial value.
@@ -3438,6 +3453,12 @@ void IrLowering::prepareGraph() {
     programHandleIndexMap["implicitPipeliningFwdOnly"] = index;
   }
 
+  if (ir().getSessionOptions().updatableNamedBuffers.size()) {
+    logging::devicex::debug("copyNamedBuffers program created");
+    auto index = progs_.addCustomProgram(progs_.namedBuffersCopyFragment());
+    programHandleIndexMap["copyNamedBuffers"] = index;
+  }
+
   if (ir().getSessionOptions().exportPoplarVertexGraph) {
     std::ofstream strm;
     strm.open("poplar_vertex_graph.dot", std::ios::out);
@@ -3562,8 +3583,12 @@ TaskId IrLowering::streamToHostTaskId(TensorId id, bool isAnchorStream) {
   }
 }
 
-TaskId IrLowering::fromHostTaskId(TensorId id) {
-  return TaskId(TaskId::Type::FromHostTask, id);
+TaskId IrLowering::fromHostTaskId(TensorId id, bool isUpdate) {
+  if (isUpdate) {
+    return TaskId(TaskId::Type::FromHostUpdateTask, id);
+  } else {
+    return TaskId(TaskId::Type::FromHostTask, id);
+  }
 }
 
 TaskId IrLowering::toHostTaskId(TensorId id, bool isAnchorStream) {
@@ -3621,7 +3646,8 @@ TaskId IrLowering::pipelinedCopyTaskId(Op *op) {
 }
 
 PriTask IrLowering::fromHostTask(Tensor *tensor,
-                                 poplar::program::Sequence &sq) {
+                                 poplar::program::Sequence &sq,
+                                 bool isUpdate) {
   double priority;
   if (ir().getSessionOptions().groupHostSync) {
     priority = std::numeric_limits<double>::max();
@@ -3659,7 +3685,7 @@ PriTask IrLowering::fromHostTask(Tensor *tensor,
     return seqs;
   };
   return {priority,
-          fromHostTaskId(tensor->id),
+          fromHostTaskId(tensor->id, isUpdate),
           {
               {streamFromHostTaskId(tensor->id),
                DependencyType::Tensor}, // poplar::Stream created

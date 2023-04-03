@@ -325,6 +325,11 @@ public:
   void weightsFromHost();
 
   /**
+   * Copy buffers from the host to the device.
+   */
+  void buffersFromHost();
+
+  /**
    * Copy the weights from the device to the host steam memory.
    */
   void weightsToHost();

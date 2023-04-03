@@ -49,6 +49,7 @@ public:
     AnchorSumTask,
     AnchorToHostTask,
     FromHostTask,
+    FromHostUpdateTask,
     FromOpTask,
     InitBatchCounterTensorsTask,
     InitRngSeedsTask,

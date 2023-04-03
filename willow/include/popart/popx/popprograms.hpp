@@ -195,6 +195,8 @@ public:
   pipelineToHostStreamFragment(PipelineStage, const std::string &desc);
   poplar::program::Sequence &pipelineIpuCopyFragment(const std::string &desc);
 
+  poplar::program::Sequence &namedBuffersCopyFragment();
+
   void addPipelineCycle(PipelineInfo pInfo,
                         PipelineCycle pCycle,
                         poplar::program::Sequence &sq,
@@ -291,6 +293,9 @@ private:
   // tensors only streamed once for the whole program run
   // (see AnchorReturnTypeId::Final)
   poplar::Function toHostFinalCopyFunction;
+
+  // Program for selective update of named buffers
+  poplar::program::Sequence namedBuffersCopySeq;
 
   // Custom programs
   std::vector<poplar::program::Program> customPrograms;

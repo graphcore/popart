@@ -872,6 +872,10 @@ PopPrograms::pipelineIpuCopyFragment(const std::string &desc) {
   return pipelineIpuCopySeq;
 }
 
+poplar::program::Sequence &PopPrograms::namedBuffersCopyFragment() {
+  return namedBuffersCopySeq;
+}
+
 std::string
 PopPrograms::getStrFromPipelineFragmentId(PipelineFragmentId fragId) const {
   switch (fragId) {

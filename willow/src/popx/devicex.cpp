@@ -699,7 +699,30 @@ void Devicex::weightsFromHost() {
   }
 }
 
-void Devicex::remoteBufferWeightsFromHost() {
+void Devicex::buffersFromHost() {
+  POPART_TRACEPOINT();
+  logging::devicex::trace("Devicex::buffersFromHost");
+
+  if (ir().useSyntheticData() == false) {
+    logging::devicex::debug("Writing named buffers from host, ");
+    pEngine->disableExecutionProfiling();
+    // Weights in the remote buffers
+    remoteBufferWeightsFromHost(true);
+    // Weights on the IPU
+    auto &indexMap = lowering().getProgramHandleIndexMap();
+    auto it        = indexMap.find("copyNamedBuffers");
+    if (it == indexMap.end()) {
+      throw error(
+          "[Devicex::buffersFromHost] copyNamedBuffers program not found");
+    }
+
+    run(it->second, "buffersFromHost");
+
+    logging::devicex::debug("done.");
+  }
+}
+
+void Devicex::remoteBufferWeightsFromHost(const bool isUpdate) {
   POPART_TRACEPOINT();
   if (isEngineLoaded() == false) {
     loadEngineAndConnectStreams();
@@ -707,6 +730,10 @@ void Devicex::remoteBufferWeightsFromHost() {
   for (auto *tensor : executable_.getWeightTensors()) {
     const auto &initId = tensor->id;
     if (tensor->tensorLocationInfo.isRemote()) {
+      const auto &buffers = ir().getSessionOptions().updatableNamedBuffers;
+      if (isUpdate &&
+          std::find(buffers.begin(), buffers.end(), initId) == buffers.end())
+        continue;
       logging::devicex::debug("remoteBufferWeightsFromHost: {}", initId);
       const auto remoteBufferInfo =
           tensor->tensorLocationInfo.getRemoteBufferInfo();

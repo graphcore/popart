@@ -82,7 +82,8 @@ public:
   void prepare();
 
   void weightsFromHost();
-  void remoteBufferWeightsFromHost();
+  void buffersFromHost();
+  void remoteBufferWeightsFromHost(const bool isUpdate = false);
   void optimizerFromHost();
   // Streams the random seed value from host, and sets the rng registers on
   // the device

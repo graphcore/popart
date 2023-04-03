@@ -14811,6 +14811,14 @@ static const char
     *__doc_popart_SessionOptions_enableConstantFoldingOfMultipleConsumers =
         R"doc(Specify whether to enable constant folding on ops that inputs have multiple consumers. Default :code:`true` (enabled).)doc";
 
+static const char *__doc_popart_SessionOptions_updatableNamedBuffers =
+    R"doc(List of model named buffers that can be updated with call to
+buffersFromHost(). This allows to update just a subset of model weights
+instead of all or them as it happens with weightsFromHost() call.)doc";
+
+static const char *__singlelinedoc_popart_SessionOptions_updatableNamedBuffers =
+    R"doc(List of model named buffers that can be updated with call to buffersFromHost(). This allows to update just a subset of model weights instead of all or them as it happens with weightsFromHost() call.)doc";
+
 static const char *__doc_popart_SessionOptions_useLoopCandidateCreator =
     R"doc(Specify whether to use the loop candidate to create tensor. For a constant consumed by a LoopOp and a non-LoopOp, using LoopOp as the creator may improve perforamance. Default :code:`false` (disabled).)doc";
 

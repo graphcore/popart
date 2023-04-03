@@ -120,6 +120,10 @@ std::ostream &operator<<(std::ostream &out, const TaskId::Type &type) {
     out << "fromHostTask";
     break;
   }
+  case (TaskId::Type::FromHostUpdateTask): {
+    out << "fromHostUpdateTask";
+    break;
+  }
   case (TaskId::Type::FromOpTask): {
     out << "fromOpTask";
     break;
