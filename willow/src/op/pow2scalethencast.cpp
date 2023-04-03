@@ -36,13 +36,6 @@ std::vector<std::unique_ptr<Op>> Pow2ScaleThenCastOp::getGradOps() {
 
 void Pow2ScaleThenCastOp::setup() {
   auto info = inInfo(getInIndex());
-  if (info.dataType() != DataType::FLOAT16) {
-
-    throw error("Casting to FLOAT8 is only supported for FLOAT16 input "
-                "types. This "
-                "is for op {}.",
-                this->debugName());
-  }
 
   // Change data type
   info.set(to);
@@ -54,7 +47,7 @@ namespace {
 
 static OpDefinition::DataTypes T1 = {DataType::FLOAT8_143,
                                      DataType::FLOAT8_152};
-static OpDefinition::DataTypes T2 = {DataType::FLOAT16};
+static OpDefinition::DataTypes T2 = {DataType::FLOAT16, DataType::FLOAT};
 
 } // namespace
 
