@@ -437,6 +437,17 @@ TensorId removePrefix(const Ir &ir, const TensorId &t, const TensorId &prefix);
  */
 std::ostream &operator<<(std::ostream &ss, const StochasticRoundingMethod &srm);
 
+/**
+ * Generate a name of a branch not conflicting in the graph namespace.
+ *
+ * \param branchGraph The branch graph.
+ * \param parentIr Ir of the branch parent.
+ * \param defaultName The string to become the base of the branch final name if
+ *                    the original branch name is empty.
+ */
+GraphId nameBranchGraph(Attributes::Graph &branchGraph,
+                        Ir &parentIr,
+                        const std::string &defaultName);
 } // namespace popart
 
 #endif // POPART_WILLOW_INCLUDE_POPART_UTIL_HPP_

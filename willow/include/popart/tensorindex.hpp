@@ -48,6 +48,8 @@ public:
   // Unique list of tensors in the TensorIndexMap
   const std::vector<Tensor *> tensors() const;
   std::map<int, TensorId> tensorIdMap() const;
+  std::map<TensorId, int> idMap() const;
+
   // the number of indices. Exactly the number of keys of tensor_map
   int n() const;
   void append(std::stringstream &, std::string prefix, int max_id_length) const;

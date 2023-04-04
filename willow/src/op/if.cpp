@@ -36,11 +36,11 @@
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorindex.hpp"
 #include "popart/tensorinfo.hpp"
-
 #include <boost/container/flat_set.hpp>
 
 namespace popart {
 class AliasModel;
+enum class RequireOptimalSchedule;
 struct OperatorIdentifier;
 template <typename T> using FlatSet = boost::container::flat_set<T>;
 
@@ -630,24 +630,25 @@ static OpCreator<IfOp> ifOpCreator(
     OpDefinitions({{Onnx::Operators::If_1, ifOpDef},
                    {Onnx::Operators::If_11, ifOpDef}}),
     [](const OpCreatorInfo &info, Graph &graph) -> Op * {
-      auto elseBranch =
-          info.attributes.getAttribute<Attributes::Graph>("else_branch");
       auto thenBranch =
           info.attributes.getAttribute<Attributes::Graph>("then_branch");
+      auto elseBranch =
+          info.attributes.getAttribute<Attributes::Graph>("else_branch");
 
-      auto &parentGraph = info.settings.graph.get();
-      auto &ir          = parentGraph.getIr();
-      auto &tensors     = parentGraph.getTensors();
+      auto &parentGraph                             = info.settings.graph.get();
+      auto &ir                                      = parentGraph.getIr();
+      auto &tensors                                 = parentGraph.getTensors();
+      const VectorAndSet<TensorId> &constTensorsIds = tensors.getConstIds();
       std::map<TensorId, TensorInfo> inputInfos;
 
-      const auto setupInputInfos = [&inputInfos, &parentGraph, &tensors](
-                                       const bool inserted,
-                                       const TensorId &input) {
+      const auto setupInputInfos = [&](const bool inserted,
+                                       const TensorId &inputId) {
         if (inserted)
-          inputInfos[input] = tensors.get(addScope(parentGraph, input))->info;
+          inputInfos[inputId] =
+              tensors.get(addScope(parentGraph, inputId))->info;
       };
 
-      // Collect all input names
+      // Collect all inputs names.
       bool inserted = false;
       FlatSet<TensorId> thenInputIds;
       for (auto &input : thenBranch.input()) {
@@ -660,89 +661,88 @@ static OpCreator<IfOp> ifOpCreator(
         setupInputInfos(inserted, input.name());
       }
 
+      const auto insertImplicitTensor = [&](FlatSet<TensorId> &branchInputIds,
+                                            const TensorId &inputId,
+                                            FlatSet<Tensor *> &constTensors) {
+        if (constTensorsIds.contains(inputId)) {
+          // If the tensor is a const, we put it in a separate container to
+          // handle it differently.
+          auto *tensor = tensors.get(inputId);
+          constTensors.insert(tensor);
+        } else {
+          std::tie(std::ignore, inserted) = branchInputIds.insert(inputId);
+          setupInputInfos(inserted, inputId);
+        }
+      };
+
+      // Implicit const tensors used in branches.
+      FlatSet<Tensor *> thenImplicitConstTensors;
+      FlatSet<Tensor *> elseImplicitConstTensors;
+
+      // Gather all implicit tensors from 'then' and 'else' branches.
       auto thenImplicitTensorIds = onnxutil::getImplicitTensorIds(thenBranch);
-      for (auto implicitTensorId : thenImplicitTensorIds) {
-        std::tie(std::ignore, inserted) = thenInputIds.insert(implicitTensorId);
-        setupInputInfos(inserted, implicitTensorId);
+      for (const auto &implicitTensorId : thenImplicitTensorIds) {
+        insertImplicitTensor(
+            thenInputIds, implicitTensorId, thenImplicitConstTensors);
       }
       auto elseImplicitTensorIds = onnxutil::getImplicitTensorIds(elseBranch);
-      for (auto implicitTensorId : elseImplicitTensorIds) {
-        std::tie(std::ignore, inserted) = elseInputIds.insert(implicitTensorId);
-        setupInputInfos(inserted, implicitTensorId);
+      for (const auto &implicitTensorId : elseImplicitTensorIds) {
+        insertImplicitTensor(
+            elseInputIds, implicitTensorId, elseImplicitConstTensors);
       }
 
-      // Collect all output names
+      // Collect all outputs IDs.
       std::vector<TensorId> thenOutputIds;
       thenOutputIds.reserve(thenBranch.output().size());
       for (const auto &output : thenBranch.output()) {
         thenOutputIds.push_back(output.name());
       }
       std::vector<TensorId> elseOutputIds;
-      thenOutputIds.reserve(elseBranch.output().size());
+      elseOutputIds.reserve(elseBranch.output().size());
       for (const auto &output : elseBranch.output()) {
         elseOutputIds.push_back(output.name());
       }
 
-      GraphId thenGraphId("");
-      if (thenBranch.name().empty()) {
-        thenGraphId = parentGraph.getIr().createUniqueSubgraphId({"cond"});
-      } else {
-        thenGraphId = thenBranch.name();
-      }
+      // Prepare branches graphs IDs.
+      GraphId thenGraphId{nameBranchGraph(thenBranch, ir, "then_block")};
+      GraphId elseGraphId{nameBranchGraph(elseBranch, ir, "else_block")};
 
-      if (ir.hasGraph(thenGraphId)) {
-        thenGraphId = parentGraph.getIr().createUniqueSubgraphId(thenGraphId);
-      }
-
-      GraphId elseGraphId("");
-      if (elseBranch.name().empty()) {
-        elseGraphId = parentGraph.getIr().createUniqueSubgraphId({"cond"});
-      } else {
-        elseGraphId = elseBranch.name();
-      }
-
-      if (ir.hasGraph(elseGraphId)) {
-        elseGraphId = parentGraph.getIr().createUniqueSubgraphId(elseGraphId);
-      }
-
-      // Get all the inputIds
-      std::vector<TensorId> inputIds = [&]() {
-        std::set<TensorId> inIds;
-        inIds.insert(thenInputIds.begin(), thenInputIds.end());
-        inIds.insert(elseInputIds.begin(), elseInputIds.end());
-        return std::vector<TensorId>(inIds.begin(), inIds.end());
-      }();
-
-      // Create maps of the op inputs to branch inputs.
-      const auto createMap = [&inputIds](
-                                 const FlatSet<TensorId> &branchInputs) {
-        std::map<int, int> branchInputIndicesMap;
-        for (int i = 0; i < inputIds.size(); i++) {
-          auto id          = inputIds.at(i);
-          const auto found = branchInputs.find(id);
-          if (found != branchInputs.end()) {
-            const auto branchIdx = std::distance(branchInputs.begin(), found);
-            // +1 required because of IfOp condition input
-            branchInputIndicesMap.insert({i + 1, branchIdx});
-          }
-        }
-        return branchInputIndicesMap;
-      };
-
-      auto thenInputIndicesMap = createMap(thenInputIds);
-      auto elseInputIndicesMap = createMap(elseInputIds);
+      // Gather all the inputIds from both branches graphs.
+      FlatSet<TensorId> inputIds;
+      inputIds.reserve(thenInputIds.size() + elseInputIds.size());
+      inputIds.insert(thenInputIds.begin(), thenInputIds.end());
+      inputIds.insert(elseInputIds.begin(), elseInputIds.end());
 
       // Create maps of the op outputs to branch outputs.
       // In ONNX spec, then and else branches must have identical outputs.
       std::map<int, int> thenAndElseOutputIndicesMap;
-      for (int i = 0; i < thenOutputIds.size(); i++) {
+      for (size_t i = 0; i < thenOutputIds.size(); i++) {
         thenAndElseOutputIndicesMap.insert({i, i});
       }
 
-      auto &thenGraph = ir.createGraph(thenGraphId);
-      auto &elseGraph = ir.createGraph(elseGraphId);
+      // Create maps of the op inputs to branch inputs.
+      const auto createInputIndicesMap =
+          [&](const FlatSet<TensorId> &branchInputs) {
+            std::map<int, int> branchInputIndicesMap;
+            size_t idx = 0;
+            for (const auto &id : inputIds) {
+              const auto found = branchInputs.find(id);
+              if (found !=
+                  branchInputs.end()) { // && !constTensorsIds.contains(id)) {
+                const auto branchIdx =
+                    std::distance(branchInputs.begin(), found);
+                // +1 required because of IfOp condition input
+                branchInputIndicesMap.insert({idx + 1, branchIdx});
+              }
+              idx++;
+            }
+            return branchInputIndicesMap;
+          };
 
-      Op *op = graph.createOp<IfOp>(
+      // Create IfOp.
+      auto thenInputIndicesMap = createInputIndicesMap(thenInputIds);
+      auto elseInputIndicesMap = createInputIndicesMap(elseInputIds);
+      Op *op                   = graph.createOp<IfOp>(
           info.opid,
           BranchInfo{
               thenGraphId, thenInputIndicesMap, thenAndElseOutputIndicesMap},
@@ -751,39 +751,60 @@ static OpCreator<IfOp> ifOpCreator(
           info.settings);
 
       // Connect IfOp inputs.
-      for (const auto id : info.getInputIds()) {
+      for (const auto &id : info.getInputIds()) {
         op->connectInTensor(op->input->n(), id);
       }
       for (const auto &inputId : inputIds) {
         op->connectInTensor(op->input->n(), addScope(parentGraph, inputId));
       }
 
-      // Construct then graph
-      for (const auto id : thenInputIds) {
-        const auto scopedId = addScope(thenGraph, id);
-        thenGraph.addInput(scopedId, inputInfos.at(id));
-      }
-      thenGraph.constructFromOnnxGraph(thenBranch);
-      for (const auto id : thenOutputIds) {
-        const auto scopedId = addScope(thenGraph, id);
-        thenGraph.markAsOutput(scopedId);
-      }
+      const auto constructBranchGraph =
+          [&](Graph &branchGraph,
+              Attributes::Graph &branch,
+              const FlatSet<TensorId> &inputIds,
+              const std::vector<TensorId> &outputIds,
+              const FlatSet<Tensor *> &implicitConstTensors) {
+            // Add regular graph inputs.
+            for (const auto &id : inputIds) {
+              const auto scopedId = addScope(branchGraph, id);
+              branchGraph.addInput(scopedId, inputInfos.at(id));
+            }
+            // Add initialization of constants.
+            for (const auto *tensor : implicitConstTensors) {
+              const auto tId =
+                  addScope(branchGraph, removeScope(graph, tensor->id));
+              branchGraph.addConstInit(
+                  tId, tensor->info, tensor->tensorData()->data(), tId);
+            }
+            // Add all the ops to the graph.
+            branchGraph.constructFromOnnxGraph(branch);
 
-      // Construct else graph
-      for (const auto id : elseInputIds) {
-        const auto scopedId = addScope(elseGraph, id);
-        elseGraph.addInput(scopedId, inputInfos.at(id));
-      }
-      elseGraph.constructFromOnnxGraph(elseBranch);
-      for (const auto id : elseOutputIds) {
-        const auto scopedId = addScope(elseGraph, id);
-        elseGraph.markAsOutput(scopedId);
-      }
+            // Add graph outputs.
+            for (const auto &id : outputIds) {
+              const auto scopedId = addScope(branchGraph, id);
+              branchGraph.markAsOutput(scopedId);
+            }
+          };
 
-      // Connect IfOp outputs
-      for (const auto id : info.getOutputIds()) {
+      // Construct then graph.
+      auto &thenGraph = ir.createGraph(thenGraphId);
+      constructBranchGraph(thenGraph,
+                           thenBranch,
+                           thenInputIds,
+                           thenOutputIds,
+                           thenImplicitConstTensors);
+
+      // Construct else graph.
+      auto &elseGraph = ir.createGraph(elseGraphId);
+      constructBranchGraph(elseGraph,
+                           elseBranch,
+                           elseInputIds,
+                           elseOutputIds,
+                           elseImplicitConstTensors);
+
+      // Connect IfOp outputs.
+      for (const auto &id : info.getOutputIds())
         op->createAndConnectOutTensor(op->output->n(), id);
-      }
 
       return op;
     },

@@ -35,6 +35,8 @@
 #include "popart/vendored/any.hpp"
 #include "popart/vendored/optional.hpp"
 
+#include <onnx/onnx_pb.h>
+
 namespace std {
 
 std::ostream &operator<<(std::ostream &ss, const popart::any &value) {
@@ -511,6 +513,19 @@ std::ostream &operator<<(std::ostream &ss,
   }
 
   return ss;
+}
+
+GraphId nameBranchGraph(Attributes::Graph &branchGraph,
+                        Ir &parentIr,
+                        const std::string &defaultName) {
+  GraphId graphId{""};
+  if (branchGraph.name().empty())
+    graphId = parentIr.createUniqueSubgraphId({defaultName});
+  else
+    graphId = branchGraph.name();
+  if (parentIr.hasGraph(graphId))
+    graphId = parentIr.createUniqueSubgraphId(graphId);
+  return graphId;
 }
 
 } // namespace popart
