@@ -51,12 +51,7 @@ def test_broadcast_pow(op_tester):
     op_tester.run(init_builder, reference, step_type="infer")
 
 
-@pytest.mark.parametrize("precision", [np.float32, np.float16])
-def test_pow_grad(op_tester, precision):
-    # create test data
-    d1 = np.random.randn(4, 1, 4)
-    d2 = np.random.randn(3, 1)
-
+def pow_grad(op_tester, precision, d1, d2):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1.astype(precision))
         i2 = builder.addInputTensor(d2.astype(precision))
@@ -93,3 +88,145 @@ def test_pow_grad(op_tester, precision):
         ["PreUniRepl", "PowArg0GradOp", "PowArg1GradOp"], enableRuntimeAsserts=False
     )
     op_tester.run(init_builder, reference, "train")
+
+
+def test_pow_grad_corner_cases(op_tester):
+    # due to HW caveats for half precision only f32 is tested
+    precision = np.float32
+    d1 = np.array(
+        [
+            -0.5,
+            -0.5,
+            -0.5,
+            -0.5,
+            -0.5,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.5,
+            0.5,
+            0.5,
+            0.5,
+            0.5,
+            -0.5,
+            -0.5,
+            0,
+            0,
+            0.5,
+            0.5,
+            -0.5,
+            -0.5,
+            0.0,
+            0,
+            0.5,
+            0.5,
+            float("-inf"),
+            float("-inf"),
+            float("-inf"),
+            float("-inf"),
+            float("-inf"),
+            float("-inf"),
+            float("-inf"),
+            float("inf"),
+            float("inf"),
+            float("inf"),
+            float("inf"),
+            float("inf"),
+            float("inf"),
+            float("inf"),
+            float("nan"),
+            float("nan"),
+            float("nan"),
+            float("nan"),
+            float("nan"),
+            float("nan"),
+            float("nan"),
+            -2,
+            -0.5,
+            0,
+            0.5,
+            1,
+            1.5,
+            2,
+            float("nan"),
+            float("nan"),
+            float("nan"),
+            float("-inf"),
+            float("inf"),
+        ]
+    ).astype(float)
+    d2 = np.array(
+        [
+            -0.5,
+            0,
+            0.5,
+            1,
+            1.5,
+            -0.5,
+            0,
+            0.5,
+            1,
+            1.5,
+            -0.5,
+            0,
+            0.5,
+            1,
+            1.5,
+            -2,
+            2,
+            -2,
+            2,
+            -2,
+            2,
+            float("-inf"),
+            float("inf"),
+            float("-inf"),
+            float("inf"),
+            float("-inf"),
+            float("inf"),
+            -2,
+            -0.5,
+            0,
+            0.5,
+            1,
+            1.5,
+            2,
+            -2,
+            -0.5,
+            0,
+            0.5,
+            1,
+            1.5,
+            2,
+            -2,
+            -0.5,
+            0,
+            0.5,
+            1,
+            1.5,
+            2,
+            float("nan"),
+            float("nan"),
+            float("nan"),
+            float("nan"),
+            float("nan"),
+            float("nan"),
+            float("nan"),
+            float("nan"),
+            float("-inf"),
+            float("inf"),
+            float("nan"),
+            float("nan"),
+        ]
+    ).astype(float)
+    pow_grad(op_tester, precision, d1, d2)
+
+
+@pytest.mark.parametrize("precision", [np.float32, np.float16])
+def test_pow_grad(op_tester, precision):
+    # create test data
+    d1 = np.random.randn(4, 1, 4)
+    d2 = np.random.randn(3, 1)
+    pow_grad(op_tester, precision, d1, d2)

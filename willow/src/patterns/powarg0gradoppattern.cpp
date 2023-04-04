@@ -19,7 +19,10 @@ bool PowArg0GradOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<PowArg0GradOp>();
 }
 
-// grad_out = grad_in *arg1 * arg0 ^(arg1 - 1)
+// if (arg1 == 0)
+//      grad_out = 0
+// else
+//      grad_out = grad_in * arg1 * arg0 ^ (arg1 - 1)
 TensorId
 PowArg0GradOpPattern::makeAllReplacementOps(Op *op,
                                             Ir *ir,
@@ -27,17 +30,22 @@ PowArg0GradOpPattern::makeAllReplacementOps(Op *op,
                                             const Tensor &fwdIn0,
                                             const Tensor &fwdIn1,
                                             const Tensor &fwdOut) const {
-  // Create a 1-dim constant tensor of value 1.0f with same type as fwd_in1
+  // Create a 1-dim constant tensor with same type as fwd_in1
   TensorInfo resultInfo(fwdIn1.info.dataType(), {1});
-  auto onesId = ir->createIntermediateTensorId("ones");
 
+  auto onesId = ir->createIntermediateTensorId("ones");
   addConstInitFromFloat(1.0f, onesId, resultInfo, op->getGraph().getTensors());
 
+  auto zerosId = ir->createIntermediateTensorId(gradIn.id);
+  addConstInitFromFloat(0.0f, zerosId, resultInfo, op->getGraph().getTensors());
+
   // create the new ops
-  auto sub  = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Sub, op);
-  auto pow  = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Pow, op);
-  auto mul1 = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
-  auto mul2 = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
+  auto sub       = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Sub, op);
+  auto pow       = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Pow, op);
+  auto mul1      = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
+  auto mul2      = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
+  auto in1eq0    = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Equal, op);
+  auto outPicker = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Where, op);
 
   // Connect up the new ops
   sub->connectInTensor(0, fwdIn1.id);
@@ -60,7 +68,20 @@ PowArg0GradOpPattern::makeAllReplacementOps(Op *op,
   mul2->createAndConnectOutTensor(0, ir->createIntermediateTensorId(gradIn.id));
   mul2->outInfo(0) = op->prettyNpOut(mul2->inInfo(0), mul2->inInfo(1));
 
-  return mul2->outTensor(0)->id;
+  in1eq0->connectInTensor(0, fwdIn1.id);
+  in1eq0->connectInTensor(1, zerosId);
+  in1eq0->createAndConnectOutTensor(0,
+                                    ir->createIntermediateTensorId(gradIn.id));
+  in1eq0->setup();
+
+  outPicker->connectInTensor(0, in1eq0->outTensor(0)->id);
+  outPicker->connectInTensor(1, zerosId);
+  outPicker->connectInTensor(2, mul2->outTensor(0)->id);
+  outPicker->createAndConnectOutTensor(
+      0, ir->createIntermediateTensorId(gradIn.id));
+  outPicker->setup();
+
+  return outPicker->outTensor(0)->id;
 }
 
 namespace {

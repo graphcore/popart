@@ -13,7 +13,9 @@ class Tensor;
 // Replace a PowArg0GradOp with
 // {(fwd_in1), (ones)} -> [Minus] -> (tmp1)
 // {(fwd_in0), (tmp1)} -> [Pow] -> (tmp2)
-// {(fwd_in1), (tmp2)} -> [Mult] -> [ReduceSum] -> (grad_out)
+// {(fwd_in1), (tmp2)} -> [Mult] -> (tmp3)
+// {(fwd_in1), (zeros)} -> [Equal] -> (tmp4)
+// {(tmp4), (zeros), (tmp3)} -> [Where] -> [ReduceSum] -> (grad_out)
 class PowArg0GradOpPattern : public BinaryGradOpPattern {
 public:
   bool matches(Op *) const override;
