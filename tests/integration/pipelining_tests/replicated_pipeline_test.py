@@ -38,10 +38,10 @@ def get_model_anchors(
     shape_d0 = [microBatchSize, 2, 4, 4]
     shape_l0 = [microBatchSize]
 
-    d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d0), "d0")
+    d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d0))
     data_w0 = np.ones(shape=[2, 2, 3, 3]).astype(np.float32)
-    w0 = builder.addInitializedInputTensor(data_w0, "w0")
-    l0 = builder.addInputTensor(popart.TensorInfo("INT32", shape_l0), "l0")
+    w0 = builder.addInitializedInputTensor(data_w0)
+    l0 = builder.addInputTensor(popart.TensorInfo("INT32", shape_l0))
 
     s0 = builder.aiOnnx.sin([d0], "s0")
     e0 = builder.aiOnnx.exp([s0], "e0")

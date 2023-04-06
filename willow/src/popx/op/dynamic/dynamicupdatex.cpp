@@ -83,9 +83,38 @@ void DynamicUpdateOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 InputCreatorType DynamicUpdateOpx::getInputCreatorType(InIndex index) const {
-  if (index == DynamicTernaryBaseOp::getUpdateInIndex() ||
-      index == DynamicTernaryBaseOp::getInIndex())
-    return InputCreatorType::CanCreateOrUnwind;
+  DynamicTernaryBaseOp *op = dynamic_cast<DynamicTernaryBaseOp *>(this->op_p);
+  auto itUpdate            = op->settings.inferTensorMappingToFrom.find(
+      DynamicTernaryBaseOp::getUpdateInIndex());
+  auto itIn = op->settings.inferTensorMappingToFrom.find(
+      DynamicTernaryBaseOp::getInIndex());
+
+  bool inferUpdateFromIn =
+      itUpdate != op->settings.inferTensorMappingToFrom.end() &&
+      itUpdate->second == DynamicTernaryBaseOp::getInIndex();
+  bool inferInFromUpdate =
+      itIn != op->settings.inferTensorMappingToFrom.end() &&
+      itIn->second == DynamicTernaryBaseOp::getUpdateInIndex();
+
+  if (index == DynamicTernaryBaseOp::getUpdateInIndex()) {
+    if (inferUpdateFromIn) {
+      return InputCreatorType::CanCreateOrUnwind;
+    } else if (inferInFromUpdate) {
+      return InputCreatorType::Deadend;
+    } else {
+      return InputCreatorType::CanUnwind;
+    }
+  }
+
+  if (index == DynamicTernaryBaseOp::getInIndex()) {
+    if (inferInFromUpdate) {
+      return InputCreatorType::CanCreateOrUnwind;
+    } else if (inferUpdateFromIn) {
+      return InputCreatorType::Deadend;
+    } else {
+      return InputCreatorType::CanUnwind;
+    }
+  }
 
   return Opx::getInputCreatorType(index);
 }
@@ -161,9 +190,9 @@ poplar::Tensor DynamicUpdateOpx::unwindTensorLayout(poplar::Tensor tensor,
                                                     InIndex in,
                                                     OutIndex) const {
   if (in == DynamicUpdateOp::getInIndex()) {
-    DynamicTernaryBaseOp *op = dynamic_cast<DynamicTernaryBaseOp *>(this->op_p);
-    std::vector<size_t> paxes(op->getAxes().begin(), op->getAxes().end());
-    std::vector<size_t> psizes(op->getSizes().begin(), op->getSizes().end());
+    auto &op = getOp<DynamicUpdateOp>();
+    std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
+    std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
 
     return popops::createSliceTensor(graph(), tensor, paxes, psizes, 1)
         .squeeze({0})
@@ -189,12 +218,15 @@ DynamicUpdateOpx::mustExistBeforeCreate(InIndex index) const {
 
   std::set<TensorId> mustExist;
 
-  mustExist.insert(
-      op->input
-          ->tensor(index == DynamicTernaryBaseOp::getUpdateInIndex()
-                       ? DynamicTernaryBaseOp::getInIndex()
-                       : DynamicTernaryBaseOp::getUpdateInIndex())
-          ->id);
+  auto it = op->settings.inferTensorMappingToFrom.find(index);
+
+  if (it != op->settings.inferTensorMappingToFrom.end() &&
+      ((it->first == DynamicTernaryBaseOp::getInIndex() &&
+        it->second == DynamicTernaryBaseOp::getUpdateInIndex()) ||
+       (it->first == DynamicTernaryBaseOp::getUpdateInIndex() &&
+        it->second == DynamicTernaryBaseOp::getInIndex()))) {
+    mustExist.insert(op->input->tensor(it->second)->id);
+  }
 
   return mustExist;
 }
