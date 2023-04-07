@@ -360,6 +360,27 @@ def test_clip11_default_max(op_tester):
     )
 
 
+def test_clip11_default_max_with_half(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float16)
+    d_min = np.array([-1.5], dtype=np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        t_min = builder.aiOnnx.constant(d_min)
+        o = builder.aiOnnx.clip([i1, t_min])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(_):  # ref_data is an unused argument
+        a = torch.tensor(d1.astype(np.float32))
+        result = torch.clamp(a, min=d_min[0], max=np.finfo("float32").max)
+        return [result.to(torch.float16)]
+
+    op_tester.run(
+        init_builder, reference, "infer", opsets={"ai.onnx": 11, "ai.graphcore": 1}
+    )
+
+
 def test_argmax_keepdims(op_tester):
     d1 = np.random.rand(5, 7, 11, 13).astype(np.float32)
     axis = 0

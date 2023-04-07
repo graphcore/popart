@@ -37,6 +37,14 @@ poplar::Tensor ClipComputex::getClipTensor(float val,
                                            const poplar::Type &type,
                                            poplar::Graph &graph,
                                            const poplar::DebugNameAndId &dnai) {
+  // It's diffcult to ensure val in the range of half, so check and change there
+  if (type == poplar::HALF) {
+
+    static constexpr float minHalf = -65504.0f;
+    static constexpr float maxHalf = 65504.0f;
+    val                            = std::min(maxHalf, std::max(val, minHalf));
+  }
+
   auto tensor = graph.addConstant(type, {}, val, {dnai, "clip"});
   graph.setTileMapping(tensor, 0);
   return tensor;
