@@ -2778,6 +2778,17 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("remap_type") =
                 static_cast<int>(TensorRemapType::FwdBwdReverse),
             py::arg("debugPrefix") = std::string());
+    cls.def("splinebasis",
+            &AiGraphcoreOpset1::splinebasis,
+            py::arg("args") = pybind11::list(),
+            py::arg("degree"),
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, splinebasis));
+    cls.def("splineweighting",
+            &AiGraphcoreOpset1::splineweighting,
+            py::arg("args")         = pybind11::list(),
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, splineweighting));
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");

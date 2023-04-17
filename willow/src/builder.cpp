@@ -1439,6 +1439,41 @@ AiGraphcoreOpset1::sort(const std::vector<TensorId> &args,
   return outputs;
 }
 
+std::vector<TensorId>
+AiGraphcoreOpset1::splinebasis(const std::vector<TensorId> &args,
+                               Attributes::Int degree,
+                               const DebugContext &debugContext) {
+
+  std::map<std::string, popart::any> attributes = {{"degree", degree}};
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::SplineBasis,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          {di});
+
+  di.setOutputs(outputs);
+  return outputs;
+}
+
+TensorId AiGraphcoreOpset1::splineweighting(const std::vector<TensorId> &args,
+                                            const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes;
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::SplineWeighting,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          {di});
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
+}
+
 TensorId AiGraphcoreOpset1::incrementmod(const std::vector<TensorId> &args,
                                          Attributes::Float increment,
                                          Attributes::Float modulus,

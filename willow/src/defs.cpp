@@ -1,5 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <numeric>
@@ -78,6 +79,8 @@ void CopyVarUpdateShapeInference(InferenceContext &ctx);
 void SwishShapeInference(InferenceContext &ctx);
 void BucketizeShapeInference(InferenceContext &ctx);
 void SortShapeInference(InferenceContext &ctx);
+void SplineBasisShapeInference(InferenceContext &ctx);
+void SplineWeightingShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -645,6 +648,36 @@ void SortShapeInference(InferenceContext &ctx) {
   propagateShapeFromInputToOutput(ctx, 0, 1);
 }
 
+void SplineBasisShapeInference(InferenceContext &ctx) {
+  propagateElemTypeFromInputToOutput(ctx, 0, 0);
+
+  const unsigned degree   = getAttribute(ctx, "degree", 1u);
+  const auto input_shape  = ctx.getInputType(0)->tensor_type().shape();
+  const auto numDims      = input_shape.dim(1).dim_value();
+  const size_t numSplines = std::pow(1 + degree, numDims) + 0.5;
+
+  auto *output0_shape = getOutputShape(ctx, 0);
+  output0_shape->add_dim()->set_dim_value(input_shape.dim(0).dim_value());
+  output0_shape->add_dim()->set_dim_value(numSplines);
+
+  auto &&outputMutableType = ctx.getOutputType(1)->mutable_tensor_type();
+  outputMutableType->set_elem_type(TensorProto::INT32);
+
+  auto *output1_shape = getOutputShape(ctx, 1);
+  output1_shape->add_dim()->set_dim_value(input_shape.dim(0).dim_value());
+  output1_shape->add_dim()->set_dim_value(numSplines);
+}
+
+void SplineWeightingShapeInference(InferenceContext &ctx) {
+  propagateElemTypeFromInputToOutput(ctx, 0, 0);
+  auto input_shape  = ctx.getInputType(0)->tensor_type().shape();
+  auto weight_shape = ctx.getInputType(1)->tensor_type().shape();
+  auto *output_shape =
+      ctx.getOutputType(0)->mutable_tensor_type()->mutable_shape();
+  *output_shape->add_dim() = input_shape.dim(0);
+  *output_shape->add_dim() = weight_shape.dim(2);
+}
+
 void RemainderShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
 
@@ -846,6 +879,8 @@ extern size_t dbg_count_check_Bucketize_AiGraphcore_ver1;
 extern size_t dbg_count_check_GroupedGather_AiGraphcore_ver1;
 extern size_t dbg_count_check_Sort_AiGraphcore_ver1;
 extern size_t dbg_count_check_NearbyInt_AiGraphcore_ver1;
+extern size_t dbg_count_check_SplineBasis_AiGraphcore_ver1;
+extern size_t dbg_count_check_SplineWeighting_AiGraphcore_ver1;
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
 
@@ -2276,6 +2311,75 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               float(1.0))
         .TypeAndShapeInferenceFunction(NormalizeImageOpShapeInference))
 
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    SplineBasis,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("The operation returns B-spline basis functions coefficients"
+                " and weight indices for each spline coefficient.")
+        .Input(0,
+               "pseudo",
+               "2-D input tensor containing pseudo coordinates.",
+               "T")
+        .Input(1,
+               "kernel_size",
+               "1-D tensor containing kernel size at each dimension of pseudo "
+               "coordinates.",
+               "tensor(int32)")
+        .Input(2,
+               "is_open_spline",
+               "1-D tensor that for each dimension encodes whether open or "
+               "closed B-spline basis must be used.",
+               "tensor(uint8)")
+        .Output(0,
+                "basis",
+                "Output tensor for B-spline basis functions coefficients.",
+                "T")
+        .Output(1,
+                "weight_index",
+                "Output tensor for weight indices for each spline coefficient.",
+                "tensor(int32)")
+        .TypeConstraint("T",
+                        {"tensor(float16)", "tensor(float)"},
+                        "Constrain pseudo coordinates input and basis output "
+                        "types to float and float16.")
+        .Attr("degree",
+              "B-spline basis function degree.",
+              AttributeProto::INT,
+              true)
+        .TypeAndShapeInferenceFunction(SplineBasisShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    SplineWeighting,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("The operation returns B-spline basis function degree.")
+        .Input(0, "input", "2-D input features tensor.", "T")
+        .Input(1,
+               "weight",
+               "3-D tensor containing weights for B-Spline functions.",
+               "T")
+        .Input(2,
+               "basis",
+               "2-D tensor with B-spline basis produced by splinebasis op.",
+               "T")
+        .Input(3,
+               "weight_index",
+               "2-D tensor with weight indices produced by splinebasis op.",
+               "tensor(int32)")
+        .Output(0, "output", "2-D Output tensor.", "T")
+        .TypeConstraint("T",
+                        {"tensor(float16)", "tensor(float)"},
+                        "Constrain input, weight, basis and output types to "
+                        "float and float16.")
+        .TypeAndShapeInferenceFunction(SplineWeightingShapeInference))
+
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(popart::Domain::ai_graphcore, 1, 1);
@@ -2457,6 +2561,14 @@ static bool registerOps() {
 
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Sort)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, SplineBasis)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, SplineWeighting)>());
 
   return true;
 }

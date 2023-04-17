@@ -41,8 +41,13 @@ torchvision==0.14.1; sys_platform == "darwin" and python_version >= '3.7'
 --find-links https://data.pyg.org/whl/torch-1.13.1%2Bcpu.html
 torch_scatter==2.1.0+pt113cpu; sys_platform != "darwin" and python_version >= '3.7'
 torch_scatter==2.1.0; sys_platform == "darwin" and python_version >= '3.7'
+torch_spline_conv==1.2.2+pt113cpu; sys_platform != "darwin" and python_version >= '3.7'
+torch_spline_conv==1.2.2; sys_platform == "darwin" and python_version >= '3.7'
+
 --find-links https://data.pyg.org/whl/torch-1.9.1%2Bcpu.html
 torch_scatter==2.0.9; python_version < '3.7'
+torch_spline_conv==1.2.1; python_version < '3.7'
+
 
 # End pytorch
 cppimport==21.3.7

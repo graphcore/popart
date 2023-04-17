@@ -288,6 +288,8 @@ const static AiGraphcoreOpIdV1 SignInplace("SignInplace");
 const static AiGraphcoreOpIdV1 SinhInplace("SinhInplace");
 const static AiGraphcoreOpIdV1 SliceInplace("SliceInplace");
 const static AiGraphcoreOpIdV1 Slice_1("Slice", 1, 1);
+const static AiGraphcoreOpIdV1 SplineBasis("SplineBasis", 3, 2);
+const static AiGraphcoreOpIdV1 SplineWeighting("SplineWeighting", 4, 1);
 const static AiGraphcoreOpIdV1 SoftmaxInplace("SoftmaxInplace");
 const static AiGraphcoreOpIdV1 SoftPlusInplace("SoftPlusInplace");
 const static AiGraphcoreOpIdV1 SoftSignInplace("SoftSignInplace");
@@ -400,6 +402,9 @@ const static OperatorIdentifier Bucketize     = CustomOperators::Bucketize;
 const static OperatorIdentifier GroupedGather = CustomOperators::GroupedGather;
 const static OperatorIdentifier Sort          = CustomOperators::Sort;
 const static OperatorIdentifier NearbyInt     = CustomOperators::NearbyInt;
+const static OperatorIdentifier SplineBasis   = CustomOperators::SplineBasis;
+const static OperatorIdentifier SplineWeighting =
+    CustomOperators::SplineWeighting;
 
 } // namespace OpSet1
 } // namespace AiGraphcore
