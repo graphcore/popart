@@ -1261,6 +1261,57 @@ public:
    */
   TensorId nearbyint(const std::vector<TensorId> &args,
                      const DebugContext &debugContext = {});
+
+  /**
+   * Add a splinebasis operation to the model.
+   *
+   * The operation returns two outputs: coefficients for the B-spline basis
+   * functions and weight indices for each spline coefficient.
+   *
+   * \param args A vector of tensor IDs containing [`pseudo`, `kernel_size`,
+   *             `is_open_spline`].
+   * where
+   *      * `pseudo` is a 2-D tensor with pseudo coordinates, of shape
+   *        [`numEdges * numDims`].
+   *      * `kernel_size` is a 1-D tensor containing the kernel size at each
+   *        dimension of the edge pseudo coordinates.
+   *      * `is_open_slice` is a 1-D tensor that for each dimension encodes
+   *        whether an open or a closed B-spline basis function must be used.
+   *
+   * \param degree The degree of the B-spline basis function.
+   * \return The `basis` and `weightIndex` tensors, both of shape
+   *         [`numEdges * numSplines`]. `basis` contains the coefficients for
+   *         the B-spline basis functions. `weightIndex` contains weight indices
+   *         for each spline.
+   */
+  std::vector<TensorId> splinebasis(const std::vector<TensorId> &args,
+                                    Attributes::Int degree           = 1,
+                                    const DebugContext &debugContext = {});
+
+  /**
+   * Add a splineweighting operation to the model.
+   *
+   * The operation returns features weighted by a continuous B-spline kernel
+   * function.
+   *
+   * \param args A vector of tensor IDs containing [`input`, `weight`, `basis`
+   *             `weightIndex`].
+   * where
+   *      * `input` is a 2-D tensor (size: [`numEdges * numInputChannels`])
+   *        with input features.
+   *      * `weight` is a 3-D tensor (size: [`numEdges * numInputChannels *
+   *        numOutputChannels`]) containing weights for B-Spline functions.
+   *      * `basis` is a 2-D tensor (size: [`numEdges * numSplines`]) of the
+   *        coefficients for the  B-spline basis functions and is produced by
+   *        the `splinebasis` op.
+   *      * `weightIndex` is a 2-D tensor (size: [`numEdges * numSplines`]) of
+   *        the weight indices produced by the `splinebasis` op.
+   *
+   * \return A tensor of shape [`numEdges * numOutputChannels`] containing
+   *         features weighted by a continuous B-spline kernel function.
+   */
+  TensorId splineweighting(const std::vector<TensorId> &args,
+                           const DebugContext &debugContext = {});
 };
 
 /**

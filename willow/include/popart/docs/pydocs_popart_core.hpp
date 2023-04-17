@@ -1857,6 +1857,50 @@ Returns:
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_slice =
     R"doc(Add a slice to the model. This version of slice uses the :code:`starts`, :code:`ends` and :code:`axes` attributes rather than tensor inputs. This reduces the number of ops as constant tensors are treated as ops while attributes are not. Args: args: A vector of input tensor ids. ends: The :code:`ends` attribute. starts: The :code:`starts` attribute. axes: The :code:`axes` attribute. debugContext: Optional debug information. Returns: The normalized output tensor id.)doc";
 
+static const char *__doc_popart_AiGraphcoreOpset1_splinebasis =
+    R"doc(Add a splinebasis operation to the model.
+
+The operation returns two outputs: B-spline basis functions coefficients
+and weight indices for each spline coefficient.
+
+Args:
+ args: vector of tensor IDs containing [`pseudo`, `kernel_size`,
+            `is_open_spline`] where
+    * `pseudo` is an 2-D tensor with pseudo coordinates, of
+      shape numEdges * numDims.
+    * `kernel_size` is a 1-D tensor containing kernel size at each
+      dimension of edge's pseudo coordinates.
+    * `is_open_slice` is a 1-D tensor that for each dimension encodes
+      whether open or closed B-spline basis must be used.
+
+ degree: B-spline basis function degree.
+
+Returns:
+    Basis and weightIndex tensors, both of shape numEdges * numSplines.
+    Basis tensor contains B-spline basis functions coefficients.
+    WeightIndex tensor contains weight indices for each spline
+    coefficient.)doc";
+
+static const char *__doc_popart_AiGraphcoreOpset1_splineweighting =
+    R"doc(Add a splineweighting operation to the model.
+
+The operation returns features weighted by a continuous B-spline kernel functions.
+
+Args:
+ args: A vector of tensor IDs containing [`input`, `weight`, `basis`, `weightIndex`]
+    where:
+    * `input` is an 2-D (numEdges * numInputChannels) tensor with input features.
+    * `weight` is a 3-D (numEdges * numInputChannels * numOutputChannels)
+      tensor containing weights for B-Spline functions.
+    * `basis` is a 2-D (numEdges * numSplines) tensor with B-spline basis
+      produced by splinebasis op.
+    * `weightIndex` is a 2-D (numEdges * numSplines) tensor with weight
+      indices produced by splinebasis op.
+
+Returns:
+  Tensor of shape (numEdges * numOutputChannels) containing features weighted by
+  a continuous B-spline kernel function.)doc";
+
 static const char *__doc_popart_AiGraphcoreOpset1_subsample =
     R"doc(Add a sub-sample operation to the model.
 
