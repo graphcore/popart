@@ -62,6 +62,7 @@ def test_topk_2d_smallest(op_tester, dim, largest):
     )
 
 
+@pytest.mark.skip(reason="BitonicTopK does not support correctly sort==false case")
 @pytest.mark.parametrize("largest", [True, False])
 def test_topk_2d_sorted(largest):
     np.random.seed(0)

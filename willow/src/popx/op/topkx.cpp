@@ -6,10 +6,10 @@
 #include <poplar/Graph.hpp>
 #include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
-#include <popnn/Loss.hpp>
 #include <popops/DynamicSlice.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/ExprOp.hpp>
+#include <popops/TopK.hpp>
 #include <popops/Zero.hpp>
 #include <poputil/TileMapping.hpp>
 #include <popart/op/topk.hpp>
@@ -105,26 +105,13 @@ InputCreatorType TopKGradOpx::getInputCreatorType(InIndex index) const {
 }
 
 void TopKOpx::grow(poplar::program::Sequence &prog) const {
-  auto negateTensor = [&](auto &x) {
-    return popops::map(graph(),
-                       popops::expr::UnaryOpType::NEGATE,
-                       x,
-                       prog,
-                       debugContext("neg"));
-  };
-
   // Input shape, e.g. for rank = 4, axis = 2:
   //   [a0, a1, a2, a3]
   // Output shape:
   //   [a0, a1, K,  a3]
   auto input = getInTensor(TopKOp::getInIndex());
 
-  auto &topk = getOp<TopKOp>();
-
-  if (!topk.getLargest()) {
-    input = negateTensor(input);
-  }
-
+  auto &topk         = getOp<TopKOp>();
   const auto lastDim = input.rank() - 1;
   // Poplibs topk requires input with rank = 2, axis = 1
   // Reshape input to:
@@ -137,23 +124,21 @@ void TopKOpx::grow(poplar::program::Sequence &prog) const {
   const auto dim0Elems    = input.numElements() / dim1Elememts;
   input                   = input.reshape({dim0Elems, dim1Elememts});
 
-  // Add variable to store indices
-  auto indsShape = input.shape();
-  indsShape[1]   = K;
-  auto topKInds  = graph().addVariable(
-      poplar::UNSIGNED_INT, indsShape, debugContext("topKInds"));
-  poputil::mapTensorLinearly(graph(), topKInds);
+  const bool largest   = topk.getLargest();
+  const auto sortOrder = topk.getSorted() ? largest
+                                                ? popops::SortOrder::DESCENDING
+                                                : popops::SortOrder::ASCENDING
+                                          : popops::SortOrder::NONE;
 
-  auto topKVals = popnn::topK(graph(),
-                              input,
-                              topKInds,
-                              K,
-                              topk.getSorted(),
-                              prog,
-                              debugContext("topK"));
-  if (!topk.getLargest()) {
-    topKVals = negateTensor(topKVals);
-  }
+  if (!topk.getSorted())
+    logging::warn("topk op when sort==false is not supported!");
+
+  const popops::TopKParams params(K, largest, sortOrder, false);
+  poplar::Tensor topKVals;
+  poplar::Tensor topKInds;
+
+  std::tie(topKVals, topKInds) = popops::topKWithPermutation(
+      graph(), prog, input, params, debugContext("topK"));
 
   // Reverse the dimshuffling and reshaping of the input and indices tensors
   const auto valsShape = outShape(TopKOp::getValuesOutIndex());
