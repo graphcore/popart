@@ -1116,7 +1116,8 @@ bool Pipeline::checkIsFullRecompute(Graph &graph) {
 bool Pipeline::checkIsFullCheckpoint(Graph &graph) {
   auto &ir = graph.getIr();
   return (ir.getExecutionMode() == Ir::ExecutionMode::Inference) &&
-         (ir.getSessionOptions().implicitPipeliningEnabled());
+         (ir.getSessionOptions().implicitPipeliningEnabled()) &&
+         (ir.getSessionOptions().stashAllTensorsInferencePipeline);
 }
 
 void Pipeline::setFinalFwdStageRecomputation(Graph &graph) {

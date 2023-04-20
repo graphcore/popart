@@ -14811,6 +14811,9 @@ static const char
     *__doc_popart_SessionOptions_enableConstantFoldingOfMultipleConsumers =
         R"doc(Specify whether to enable constant folding on ops that inputs have multiple consumers. Default :code:`true` (enabled).)doc";
 
+static const char *__doc_popart_SessionOptions_stashAllTensorsInferencePipeline =
+    R"doc(Specify whether to enable stash all needed tensors when inference pipeline. Default :code:`false` (disabled).)doc";
+
 static const char *__doc_popart_SessionOptions_updatableNamedBuffers =
     R"doc(List of model named buffers that can be updated with call to
 buffersFromHost(). This allows to update just a subset of model weights

@@ -762,6 +762,7 @@ def test_multiple_stages_per_virtual_graph_sharing_same_tensor_inference():
     session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
     session.options.enablePipelining = True
     session.options.autoRecomputation = popart.RecomputationType.Pipeline
+    session.options.stashAllTensorsInferencePipeline = True
     session.batchesPerStep = bps
 
     with tu.create_test_device(numIpus=2) as device:

@@ -1722,6 +1722,13 @@ struct SessionOptions {
    */
   bool useLoopCandidateCreator = false;
 
+  /**
+   * Stash all tensors when inference pipeline.
+   *
+   * Default=`false`.
+   */
+  bool stashAllTensorsInferencePipeline = false;
+
   /// Constructor for SessionOptions.
   SessionOptions() {
     // Automatically set `enableEngineCaching` and `cachePath` if the

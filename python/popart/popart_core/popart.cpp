@@ -1708,6 +1708,10 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("useLoopCandidateCreator",
                       &SessionOptions::useLoopCandidateCreator,
                       DOC(popart, SessionOptions, useLoopCandidateCreator));
+    cls.def_readwrite(
+        "stashAllTensorsInferencePipeline",
+        &SessionOptions::stashAllTensorsInferencePipeline,
+        DOC(popart, SessionOptions, stashAllTensorsInferencePipeline));
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel", DOC(popart, PatternsLevel));
