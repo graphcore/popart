@@ -30,4 +30,4 @@ add_popart_py_unit_test(batchserialize_dropout_test VARIANTS Hw)
 
 # We run this test on the POD builder only to load balance across builders, as
 # it is a long test.
-add_popart_py_unit_test(overlapio VARIANTS Hw LABELS multicard)
+add_popart_py_unit_test(overlapio VARIANTS Hw LABELS multicard PROPERTIES RUN_SERIAL TRUE)

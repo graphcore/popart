@@ -43,9 +43,9 @@ add_popart_py_unit_test(test_conv_pow2scaled VARIANTS IpuModel2)
 add_popart_py_unit_test(test_convtranspose VARIANTS IpuModel2)
 add_popart_py_unit_test(test_mmap_variable VARIANTS IpuModel2)
 # Running remote buffer test on POD system (multicard) to test interactions with GW
-add_popart_py_unit_test(test_session_remote_buffers VARIANTS Hw LABELS multicard)
+add_popart_py_unit_test(test_session_remote_buffers VARIANTS Hw LABELS multicard PROPERTIES RUN_SERIAL TRUE)
 add_popart_py_unit_test(test_replica_grouping VARIANTS IpuModel2)
-add_popart_py_unit_test(test_replica_sharding VARIANTS Hw LABELS multicard)
+add_popart_py_unit_test(test_replica_sharding VARIANTS Hw LABELS multicard PROPERTIES RUN_SERIAL TRUE)
 add_popart_py_unit_test(test_d2hWeightBuffer_elision VARIANTS IpuModel2)
 add_popart_py_unit_test(test_print_tensor VARIANTS IpuModel2)
 add_popart_py_unit_test(test_replicated_all_gather VARIANTS IpuModel2)
@@ -61,7 +61,9 @@ add_popart_py_unit_test(test_tensor VARIANTS IpuModel2)
 add_popart_py_unit_test(test_multi_instance_vs_rts
   VARIANTS Hw
   LABELS multicard
-  PROPERTIES DISABLED TRUE
+  PROPERTIES
+    DISABLED TRUE
+    RUN_SERIAL TRUE
 )
 
 # popxl-grouped_initialization test starts here
