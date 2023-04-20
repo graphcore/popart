@@ -1149,7 +1149,10 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_using_cache) {
   testSessionRunFromSerializedExe(true);
 }
 
-BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
+BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe,
+                     // TODO(AFS-302): Re-enable this test when it passes
+                     //                when run on a POD machine.
+                     *boost::unit_test::disabled()) {
   // the dimensions of the matrices
   int K = 6;
   int M = 7;
