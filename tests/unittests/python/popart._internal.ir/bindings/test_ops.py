@@ -285,6 +285,12 @@ def test_binary_ops(
             {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True},
             1,
         ),
+        ("IdentityOp", {}, 1),
+        ("IsNaN", {}, 1),
+        ("IsInf", {}, 1),
+        ("CeilOp", {}, 1),
+        ("SignOp", {}, 1),
+        ("ClipOp", {"min_": -1, "max_": 1}, 1),
     ],
 )
 # fmt: on, pylint: enable-all

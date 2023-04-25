@@ -87,6 +87,13 @@ from .transpose import transpose, transpose_
 from .where import where
 from .swish import swish, swish_
 from .greater import greater
+from .identity import identity, rename
+from .isnan import isnan
+from .isinf import isinf
+from .isfinite import isfinite
+from .ceil import ceil
+from .clip import clip, clamp
+from .sign import sign
 
 from . import collectives
 from . import var_updates
@@ -291,4 +298,20 @@ __all__ = [
     "collectives",
     # sub-package popxl.ops.var_updates
     "var_updates",
+    # identity.py
+    "identity",
+    "rename",
+    # isnan.py
+    "isnan",
+    # isinf.py
+    "isinf",
+    # isfinite.py
+    "isfinite",
+    # ceil.py
+    "ceil",
+    # clip.py
+    "clip",
+    "clamp",
+    # sign.py
+    "sign",
 ]

@@ -106,6 +106,12 @@ list(
   ${popart_op_headers_dir}/greater.hpp
   ${popart_op_headers_dir}/scatterreduce.hpp
   ${popart_op_headers_dir}/subsample.hpp
+  ${popart_op_headers_dir}/identity.hpp
+  ${popart_op_headers_dir}/isnan.hpp
+  ${popart_op_headers_dir}/isinf.hpp
+  ${popart_op_headers_dir}/ceil.hpp
+  ${popart_op_headers_dir}/clip.hpp
+  ${popart_op_headers_dir}/sign.hpp
   )
 # file(GLOB_RECURSE op_headers ${popart_op_headers_dir}/*.hpp)
 

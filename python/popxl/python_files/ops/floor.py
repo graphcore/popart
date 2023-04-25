@@ -8,7 +8,7 @@ from .utils import check_in_graph
 @op_debug_context
 def floor(t: Tensor) -> Tensor:
     """
-    Compute the floor of the elements of input tensor.
+    Compute the floor of the elements of input tensor. NaN values are propagated.
 
     See also `PyTorch torch.floor <https://pytorch.org/docs/stable/generated/torch.floor.html#torch.floor>`__, `NumPy floor <https://numpy.org/doc/stable/reference/generated/numpy.floor.html>`__, `ONNX Floor <https://github.com/onnx/onnx/blob/main/docs/Operators.md#floor>`__.
 
