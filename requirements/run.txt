@@ -24,7 +24,7 @@ pytest==6.2.5
 pytest-xdist==2.5.0
 typing-extensions==4.4.0; sys_platform != "darwin" and python_version >= '3.7'
 
---find-links https://download.pytorch.org/whl/torch_stable.html
+--extra-index-url https://download.pytorch.org/whl/cpu
 
 # PyTorch/TorchVision :: Python < 3.10
 torch==1.9.1+cpu; sys_platform != "darwin" and python_version < '3.7'
