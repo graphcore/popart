@@ -129,6 +129,7 @@ template <> std::string getTypeName<int32_t>() { return "INT32"; }
 template <> std::string getTypeName<uint32_t>() { return "UINT32"; }
 template <> std::string getTypeName<float>() { return "FLOAT"; }
 template <> std::string getTypeName<float16_t>() { return "FLOAT16"; }
+template <> std::string getTypeName<bool>() { return "BOOL"; }
 
 template <typename FROM, typename TO> void ConstExprTest_AddCastMatMul_Type() {
 
@@ -141,27 +142,27 @@ template <typename FROM, typename TO> void ConstExprTest_AddCastMatMul_Type() {
                                               \
                                                \
                                                 \
--> i0, int32, (5,1)-|                            \
+-> i0, FROM (5,1)---|                            \
                     |                             \
                     |                              \
-                    |- ADD --| CAST -- float (5,3) -|
--> i1, int32 (1,3)--|
+                    |- ADD --| CAST -- TO (5,3) ----|
+-> i1, FROM (1,3)---|
 
   ***********/
 
   // Build the onnx model described
   // in the schematic above
-  int64_t M = 7;
-  int64_t K = 5;
-  int64_t N = 3;
+  static constexpr int64_t M = 7;
+  static constexpr int64_t K = 5;
+  static constexpr int64_t N = 3;
 
   std::vector<int64_t> outshape{M, N};
   std::vector<int64_t> weights_shape{K, N};
   std::vector<int64_t> data_shape{M, K};
 
-  std::vector<FROM> i0(K);
+  std::array<FROM, K> i0;
   std::iota(i0.begin(), i0.end(), 1);
-  std::vector<FROM> i1(N);
+  std::array<FROM, N> i1;
   std::iota(i1.begin(), i1.end(), 1);
   // TensorInfo dataInfo{"FLOAT", std::vector<int64_t>{M, K}};
   TensorInfo dataInfo{getTypeName<TO>(), std::vector<int64_t>{M, K}};
@@ -221,7 +222,9 @@ template <typename FROM, typename TO> void ConstExprTest_AddCastMatMul_Type() {
   // vectors, {1...K} and {1...N}. We therefore expect the very
   // last element of the weights tensor to be K + N
   logging::info("{} ? {}", floatWData[K * N - 1], static_cast<TO>(K + N));
-  BOOST_CHECK(floatWData[K * N - 1] == static_cast<TO>(K + N));
+  constexpr bool isBool = std::is_same<FROM, bool>::value;
+  const auto expected   = isBool ? static_cast<TO>(1) : static_cast<TO>(K + N);
+  BOOST_CHECK(floatWData[K * N - 1] == expected);
 }
 
 BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul_Types) {
@@ -229,4 +232,6 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul_Types) {
   ConstExprTest_AddCastMatMul_Type<int32_t, float16_t>();
   ConstExprTest_AddCastMatMul_Type<uint32_t, float_t>();
   ConstExprTest_AddCastMatMul_Type<uint32_t, float16_t>();
+  ConstExprTest_AddCastMatMul_Type<bool, float_t>();
+  ConstExprTest_AddCastMatMul_Type<bool, float16_t>();
 }

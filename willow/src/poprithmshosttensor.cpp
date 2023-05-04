@@ -1,5 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <ostream>
+
 #include <poprithms/ndarray/dtype.hpp>
 #include <poprithmshosttensor.hpp>
 
@@ -61,10 +62,18 @@ poprithms::ndarray::DType getPoprithmsDType(popart::DataType t) {
 
 poprithms::compute::host::Tensor
 getPoprithmsComputeHostTensor(const popart::Tensor &t) {
-  return poprithms::compute::host::Tensor::copy(
-      getPoprithmsDType(t.info.dataType()),
-      t.info.shape(),
-      t.tensorData()->data());
+  const auto dtype = getPoprithmsDType(t.info.dataType());
+  const auto data  = t.tensorData()->data();
+  const auto shape = t.info.shape();
+
+  if (dtype == poprithms::ndarray::DType::Boolean) {
+    const bool *boolean_data = static_cast<const bool *>(data);
+    const std::vector<bool> src(boolean_data,
+                                boolean_data + t.tensorData()->size());
+    return poprithms::compute::host::Tensor::boolean(shape, src);
+  }
+
+  return poprithms::compute::host::Tensor::copy(dtype, shape, data);
 }
 
 } // namespace popart
