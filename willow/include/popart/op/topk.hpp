@@ -30,9 +30,11 @@ public:
   std::unique_ptr<Op> clone() const override;
   void setup() final;
 
-  int64_t getK() const;
-  bool getLargest() const { return largest; }
-  bool getSorted() const { return sorted; }
+  int64_t getK() const noexcept;
+  bool getLargest() const noexcept;
+  bool getSorted() const noexcept;
+  bool getStable() const noexcept;
+
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 
   void appendOutlineAttributes(OpSerialiserBase &) const final;
@@ -48,10 +50,22 @@ public:
     return available_memory_proportion;
   }
 
+protected:
+  TopKOp(const OperatorIdentifier &_opid,
+         int64_t k,
+         int64_t axis,
+         bool largest,
+         bool sorted,
+         bool stable,
+         const Op::Settings &settings,
+         const nonstd::optional<float> &available_memory_proportion =
+             nonstd::nullopt);
+
 private:
   int64_t K;
   bool largest;
   bool sorted;
+  bool stable;
 
   nonstd::optional<float> available_memory_proportion;
 };

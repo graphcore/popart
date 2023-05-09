@@ -285,6 +285,7 @@ const static AiGraphcoreOpIdV1 Slice_1("Slice", 1, 1);
 const static AiGraphcoreOpIdV1 SoftmaxInplace("SoftmaxInplace");
 const static AiGraphcoreOpIdV1 SoftPlusInplace("SoftPlusInplace");
 const static AiGraphcoreOpIdV1 SoftSignInplace("SoftSignInplace");
+const static AiGraphcoreOpIdV1 Sort("Sort", 1, 2);
 const static AiGraphcoreOpIdV1 SparseAccumulate("PopartSparseAccumulate");
 const static AiGraphcoreOpIdV1 Square("Square");
 const static AiGraphcoreOpIdV1 SqueezeInplace("SqueezeInplace");
@@ -388,6 +389,7 @@ const static OperatorIdentifier AllReduce     = CustomOperators::AllReduce;
 const static OperatorIdentifier TensorRemap   = CustomOperators::TensorRemap_1;
 const static OperatorIdentifier Bucketize     = CustomOperators::Bucketize;
 const static OperatorIdentifier GroupedGather = CustomOperators::GroupedGather;
+const static OperatorIdentifier Sort          = CustomOperators::Sort;
 
 } // namespace OpSet1
 } // namespace AiGraphcore

@@ -836,6 +836,22 @@ Args:
 Returns:
   The tensor ID of the result tensor. The result tensor has the same size and shape as the input tensor.)doc";
 
+static const char *__doc_popart_AiGraphcoreOpset1_sort =
+    R"doc(Add a sort operation to the model.
+
+Args:
+ args: A vector with a single input tensor id.
+ axis: The dimension to sort along.
+ descending: If '1' then the elements are sorted in descending order by value.
+ stable: If '1' then the sorting routine becomes stable, preserving the order of
+         equivalent elements.
+ debugContext: Optional debug information.
+
+Returns:
+  A vector of (values, indices) is returned, where the values are the sorted
+  values and indices are the indices of the elements in the original input
+  tensor.)doc";
+
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_bitwisexnor =
     R"doc(Add a bitwise XNOR operation to the model. The operation computes the bitwise XNOR of two integer tensors. Args: args: Two broadcastable input tensors of type integer. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 

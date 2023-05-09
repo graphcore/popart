@@ -1363,6 +1363,29 @@ TensorId AiGraphcoreOpset1::bucketize(const std::vector<TensorId> &args,
   return outputs.at(0);
 }
 
+std::vector<TensorId>
+AiGraphcoreOpset1::sort(const std::vector<TensorId> &args,
+                        Attributes::Int axis,
+                        Attributes::Int descending,
+                        Attributes::Int stable,
+                        const popart::DebugContext &debugContext) {
+
+  std::map<std::string, popart::any> attributes = {
+      {"axis", axis}, {"descending", descending}, {"stable", stable}};
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Sort,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          {di});
+
+  di.setOutputs(outputs);
+  return outputs;
+}
+
 TensorId AiGraphcoreOpset1::incrementmod(const std::vector<TensorId> &args,
                                          Attributes::Float increment,
                                          Attributes::Float modulus,

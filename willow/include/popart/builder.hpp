@@ -1205,6 +1205,25 @@ public:
   TensorId bucketize(const std::vector<TensorId> &args,
                      Attributes::Int right            = 0,
                      const DebugContext &debugContext = {});
+
+  /**
+   * Add a sort operation to the model
+   *
+   * \param args A vector with a single input tensor id.
+   * \param axis The dimension to sort along.
+   * \param descending If '1' then the elements are sorted in descending order
+   *                   by value.
+   * \param stable If '1' then the sorting routine becomes stable, preserving
+   *               the order of equivalent elements.
+   * \return A vector of (values, indices) is returned, where the values are the
+   *         sorted values and indices are the indices of the elements in the
+   *         original input tensor.
+   */
+  std::vector<TensorId> sort(const std::vector<TensorId> &args,
+                             Attributes::Int axis                     = -1,
+                             Attributes::Int descending               = 0,
+                             Attributes::Int stable                   = 0,
+                             const popart::DebugContext &debugContext = {});
 };
 
 /**

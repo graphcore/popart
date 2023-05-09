@@ -27,6 +27,7 @@ def test_topk_2d(op_tester, dim):
     def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1)
         b = torch.topk(a, k=k, dim=dim)
+        print(b.indices.dtype)
         return [b.values, b.indices]
 
     # Torch doesn't have a uint32 type

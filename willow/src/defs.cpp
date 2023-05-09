@@ -73,6 +73,7 @@ void ReduceMedianShapeInference(InferenceContext &ctx);
 void CopyVarUpdateShapeInference(InferenceContext &ctx);
 void SwishShapeInference(InferenceContext &ctx);
 void BucketizeShapeInference(InferenceContext &ctx);
+void SortShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -601,6 +602,15 @@ void BucketizeShapeInference(InferenceContext &ctx) {
       ctx.getInputType(0)->tensor_type().shape();
 }
 
+void SortShapeInference(InferenceContext &ctx) {
+  propagateElemTypeFromInputToOutput(ctx, 0, 0);
+  propagateShapeFromInputToOutput(ctx, 0, 0);
+
+  auto &&indicesMutableType = ctx.getOutputType(1)->mutable_tensor_type();
+  indicesMutableType->set_elem_type(TensorProto::INT32);
+  propagateShapeFromInputToOutput(ctx, 0, 1);
+}
+
 void RemainderShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
 
@@ -795,6 +805,7 @@ extern size_t dbg_count_check_CopyVarUpdate_AiGraphcore_ver1;
 extern size_t dbg_count_check_Swish_AiGraphcore_ver1;
 extern size_t dbg_count_check_Bucketize_AiGraphcore_ver1;
 extern size_t dbg_count_check_GroupedGather_AiGraphcore_ver1;
+extern size_t dbg_count_check_Sort_AiGraphcore_ver1;
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
 
@@ -2058,27 +2069,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
                         "Constrain input and output types to float tensors.")
         .TypeAndShapeInferenceFunction(SwishShapeInference))
 
-/**
- * Add a bucketize operation to the model.
- *
- * The operation returns the indices of the buckets to which each value in the
- * input tensor belongs. The ranges of each bucket are defined by the
- * boundaries tensor. The returned index satisfies the following rules:
- *
- * right = 1  - boundaries[i-1] <= input[m][n]...[l][x] < boundaries[i]
- * right = 0  - boundaries[i-1] < input[m][n]...[l][x] <= boundaries[i]
- *
- * \param args A vector of tensor IDs containing [`input`, `boundaries`]. Where
- *      * `input` is an N-D tensor or a scalar containing the search values
- *      * `boundaries` is a 1-D tensor defining ranges of the bucketes.
- *      This must contain a monotonically increasing sequence.
- *
- *
- * \param right If 0 (default) then the left boundary is closed.
- * \return The tensor ID of the result tensor. The result tensor has the same
- *       size as the input tensor.
- */
-
 ONNX_OPERATOR_SET_SCHEMA_EX(
     Bucketize,
     AiGraphcore,
@@ -2121,6 +2111,53 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               AttributeProto::INT,
               true)
         .TypeAndShapeInferenceFunction(BucketizeShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    Sort,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("The operation sorts input tensor along given axis.")
+        .Input(0, "input", "The input tensor", "T")
+        .Output(0, "values", "The sorted values.", "T")
+        .Output(1,
+                "indices",
+                "The indices of the elements in the original input tensor.",
+                "Tind")
+        .TypeConstraint("T",
+                        {"tensor(uint16)",
+                         "tensor(uint32)",
+                         "tensor(uint64)",
+                         "tensor(int8)",
+                         "tensor(int16)",
+                         "tensor(int32)",
+                         "tensor(int64)",
+                         "tensor(float16)",
+                         "tensor(float)"},
+                        "Constrain input and output types.")
+        .TypeConstraint("Tind",
+                        {"tensor(uint32)",
+                         "tensor(int32)",
+                         "tensor(int32)",
+                         "tensor(int64)"},
+                        "Constrain indices types.")
+        .Attr("axis",
+              "The dimension to sort along.",
+              AttributeProto::INT,
+              int64_t(-1))
+        .Attr(
+            "descending",
+            "If '1' then the elements are sorted in descending order by value.",
+            AttributeProto::INT,
+            false)
+        .Attr("stable",
+              "If '1' then the sorting routine becomes stable, preserving the "
+              "order of equivalent elements",
+              AttributeProto::INT,
+              false)
+        .TypeAndShapeInferenceFunction(SortShapeInference))
 
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
@@ -2288,6 +2325,9 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, GroupedGather)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Sort)>());
 
   return true;
 }

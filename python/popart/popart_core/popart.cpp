@@ -2697,6 +2697,14 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("right")        = 0,
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, bucketize));
+    cls.def("sort",
+            &AiGraphcoreOpset1::sort,
+            py::arg("args")         = pybind11::list(),
+            py::arg("axis")         = -1,
+            py::arg("descending")   = 0,
+            py::arg("stable")       = 0,
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, sort));
     cls.def("reducemedian",
             &AiGraphcoreOpset1::reducemedian,
             py::arg("args"),

@@ -27,11 +27,28 @@ TopKOp::TopKOp(const OperatorIdentifier &opid_,
                int64_t axis_,
                bool largest_,
                bool sorted_,
+               bool stable_,
                const Op::Settings &settings_,
                const nonstd::optional<float> &available_memory_proportion_)
     : BaseSortOp(opid_, axis_, settings_), K(K_), largest(largest_),
-      sorted(sorted_),
+      sorted(sorted_), stable(stable_),
       available_memory_proportion(available_memory_proportion_) {}
+
+TopKOp::TopKOp(const OperatorIdentifier &opid_,
+               int64_t K_,
+               int64_t axis_,
+               bool largest_,
+               bool sorted_,
+               const Op::Settings &settings_,
+               const nonstd::optional<float> &available_memory_proportion_)
+    : TopKOp(opid_,
+             K_,
+             axis_,
+             largest_,
+             sorted_,
+             false /*stable*/,
+             settings_,
+             available_memory_proportion_) {}
 
 std::unique_ptr<Op> TopKOp::clone() const {
   return std::make_unique<TopKOp>(*this);
@@ -70,7 +87,10 @@ void TopKOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute(sAvailMemAttribute, available_memory_proportion);
 }
 
-int64_t TopKOp::getK() const { return K; }
+int64_t TopKOp::getK() const noexcept { return K; }
+bool TopKOp::getLargest() const noexcept { return largest; }
+bool TopKOp::getSorted() const noexcept { return sorted; }
+bool TopKOp::getStable() const noexcept { return stable; }
 
 std::vector<std::unique_ptr<Op>> TopKOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> result;

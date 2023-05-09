@@ -129,11 +129,12 @@ void TopKOpx::grow(poplar::program::Sequence &prog) const {
                                                 ? popops::SortOrder::DESCENDING
                                                 : popops::SortOrder::ASCENDING
                                           : popops::SortOrder::NONE;
+  const bool stable = topk.getStable();
 
   if (!topk.getSorted())
     logging::warn("topk op when sort==false is not supported!");
 
-  const popops::TopKParams params(K, largest, sortOrder, false);
+  const popops::TopKParams params(K, largest, sortOrder, stable);
   poplar::Tensor topKVals;
   poplar::Tensor topKInds;
 
@@ -164,7 +165,8 @@ void TopKOpx::grow(poplar::program::Sequence &prog) const {
 namespace {
 OpxCreator<TopKOpx> TopKOpxCreator({Onnx::Operators::TopK_1,
                                     Onnx::Operators::TopK_10,
-                                    Onnx::Operators::TopK_11});
+                                    Onnx::Operators::TopK_11,
+                                    Onnx::CustomOperators::Sort});
 OpxCreator<TopKGradOpx> topkGradOpxCreator(Onnx::GradOperators::TopKGrad);
 } // namespace
 

@@ -891,6 +891,7 @@ Available Ops (Op class)
 .. doxygenclass:: popart::SoftmaxGradOp
 .. doxygenclass:: popart::SoftmaxInplaceOp
 .. doxygenclass:: popart::SoftmaxOp
+.. doxygenclass:: popart::SortOp
 .. doxygenclass:: popart::SplitGradOp
 .. doxygenclass:: popart::SplitOp
 .. doxygenclass:: popart::SqrtGradOp
