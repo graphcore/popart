@@ -281,13 +281,46 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
 
   // Find best splits for the number of ipus
   float total_subgraph_costs = 0;
+  float total_w_split_ratios = 0;
   int64_t virtual_graph_id   = 0;
   SubgraphId subgraph_id     = 0;
+
+  if (opts.virtualGraphSplitRatios.size() > 0 &&
+      opts.virtualGraphSplitRatios.size() != num_ipus) {
+    throw popart::error(
+        "The size of virtualGraphSplitRatios must be equal to num_ipus.");
+  }
+
+  {
+    float sum = 0.0;
+    for (int i = 0; i < opts.virtualGraphSplitRatios.size(); i++) {
+      if (opts.virtualGraphSplitRatios[i] <= 0 ||
+          opts.virtualGraphSplitRatios[i] >= 1) {
+        throw popart::error(
+            "virtualGraphSplitRatios[i] must be in the rage (0, 1).");
+      }
+      sum += opts.virtualGraphSplitRatios[i];
+    }
+    if (opts.virtualGraphSplitRatios.size() > 0 && sum != float(1.0)) {
+      throw popart::error("Sum of virtualGraphSplitRatios[i] must be equal to "
+                          "1.0, but found {}.",
+                          sum);
+    }
+  }
+
   for (size_t i = 1; i <= num_ipus; i++) {
     logging::transform::trace(
         "[AutoVirtualGraph] Considering what to assign to IPU: {}", i - 1);
     float split_ratio = float(i) / float(num_ipus);
-    float split_cost  = split_ratio * cumulative_cost;
+
+    if (opts.virtualGraphSplitRatios.size() > 0 &&
+        i - 1 < opts.virtualGraphSplitRatios.size()) {
+      split_ratio = total_w_split_ratios + opts.virtualGraphSplitRatios[i - 1];
+    }
+    total_w_split_ratios = split_ratio;
+
+    const float split_cost = split_ratio * cumulative_cost;
+
     while (subgraph_id < subgraphs.size()) {
       auto &subgraph = subgraphs.at(subgraph_id);
 
@@ -364,8 +397,8 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
         virtual_graph_id++;
         break;
       }
-    }
-  }
+    } // end of subgraph_id
+  }   // end of ipus
 
   if (virtual_graph_id != num_ipus - 1) {
     throw error("[AutoVirtualGraph] Couldn't find enough splits for {} IPUs. "

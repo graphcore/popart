@@ -1051,6 +1051,17 @@ struct SessionOptions {
    */
   VirtualGraphMode virtualGraphMode = VirtualGraphMode::Off;
 
+  /**
+   * Specify split ratios when VirtualGraphModel::Auto enabled.
+   *
+   * These values represent split ratios in each device and
+   * each of the values is in range (0, 1).
+   *
+   * For example, to uniformly split the whole graph on 4 IPUs, the value should
+   * be [0.25, 0.25, 025, 0.25].
+   */
+  std::vector<float> virtualGraphSplitRatios;
+
   /// Enable pipelining of virtual graphs. Default: `false` (not enabled).
   bool enablePipelining = false;
 

@@ -14864,6 +14864,17 @@ Default: VirtualGraphMode::Off.)doc";
 static const char *__singlelinedoc_popart_SessionOptions_virtualGraphMode =
     R"doc(Specify how to place ops on virtual graphs to achieve model parallelism, either manually using model annotations, or automatically. Default: VirtualGraphMode::Off.)doc";
 
+static const char *__doc_popart_SessionOptions_virtualGraphSplitRatios =
+    R"doc(Specify split ratios  when VirtualGraphModel::Auto enabled.
+
+These values represent split ratios in each device and each of the values is in range (0, 1).
+
+For example, to uniformly split the whole graph on 4 IPUs, the value should be [0.25, 0.25, 0.25, 0.25].
+)doc";
+
+static const char *__singlelinedoc_popart_SessionOptions_virtualGraphSplitRatios =
+    R"doc(Specify split ratios when VirtualGraphModel::Auto enabled. These values represent split ratios in each device and each of the values is in range (0, 1). For example, uniformly split the whole graph on 4 IPUs, the value should be [0.25, 0.25, 0.25, 0.25].)doc";
+
 static const char *__doc_popart_SessionOptions_weightTensorLocationSettings =
     R"doc(Tensor location for weight tensors.)doc";
 

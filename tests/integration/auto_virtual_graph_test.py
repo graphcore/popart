@@ -170,6 +170,66 @@ def test_auto_virtual_graph_subgraphs_4():
                 assert int(ipu) == 3
 
 
+def test_auto_virtual_graph_subgraphs_4_with_user_parameters():
+
+    ipus = 4
+
+    popart.getLogger().setLevel("TRACE")
+
+    builder = popart.Builder()
+
+    input_shape = [1, 64]
+    input1 = builder.addInputTensor(popart.TensorInfo("FLOAT16", input_shape))
+    input2 = builder.addInputTensor(popart.TensorInfo("FLOAT16", input_shape))
+
+    # Subgraph 0
+    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16), "TESTID-A")
+    x0 = builder.aiOnnx.matmul([input1, w])
+    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16), "TESTID-B")
+    x0 = builder.aiOnnx.matmul([x0, w])
+
+    # Subgraph 1
+    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16), "TESTID-C")
+    x1 = builder.aiOnnx.matmul([input2, w])
+
+    # Subgraph 2
+    x2 = builder.aiOnnx.add([x0, x1])
+    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16), "TESTID-D")
+    x2 = builder.aiOnnx.matmul([x2, w])
+
+    output = x2
+    builder.addOutputTensor(output)
+
+    # Desired split is:
+    # ipu1: 0, ipu2: 0.5, ipu3: 1, ipu4: 2
+
+    proto = builder.getModelProto()
+
+    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("Final")})
+
+    opts = popart.SessionOptions()
+    opts.virtualGraphMode = popart.VirtualGraphMode.Auto
+    opts.virtualGraphSplitRatios = [0.2, 0.3, 0.2, 0.3]
+
+    with tu.create_test_device(numIpus=ipus) as device:
+
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
+        ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+    for op in ir["maingraph"]:
+        ipu = op["attributes"]["__ipu_number"]
+        for input in op["inputs"]:
+            if "TESTID-A" in input["name"]:
+                assert int(ipu) == 0
+            if "TESTID-B" in input["name"]:
+                assert int(ipu) == 1
+            if "TESTID-C" in input["name"]:
+                assert int(ipu) == 2
+            if "TESTID-D" in input["name"]:
+                assert int(ipu) == 3
+
+
 def test_auto_virtual_graph_inf_2():
 
     ipus = 2

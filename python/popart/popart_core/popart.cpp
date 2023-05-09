@@ -1498,6 +1498,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("virtualGraphMode",
                       &SessionOptions::virtualGraphMode,
                       DOC(popart, SessionOptions, virtualGraphMode));
+    cls.def_readwrite("virtualGraphSplitRatios",
+                      &SessionOptions::virtualGraphSplitRatios,
+                      DOC(popart, SessionOptions, virtualGraphSplitRatios));
     cls.def_readwrite("enableReplicatedGraphs",
                       &SessionOptions::enableReplicatedGraphs,
                       DOC(popart, SessionOptions, enableReplicatedGraphs));
