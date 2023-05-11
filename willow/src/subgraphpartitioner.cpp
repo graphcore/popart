@@ -16,6 +16,7 @@
 #include <popart/liveness.hpp>
 #include <popart/op.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/if.hpp>
 #include <popart/subgraphpartitioner.hpp>
 
 #include "popart/graphid.hpp"
@@ -438,9 +439,9 @@ SubgraphPartitioner::getSubgraphPartitionForInstance(
       } else if (isCopyCallSubgraphPart(graph, node, activeCallOp)) {
 
         // We're dealing with an op in a subgraph called by our active CallOp.
-
         CallOp *callOp = dynamic_cast<CallOp *>(node.getOp());
-        if (callOp == nullptr) {
+        IfOp *ifOp     = dynamic_cast<IfOp *>(node.getOp());
+        if (callOp == nullptr && ifOp == nullptr) {
 
           // The op is a normal op in a child subgraph. Normal ops are currently
           // always lowered over *exactly* 1 subgraph part.
@@ -449,7 +450,7 @@ SubgraphPartitioner::getSubgraphPartitionForInstance(
           SubgraphPartIndex end   = getOpSubgraphPartEnd(op);
 
           if (end - begin != 1) {
-            // We shouldn't need multiple subgraph parts for non-call op.
+            // We shouldn't need multiple subgraph parts for non call or if op.
             throw internal_error("[SubgraphPartitioner] Lowering over multiple "
                                  "subgraph parts is only supported for call "
                                  "ops ({} suggests lowering over {} parts)",

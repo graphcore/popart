@@ -1688,6 +1688,7 @@ void Ir::prepareImpl(const IrBundle &gb,
     }
 
     applyTransform(SubgraphOutline::id(), getMainGraph());
+    removeIsolatedGraphs();
     updateVertices();
 
     if (getSessionOptions().batchSerializationSettings.factor > 1) {
@@ -1699,6 +1700,7 @@ void Ir::prepareImpl(const IrBundle &gb,
       // parent subgraph, the second pass will ignore batch serialization phases
       // and outline the repeated per-batch-element subgraphs/ops.
       applyTransform(SubgraphOutline::id(), getMainGraph());
+      removeIsolatedGraphs();
       updateVertices();
     }
   }

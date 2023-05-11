@@ -2229,7 +2229,6 @@ void IrLowering::growOpx(Opx *opx, SequenceMap::SequenceInterval seqInterval) {
   }
 
   auto begin = subgraphPartitioner->getOpSubgraphPartBegin(opx->op_p);
-  auto end   = subgraphPartitioner->getOpSubgraphPartEnd(opx->op_p);
 
   // Grow code for the op into a separate vector, because we may decide to
   // now include code for this in the poplar program. But we need to grow it
@@ -2254,13 +2253,6 @@ void IrLowering::growOpx(Opx *opx, SequenceMap::SequenceInterval seqInterval) {
   // Lower any post-Op RNG state logic.
   rngStateLowering->lowerGetRngState(seqVec.back(), opx);
 
-  // Sanity check: did the op grow over the correct number of subgraph parts?
-  if (seqVec.size() != (end - begin)) {
-    throw internal_error("Expected {} to lower into {} subgraph parts (got {})",
-                         opx->op_p->debugName(),
-                         end - begin,
-                         seqVec.size());
-  }
   if (aliasZeroCopy->opRequired(opx->op_p)) {
     // Code of an Op can be skipped if the Op is not required,
     // meaning the Op has:
