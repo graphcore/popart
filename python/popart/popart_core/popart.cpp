@@ -2454,6 +2454,11 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args"),
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, gelu));
+    cls.def("geluerf",
+            &AiGraphcoreOpset1::geluerf,
+            py::arg("args"),
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, geluerf));
     cls.def("detach",
             &AiGraphcoreOpset1::detach,
             py::arg("args"),

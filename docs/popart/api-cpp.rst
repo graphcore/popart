@@ -673,6 +673,9 @@ Available Ops (Op class)
 .. doxygenclass:: popart::GeluGradOp
 .. doxygenclass:: popart::GeluInplaceOp
 .. doxygenclass:: popart::GeluOp
+.. doxygenclass:: popart::GeluErfGradOp
+.. doxygenclass:: popart::GeluErfInplaceOp
+.. doxygenclass:: popart::GeluErfOp
 .. doxygenclass:: popart::GetRandomSeedOp
 .. doxygenclass:: popart::GlobalAveragePoolGradOp
 .. doxygenclass:: popart::GlobalAveragePoolOp
@@ -1051,6 +1054,9 @@ Available Ops (Opx class)
 .. doxygenclass:: popart::popx::GeluGradOpx
 .. doxygenclass:: popart::popx::GeluInplaceOpx
 .. doxygenclass:: popart::popx::GeluOpx
+.. doxygenclass:: popart::popx::GeluErfGradOpx
+.. doxygenclass:: popart::popx::GeluErfInplaceOpx
+.. doxygenclass:: popart::popx::GeluErfOpx
 .. doxygenclass:: popart::popx::GetRandomSeedOpx
 .. doxygenclass:: popart::popx::GreaterOpx
 .. doxygenclass:: popart::popx::GroupNormGradOpx

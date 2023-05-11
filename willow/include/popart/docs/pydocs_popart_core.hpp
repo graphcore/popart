@@ -1176,6 +1176,22 @@ Returns:
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_gelu =
     R"doc(Add a GELU operation to the model. This is a Poplar extension. Args: args: A vector of input tensor ids. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
+static const char *__doc_popart_AiGraphcoreOpset1_geluerf =
+    R"doc(Add a GELU_ERF operation to the model.
+
+This is a Poplar extension.
+
+
+Args:
+ args: A vector of input tensor IDs.
+ debugContext: Optional debug information.
+
+Returns:
+ The tensor ID of the result tensor.)doc";
+
+static const char *__singlelinedoc_popart_AiGraphcoreOpset1_geluerf =
+    R"doc(Add a GELU_ERF operation to the model. This is a Poplar extension. Args: args: A vector of input tensor IDs. debugContext: Optional debug information. Returns: The tensor ID of the result tensor.)doc";
+
 static const char *__doc_popart_AiGraphcoreOpset1_getOpsetVersion = R"doc()doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_getOpsetVersion =

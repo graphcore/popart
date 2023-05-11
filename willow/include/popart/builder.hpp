@@ -364,6 +364,16 @@ public:
                 const DebugContext &debugContext = {});
 
   /**
+   * Add an accurate GELU (ERF instead of TANH) operation to the model.
+   *
+   * \param args A vector of input tensor IDs.
+   * \param debugContext Optional debug information.
+   * \return The tensor ID of the result tensor.
+   */
+  TensorId geluerf(const std::vector<TensorId> &args,
+                   const DebugContext &debugContext = {});
+
+  /**
    * Add a detach operation to the model.
    *
    * \param args A vector of input tensor ids.

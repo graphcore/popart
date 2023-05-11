@@ -70,6 +70,7 @@ list(
   ${popart_op_headers_dir}/dynamic/dynamicslice.hpp
   ${popart_op_headers_dir}/reshape.hpp
   ${popart_op_headers_dir}/gelu.hpp
+  ${popart_op_headers_dir}/geluerf.hpp
   ${popart_op_headers_dir}/transpose.hpp
   ${popart_op_headers_dir}/slice.hpp
   ${popart_op_headers_dir}/split.hpp

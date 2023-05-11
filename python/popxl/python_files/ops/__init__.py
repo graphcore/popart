@@ -34,6 +34,7 @@ from .topk import topk
 from .fmod import fmod
 from .gather import gather, groupedgather, tied_gather
 from .gelu import gelu, gelu_
+from .geluerf import geluerf, geluerf_
 from .group_norm import group_norm, layer_norm
 from .host_load import host_load
 from .host_store import host_store
@@ -177,6 +178,9 @@ __all__ = [
     # gelu.py
     "gelu",
     "gelu_",
+    # geluerf.py
+    "geluerf",
+    "geluerf_",
     # group_norm.py
     "group_norm",
     "layer_norm",

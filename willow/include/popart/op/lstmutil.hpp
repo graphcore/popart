@@ -12,6 +12,7 @@ enum class ActivationFunction {
   Relu,
   Tanh,
   Gelu,
+  GeluErf,
   Swish,
   Softmax,
   SoftmaxStable,

@@ -19,6 +19,8 @@ popnn::NonLinearityType convert(ActivationFunction af) {
     return popnn::NonLinearityType::TANH;
   case ActivationFunction::Gelu:
     return popnn::NonLinearityType::GELU;
+  case ActivationFunction::GeluErf:
+    return popnn::NonLinearityType::GELU_ERF;
   case ActivationFunction::Swish:
     return popnn::NonLinearityType::SWISH;
   case ActivationFunction::Softmax:

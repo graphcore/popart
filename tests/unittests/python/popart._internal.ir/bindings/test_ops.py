@@ -208,6 +208,8 @@ def test_binary_ops(
         ("ReluInplaceOp", {}, 1),
         ("GeluOp", {}, 1),
         ("GeluInplaceOp", {}, 1),
+        ("GeluErfOp", {}, 1),
+        ("GeluErfInplaceOp", {}, 1),
         ("TransposeOp", {"perm_": [0, 2, 1]}, 1),
         ("SliceOp", {"starts_": [1], "ends_": [3], "steps_": [1], "axes_": [0]}, 1),
         ("ReshapeOp", {"s": [3, 1, 2], "handleZero": False}, 1),
