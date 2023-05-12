@@ -49,3 +49,20 @@ To enable the cache, set the environment variable ``POPXL_CACHE_DIR`` to the pat
 An executable binary file with the extension ``.popef`` will be saved for each Poplar graph required to execute the PopXL program.
 
 The cache does not *manage* the files within the directory. It is your responsibility to delete out-of-date files. No index is kept of the files, so they can be deleted without risk.
+
+Preloading of compiled executables
+-------------------------------
+
+In certain storage environments, the compiled executables may be located remotely, for example mounted s3 storage over a network. 
+In such cases, the first load of the executable can be slow since it needs to be downloaded over the network, resulting in 
+longer-than-usual loading times. 
+To optimise the loading process in such cases, you can enable a preload mechanism that reads the executable contents 
+sequentially, rather than using the more complex access patterns utilised by PopEF. This can significantly improve the 
+first-read speed of the file. Once the initial read is complete, subsequent access speed is no longer a concern, and PopEF 
+will proceed with loading as usual. 
+
+To enable the preload mechanism, set the environment variable ``POPART_PRELOAD_POPEF`` to the value ``full-preload``.
+
+.. code-block:: console
+
+  $ export POPART_PRELOAD_POPEF=full-preload

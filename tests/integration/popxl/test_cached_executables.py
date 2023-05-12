@@ -310,3 +310,70 @@ def test_bad_cache_files_are_not_loaded(
     assert not is_executable_loaded
     assert "Cache file hash did not match the IR hash" in stderr
     assert "Ignoring cache file because it does not contain" in stderr
+
+
+@tu.requires_ipu
+def test_popart_preload(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    capfd: pytest.CaptureFixture,
+) -> None:
+    """
+    Test that the cache is preloaded when the appropriate environment variable is set
+
+    Args:
+        tmp_path (Path): Temporary directory
+        monkeypatch (MonkeyPatch): MonkeyPatch used for setting the env variables safely
+        capfd (pytest.CaptureFixture): The output captured from the file descriptors
+    """
+
+    def run():
+        """Run a very simple model for a given square matrix multiplication size."""
+        size = 2
+        lhs = np.random.random([size, size]).astype(np.float32)
+        rhs = np.random.random([size, size]).astype(np.float32)
+
+        output_val = np.matmul(lhs, rhs)
+
+        init_val = np.zeros([size, size]).astype(np.float32)
+
+        # First run. Compile and run without executable cache
+        ir, input_tensor, copied_output = create_ir_with_copy_var_update(
+            lhs, rhs, init_val, dtype=popxl.float32, log2scale=0
+        )
+
+        sess = popxl.Session(ir, "ipu_hw")
+        run_and_compare(
+            sess, input_tensor, copied_output, lhs, output_val, popxl.float32
+        )
+
+    cache_path = tmp_path / "preload"
+    # Enable model caching
+    monkeypatch.setenv("POPXL_CACHE_DIR", str(cache_path))
+
+    np.random.seed(0)
+    # Check that no cache lingers from previous tests
+    assert len(list(cache_path.glob("**/*.popef"))) == 0
+    # Need to activate the logger in order to check whether we are compiling or loading from cache
+    popart.getLogger().setLevel("DEBUG")
+
+    # first run, generate the cached executable
+    run()
+    is_executable_loaded, _ = loaded_saved_executable(capfd=capfd)
+    assert not is_executable_loaded
+    # Check that the cache has been saved
+    assert len(list(cache_path.glob("**/*.popef"))) == 1
+
+    # second run, enable preload
+    monkeypatch.setenv("POPART_PRELOAD_POPEF", "full-preload")
+    run()
+    # check that the preload took place
+    _, stderr = capfd.readouterr()
+    assert "Completed preload of popef file" in stderr
+
+    # third run, disable preload
+    monkeypatch.delenv("POPART_PRELOAD_POPEF", raising=False)
+    run()
+    # check that preload did not take place
+    _, stderr = capfd.readouterr()
+    assert "Performing preload of popef file" not in stderr

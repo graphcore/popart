@@ -1,6 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include "popart/popx/popefserializer.hpp"
 
+#include <fstream>
 #include <iostream>
 #include <utility>
 
@@ -71,10 +72,62 @@ Reader::deserializeExecutable(popart::Ir &ir,
   return _impl->deserializeExecutable(ir, lowering);
 }
 
+namespace {
+/** Performs a full sequential read of the .popef file.
+ * To be called prior to loading by PopEF.
+ */
+void preloadFileIfEnvVarSet(const std::string &filepath) {
+  const std::string preload_env_var_name = "PRELOAD_POPEF";
+  const auto preload_env_var_value = getPopartEnvVar(preload_env_var_name);
+
+  const std::string suffix = ".popef";
+  auto endsWith            = [](const std::string &str,
+                     const std::string &suffix) -> bool {
+    return str.size() >= suffix.size() &&
+           0 == str.compare(str.size() - suffix.size(), suffix.size(), suffix);
+  };
+
+  if (preload_env_var_value && *preload_env_var_value == "full-preload" &&
+      // check it's a .popef file
+      endsWith(filepath, suffix)) {
+    try {
+      logging::session::debug("Performing preload of popef file {}", filepath);
+      std::ifstream input(filepath, std::ios::binary);
+      std::ofstream output("/dev/null", std::ios::binary);
+      if (!input) {
+        throw std::runtime_error("Failed to open input file " + filepath +
+                                 " for preload.");
+      }
+      if (!output) {
+        throw std::runtime_error("Failed to open output stream '/dev/null'");
+      }
+      output << input.rdbuf();
+      logging::session::debug("Completed preload of popef file {}", filepath);
+    } catch (const std::exception &ex) {
+      logging::session::warn("Error executing preload of file {}, where {} "
+                             "env var has value {}. Error msg: {}",
+                             filepath,
+                             "POPART_" + preload_env_var_name,
+                             *preload_env_var_value,
+                             ex.what());
+    }
+  }
+}
+} // namespace
+
 nonstd::optional<size_t>
 Reader::checkFileForValidPoplarExecutable(const std::string &filePath) {
   auto ifs = std::make_shared<std::ifstream>(filePath, std::ifstream::binary);
   try {
+    /** Preload (full sequential read of) the .popef file if the preload
+     * environment variable is set. This is useful in storage environments where
+     * the cached executables are far away, e.g. mounted s3 storage over a
+     * network. In these cases, the first slow read over the network is much
+     * faster by an explicit sequential read compared to via the Reader
+     * instantiation below. After the first read, subsequent read speeds are
+     * fast, and we can proceed with the Reader instantiation as normal.
+     */
+    preloadFileIfEnvVarSet(filePath);
     popart::popx::serialization::Reader reader({ifs});
     if (reader.containsExecutable() && reader.containsPoplarExecutable()) {
       auto hash = reader.readExecutableHash();
