@@ -3584,6 +3584,7 @@ PYBIND11_MODULE(popart_core, m) {
   {
     py::enum_<poplar::RecoveryAction> en(m, "RecoveryAction", "");
     en.value("IPU_RESET", poplar::RecoveryAction::IPU_RESET, "");
+    en.value("LINK_RESET", poplar::RecoveryAction::LINK_RESET, "");
     en.value("PARTITION_RESET", poplar::RecoveryAction::PARTITION_RESET, "");
     en.value("FULL_RESET", poplar::RecoveryAction::FULL_RESET, "");
   }

@@ -457,6 +457,7 @@ of:
 .. code-block:: python
 
   popart.RecoveryAction.IPU_RESET
+  popart.RecoveryAction.LINK_RESET
   popart.RecoveryAction.PARTITION_RESET
   popart.RecoveryAction.POWER_CYCLE
 
@@ -465,7 +466,11 @@ contact `Graphcore Support <https://support.graphcore.ai>`__ because this issue
 could either be an SDK bug or an issue with the hardware.
 
 An :py:exc:`popart.poplar_unknown_runtime_error` system error could be either recoverable or
-unrecoverable. In this instance, try the three recovery options (``IPU_RESET``,
-``PARTITION_RESET``, ``POWER_CYCLE``). If none of the recovery options
+unrecoverable. In this instance, try the four recovery options (``IPU_RESET``,
+``LINK_RESET``, ``PARTITION_RESET``, ``POWER_CYCLE``). If none of the recovery options
 resolve the issue, then contact `Graphcore Support
 <https://support.graphcore.ai>`__.
+
+.. note::
+  ``PARTITION_RESET`` recovery action is only available in a Pod systems.
+  ``LINK_RESET`` recovery action is only available in a non-Pod systems.
