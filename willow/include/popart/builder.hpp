@@ -315,6 +315,20 @@ public:
                const DebugContext &debugContext = {});
 
   /**
+   * Normalize image and pad it from 3 channels to 4 channels. The
+   * input channel must be in the last dimension.
+   *
+   * \param args Contains the image input, offsets, scales input tensors as
+   * required by Poplibs
+   * \param scale the scale to apply
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
+   */
+  TensorId normalize_image(const std::vector<TensorId> &args,
+                           float scale,
+                           const DebugContext &debugContext = {});
+
+  /**
    * Add a scale operation to the model.
    *
    * This is a Poplar extension.

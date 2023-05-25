@@ -1441,6 +1441,23 @@ Returns:
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_nop =
     R"doc(Add a no-op operation to the model. Args: args: A vector of input tensor ids. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
+static const char *__doc_popart_AiGraphcoreOpset1_normalize_image =
+    R"doc(Pad and normalize N three-channel image input (in (B,H,W,C) format).
+
+The image is padded after it is transferred to IPU memory for the best performance. The normalized
+op uses an optimized IPU codelet to normalize the image input. The output always has four channels
+in the last dimension.
+
+Args:
+  args: A vector of input tensor ID.
+  scale: The normalization scalar parameter.
+
+Returns:
+  The tensor ID of the padded and normalized image input tensor.)doc";
+
+static const char *__singlelinedoc_popart_AiGraphcoreOpset1_normalize_image =
+    R"doc(Pad and normalize N three-channel image input (in (B,H,W,C) format). The image is padded after is is transferred to IPU memory for the best performance. The normalized op uses an optimized IPU codelet to normalize the image input. The output always has four channels in the last dimension. Args: args: A vector of input tensor IDs. scale: the normalization scalar parameter. Returns : The tensor ID of the padded and normalized image input tensor.)doc";
+
 static const char *__doc_popart_AiGraphcoreOpset1_packedDataBlock =
     R"doc(Add a packedDataBlock operator to the model.
 

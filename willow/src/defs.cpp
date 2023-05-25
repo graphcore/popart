@@ -6,6 +6,7 @@
 #include <onnx/defs/schema.h>
 #include <onnx/defs/shape_inference.h>
 #include <string>
+#include <type_traits>
 #include <vector>
 #include <popart/error.hpp>
 #include <popart/names.hpp>
@@ -55,6 +56,7 @@ void DynamicAddShapeInference(InferenceContext &ctx);
 void SequenceSliceInference(InferenceContext &ctx);
 void MultiConvShapeInference(InferenceContext &ctx);
 void NopShapeInference(InferenceContext &ctx);
+void NormalizeImageOpShapeInference(InferenceContext &ctx);
 void ShapedDropoutShapeInference(InferenceContext &ctx);
 void Atan2ShapeInference(InferenceContext &ctx);
 void DepthToSpaceShapeInference(InferenceContext &ctx);
@@ -401,6 +403,32 @@ void MultiConvShapeInference(InferenceContext &ctx) {
 
 void NopShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
+}
+
+void NormalizeImageOpShapeInference(InferenceContext &ctx) {
+  auto inputMutableType =
+      const_cast<ONNX_NAMESPACE::TypeProto *>(ctx.getInputType(0))
+          ->mutable_tensor_type();
+  auto &&shape    = *(inputMutableType->mutable_shape());
+  const auto rank = shape.dim_size();
+  if (rank < 2 || shape.dim(rank - 1).dim_value() != 3) {
+    throw popart::error("requires the inner dimension to be 3.");
+  }
+
+  shape.mutable_dim(rank - 1)->set_dim_value(4);
+
+  const auto inputType = ctx.getInputType(0)->tensor_type().elem_type();
+  auto outputType =
+      inputType == TensorProto::UINT8 ? TensorProto::FLOAT16 : inputType;
+  auto &&outputMutableType = ctx.getOutputType(0)->mutable_tensor_type();
+
+  outputMutableType->set_elem_type(outputType);
+
+  auto *outputShape = getOutputShape(ctx, 0);
+
+  for (int i = 0; i < rank; i++) {
+    outputShape->add_dim()->set_dim_value(shape.dim(i).dim_value());
+  }
 }
 
 void ShapedDropoutShapeInference(InferenceContext &ctx) {
@@ -2114,8 +2142,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .Input(1,
                "boundaries",
                "1-D tensor defining ranges of the buckets. "
-               "This must contain a monotonically increasing sequence."
-               "sequence.",
+               "This must contain a monotonically increasing sequence.",
                "T")
         .Output(0,
                 "out",
@@ -2181,6 +2208,50 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               AttributeProto::INT,
               false)
         .TypeAndShapeInferenceFunction(SortShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    NormalizeImageOp,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc(
+            "The operation normalize 3 channel input images on device "
+            "and pad them automatically to achieve best performance in IPU\n")
+        .Input(0, "image", "Standard 3 channels image.", "T1")
+        .Input(1,
+               "offsets",
+               "1-D tensor defining offsets for each dimension to normalize.",
+               "T2")
+        .Input(2,
+               "scales",
+               "1-D tensor defining scales for each dimension to normalize.",
+               "T2")
+        .Output(0,
+                "out",
+                "The normalized and padded (4 channels) image input.",
+                "T2")
+        .TypeConstraint("T1",
+                        {"tensor(uint8)",
+                         "tensor(uint32)",
+                         "tensor(int32)",
+                         "tensor(float16)",
+                         "tensor(float)"},
+                        "Constrain input to float, float16, int32 and uint32.")
+        .TypeConstraint(
+            "T2",
+            {"tensor(uint32)",
+             "tensor(int32)",
+             "tensor(float16)",
+             "tensor(float)"},
+            "Constrain normalization parameters and output types to float, "
+            "float16.")
+        .Attr("scale",
+              "A parameter in normalization.",
+              AttributeProto::FLOAT,
+              float(1.0))
+        .TypeAndShapeInferenceFunction(NormalizeImageOpShapeInference))
 
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
@@ -2348,6 +2419,10 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, Bucketize)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, NormalizeImageOp)>());
 
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(

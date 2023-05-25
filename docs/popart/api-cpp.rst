@@ -767,6 +767,7 @@ Available Ops (Op class)
 .. doxygenclass:: popart::NonLinearVariadicGradOp
 .. doxygenclass:: popart::NopOp
 .. doxygenclass:: popart::NotOp
+.. doxygenclass:: popart::NormalizeImageOp
 .. doxygenclass:: popart::OneWayUnaryInPlaceOp
 .. doxygenclass:: popart::OneWayUnaryOp
 .. doxygenclass:: popart::OnehotGradOp
@@ -1128,6 +1129,7 @@ Available Ops (Opx class)
 .. doxygenclass:: popart::popx::NopOpx
 .. doxygenclass:: popart::popx::NormOpx
 .. doxygenclass:: popart::popx::NotOpx
+.. doxygenclass:: popart::popx::NormalizeImageOpx
 .. doxygenclass:: popart::popx::OnehotGradOpx
 .. doxygenclass:: popart::popx::OnehotOpx
 .. doxygenclass:: popart::popx::OrOpx

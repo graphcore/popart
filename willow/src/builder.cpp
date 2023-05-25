@@ -493,6 +493,24 @@ TensorId AiGraphcoreOpset1::nop(const std::vector<TensorId> &args,
   return outputs.at(0);
 }
 
+TensorId AiGraphcoreOpset1::normalize_image(const std::vector<TensorId> &args,
+                                            float scale,
+                                            const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes = {{"scale", scale}};
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::NormalizeImage,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          {di});
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
+}
+
 TensorId AiGraphcoreOpset1::scale(const std::vector<TensorId> &args,
                                   float scale,
                                   const DebugContext &debugContext) {

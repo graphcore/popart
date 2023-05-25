@@ -2424,6 +2424,12 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args"),
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, nop));
+    cls.def("normalize_image",
+            &AiGraphcoreOpset1::normalize_image,
+            py::arg("args"),
+            py::arg("scale")        = float(1.0),
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, normalize_image));
     cls.def("scale",
             &AiGraphcoreOpset1::scale,
             py::arg("args"),

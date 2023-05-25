@@ -223,6 +223,7 @@ const static AiGraphcoreOpIdV1 MulRhsInplace("MulRhsInplace");
 const static AiGraphcoreOpIdV1 MultiConv_1("MultiConv");
 const static AiGraphcoreOpIdV1 Nll("Nll", 2, 1);
 const static AiGraphcoreOpIdV1 Nop_1("Nop", 1, 1);
+const static AiGraphcoreOpIdV1 NormalizeImageOpId("NormalizeImage", 3, 1);
 const static AiGraphcoreOpIdV1 PadInplace("PadInplace");
 const static AiGraphcoreOpIdV1 PowLhsInplace("PowLhsInplace");
 const static AiGraphcoreOpIdV1 PrintTensor_1("PrintTensor", 1, 1);
@@ -357,13 +358,15 @@ const static OperatorIdentifier IdentityLoss = CustomOperators::IdentityLoss;
 const static OperatorIdentifier IncrementMod = CustomOperators::IncrementMod_1;
 const static OperatorIdentifier IncrementModInplace =
     CustomOperators::IncrementModInplace_1;
-const static OperatorIdentifier Init         = CustomOperators::Init_1;
-const static OperatorIdentifier L1           = CustomOperators::L1;
-const static OperatorIdentifier Log1p        = CustomOperators::Log1p_1;
-const static OperatorIdentifier LSTM         = CustomOperators::LSTM_1;
-const static OperatorIdentifier MultiConv    = CustomOperators::MultiConv_1;
-const static OperatorIdentifier Nll          = CustomOperators::Nll;
-const static OperatorIdentifier Nop          = CustomOperators::Nop_1;
+const static OperatorIdentifier Init      = CustomOperators::Init_1;
+const static OperatorIdentifier L1        = CustomOperators::L1;
+const static OperatorIdentifier Log1p     = CustomOperators::Log1p_1;
+const static OperatorIdentifier LSTM      = CustomOperators::LSTM_1;
+const static OperatorIdentifier MultiConv = CustomOperators::MultiConv_1;
+const static OperatorIdentifier Nll       = CustomOperators::Nll;
+const static OperatorIdentifier Nop       = CustomOperators::Nop_1;
+const static OperatorIdentifier NormalizeImage =
+    CustomOperators::NormalizeImageOpId;
 const static OperatorIdentifier PrintTensor  = CustomOperators::PrintTensor_1;
 const static OperatorIdentifier ReduceMedian = CustomOperators::ReduceMedian;
 const static OperatorIdentifier PackedDataBlock =
