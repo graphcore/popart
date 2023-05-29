@@ -283,11 +283,11 @@ if (BUILD_DOCS)
     COMPONENT popart-docs)
 
 else()
-  install(FILES)
+  install(FILES COMPONENT popart-docs)
 endif()
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/popart/files
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/popart)
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/popart COMPONENT popart-docs)
 
 set(PYTEST_BASETEMP ${CMAKE_CURRENT_BINARY_DIR}/pytest_tmp)
 file(MAKE_DIRECTORY ${PYTEST_BASETEMP})
