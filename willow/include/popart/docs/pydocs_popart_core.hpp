@@ -1688,6 +1688,18 @@ Returns:
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_round =
     R"doc(Add a rounding operation to the model. This allows ``Round_11`` to be targeted from earlier opsets. See Also: `ONNX Round operator <https://github.com/onnx/onnx/blob/master/docs/Operators.md#Round>`_. Args: args: A vector of input tensor ids. debugContext: Optional debug information. Returns: The normalized output tensor ids.)doc";
 
+static const char *__doc_popart_AiGraphcoreOpset1_nearbyint =
+    R"doc(Add a nearby int rounding operation to the model.
+
+Rounds the floating-point argument to an integer value in floating-point format.
+
+Args:
+ args: A vector of input tensor ids.
+ debugContext: Optional debug information.
+
+Returns:
+ The normalized output tensor ids.)doc";
+
 static const char *__doc_popart_AiGraphcoreOpset1_scale =
     R"doc(Add a scale operation to the model.
 

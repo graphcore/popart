@@ -1248,6 +1248,19 @@ public:
                              Attributes::Int descending               = 0,
                              Attributes::Int stable                   = 0,
                              const popart::DebugContext &debugContext = {});
+
+  /**
+   * Add a nearby int rounding operation to the model.
+   *
+   * Rounds the floating-point argument to an integer value in floating-point
+   * format.
+   *
+   * \param args A vector of input tensor ids.
+   * \param debugContext Optional debug information.
+   * \return The normalized output tensor ids.
+   */
+  TensorId nearbyint(const std::vector<TensorId> &args,
+                     const DebugContext &debugContext = {});
 };
 
 /**

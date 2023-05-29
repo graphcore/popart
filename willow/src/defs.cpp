@@ -70,6 +70,7 @@ void RemainderShapeInference(InferenceContext &ctx);
 void FmodShapeInference(InferenceContext &ctx);
 void BitwiseNotShapeInference(InferenceContext &ctx);
 void RoundShapeInference(InferenceContext &ctx);
+void NearbyIntShapeInference(InferenceContext &ctx);
 void CtcBeamSearchDecoderShapeInference(InferenceContext &ctx);
 void CtcLossShapeInference(InferenceContext &ctx);
 void ReduceMedianShapeInference(InferenceContext &ctx);
@@ -678,6 +679,10 @@ void RoundShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
 
+void NearbyIntShapeInference(InferenceContext &ctx) {
+  propagateShapeAndTypeFromFirstInput(ctx);
+}
+
 void CtcBeamSearchDecoderShapeInference(InferenceContext &ctx) {
   auto batchSize = getInputShape(ctx, 0).dim(1).dim_value();
   auto topPaths  = getIntAttribute(ctx, "top_paths");
@@ -840,6 +845,7 @@ extern size_t dbg_count_check_Swish_AiGraphcore_ver1;
 extern size_t dbg_count_check_Bucketize_AiGraphcore_ver1;
 extern size_t dbg_count_check_GroupedGather_AiGraphcore_ver1;
 extern size_t dbg_count_check_Sort_AiGraphcore_ver1;
+extern size_t dbg_count_check_NearbyInt_AiGraphcore_ver1;
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
 
@@ -1896,6 +1902,23 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
 
+    NearbyInt,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("NearbyInt(X)")
+        .Input(0, "X", "Input tensor", "T")
+        .Output(0, "Y", "Output tensor", "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(float)", "tensor(float16)"},
+            "Constrain input and output types to float(32/16) tensors.")
+        .TypeAndShapeInferenceFunction(NearbyIntShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+
     CtcBeamSearchDecoder,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -2380,6 +2403,10 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, Round)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, NearbyInt)>());
 
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(

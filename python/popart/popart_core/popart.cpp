@@ -2475,6 +2475,11 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args"),
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, round));
+    cls.def("nearbyint",
+            &AiGraphcoreOpset1::nearbyint,
+            py::arg("args"),
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, nearbyint));
     cls.def("depthtospace",
             &AiGraphcoreOpset1::depthtospace,
             py::arg("args"),

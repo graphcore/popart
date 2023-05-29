@@ -759,6 +759,7 @@ Available Ops (Op class)
 .. doxygenclass:: popart::MultiConvWeightsGradOp
 .. doxygenclass:: popart::MultiExchangeOp
 .. doxygenclass:: popart::MultiReplicatedAllReduceOp
+.. doxygenclass:: popart::NearbyIntOp
 .. doxygenclass:: popart::NegateGradOp
 .. doxygenclass:: popart::NegateOp
 .. doxygenclass:: popart::NllGradOp

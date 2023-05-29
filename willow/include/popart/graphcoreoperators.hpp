@@ -221,6 +221,8 @@ const static AiGraphcoreOpIdV1 ModifyRandomSeed("ModifyRandomSeed");
 const static AiGraphcoreOpIdV1 MulLhsInplace("MulLhsInplace");
 const static AiGraphcoreOpIdV1 MulRhsInplace("MulRhsInplace");
 const static AiGraphcoreOpIdV1 MultiConv_1("MultiConv");
+const static AiGraphcoreOpIdV1 NearbyInt("NearbyInt", 1, 1);
+const static AiGraphcoreOpIdV1 NearbyIntInplace("NearbyIntInplace");
 const static AiGraphcoreOpIdV1 Nll("Nll", 2, 1);
 const static AiGraphcoreOpIdV1 Nop_1("Nop", 1, 1);
 const static AiGraphcoreOpIdV1 NormalizeImageOpId("NormalizeImage", 3, 1);
@@ -397,6 +399,7 @@ const static OperatorIdentifier TensorRemap   = CustomOperators::TensorRemap_1;
 const static OperatorIdentifier Bucketize     = CustomOperators::Bucketize;
 const static OperatorIdentifier GroupedGather = CustomOperators::GroupedGather;
 const static OperatorIdentifier Sort          = CustomOperators::Sort;
+const static OperatorIdentifier NearbyInt     = CustomOperators::NearbyInt;
 
 } // namespace OpSet1
 } // namespace AiGraphcore

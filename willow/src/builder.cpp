@@ -659,6 +659,24 @@ TensorId AiGraphcoreOpset1::round(const std::vector<TensorId> &args,
   return outputs.at(0);
 }
 
+TensorId AiGraphcoreOpset1::nearbyint(const std::vector<TensorId> &args,
+                                      const DebugContext &debugContext) {
+
+  std::map<std::string, popart::any> attributes;
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::NearbyInt,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          {di});
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
+}
+
 TensorId AiGraphcoreOpset1::init(Attributes::Ints shape,
                                  Attributes::Int data_type,
                                  Attributes::Int init_type,
