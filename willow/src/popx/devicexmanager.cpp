@@ -235,7 +235,8 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
     return std::make_shared<DevicexIpuModelInfo>(device, ipuVersion);
   }
   case DeviceType::OfflineIpu: {
-    checkOptions({"numIPUs", "tilesPerIPU", "ipuVersion", "syncPattern"});
+    checkOptions(
+        {"numIPUs", "tilesPerIPU", "ipuVersion", "syncPattern", "gatewayMode"});
 
     // Create an ipumodel, using the values set in the options map, else use the
     // defaults
@@ -248,8 +249,13 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
             options, "syncPattern", syncPatternToString(SyncPattern::Full))),
         flags);
 
-    auto ipuTarget = poplar::Target::createIPUTarget(
-        mapFind(options, "numIPUs", 1), poplar::StringRef(ipuVersion), flags);
+    poplar::OptionFlags flagsWithGw = flags;
+    flagsWithGw.set("gatewayMode",
+                    mapFind<std::string>(options, "gatewayMode", "false"));
+    auto ipuTarget =
+        poplar::Target::createIPUTarget(mapFind(options, "numIPUs", 1),
+                                        poplar::StringRef(ipuVersion),
+                                        flagsWithGw);
     return std::make_shared<DevicexOfflineIpuInfo>(ipuTarget, flags);
   }
   case DeviceType::Sim: {

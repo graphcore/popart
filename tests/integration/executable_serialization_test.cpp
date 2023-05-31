@@ -1149,10 +1149,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_using_cache) {
   testSessionRunFromSerializedExe(true);
 }
 
-BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe,
-                     // TODO(AFS-302): Re-enable this test when it passes
-                     //                when run on a POD machine.
-                     *boost::unit_test::disabled()) {
+BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
   // the dimensions of the matrices
   int K = 6;
   int M = 7;
@@ -1246,6 +1243,7 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe,
 
   int initialDeviceId = 0;
   std::string initialDeviceArchString;
+  std::string deviceGatewayMode;
 
   {
     auto initialDevice =
@@ -1255,6 +1253,8 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe,
     BOOST_REQUIRE(initialDevice);
     initialDeviceId         = initialDevice->getId();
     initialDeviceArchString = initialDevice->getTarget().getTargetArchString();
+    deviceGatewayMode =
+        initialDevice->getTarget().getGatewayMode() ? "true" : "false";
 
     // Engine caching is enabled so this session will store
     // the serialized PopART state and poplar executable
@@ -1296,7 +1296,8 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe,
                                  1,
                                  0,
                                  SyncPattern::Full,
-                                 {{"ipuVersion", initialDeviceArchString}});
+                                 {{"ipuVersion", initialDeviceArchString},
+                                  {"gatewayMode", deviceGatewayMode}});
 
     // Engine caching is enabled so this session will store
     // the serialized PopART state and poplar executable
