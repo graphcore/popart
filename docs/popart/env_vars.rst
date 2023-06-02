@@ -63,23 +63,17 @@ An executable binary file with the extension ``.popef`` will be saved for each P
 The cache does not *manage* the files within the directory. It is your responsibility to delete out-of-date files. No index is kept of the files, so they can be deleted without risk.
 
 Preloading of compiled executables
--------------------------------
+----------------------------------
 
-In certain storage environments, the compiled executables may be located remotely, for example mounted s3 storage over a network. 
-In such cases, the first load of the executable can be slow since it needs to be downloaded over the network, resulting in 
-longer-than-usual loading times. 
-To optimise the loading process in such cases, you can enable a preload mechanism that reads the executable contents 
-sequentially, rather than using the more complex access patterns utilised by PopEF. This can significantly improve the 
-first-read speed of the file. Once the initial read is complete, subsequent access speed is no longer a concern, and PopEF 
-will proceed with loading as usual. 
+Loading PopEF executable files may exhibit poor performance if the the files are stored remotely, for example on Amazon Simple Storage Service (Amazon S3) and mounted through S3FS. This is caused by making random accesses to uncached remote files.
 
-To enable the preload mechanism, set the environment variable ``POPART_PRELOAD_POPEF`` to the value ``full-preload``.
+You can optimise the loading process in such cases by enabling a preload mechanism. This can significantly improve the speed of the initial loading of the file and also enables subsequent operations to be carried out on a cached file. This makes it viable to store PopEF files on systems such as Amazon S3.
+
+To enable the preload mechanism, set the value of the environment variable ``POPART_PRELOAD_POPEF`` to ``full-preload``.
 
 .. code-block:: console
 
   $ export POPART_PRELOAD_POPEF=full-preload
-
-
 
 
 Inspecting the IR
