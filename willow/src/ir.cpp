@@ -137,6 +137,7 @@
 #include "popart/tensorlocation.hpp"
 #include "popart/transforms/transform.hpp"
 #include "popart/vendored/optional.hpp"
+#include "popart/version.hpp"
 #include "popart/vertex.hpp"
 #include "popart/voiddata.hpp"
 
@@ -4398,8 +4399,13 @@ std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   boost::hash_combine(seed,
                       std::hash<popart::SessionOptions>{}(bundle.userOptions));
   boost::hash_combine(seed, std::hash<popart::Patterns>()(bundle.patterns));
-  const std::string poplarHash = poplar::packageHash();
-  boost::hash_combine(seed, poplarHash);
+
+  const std::string poplarVersion = poplar::versionString();
+  boost::hash_combine(seed, poplarVersion);
+  const std::string popartVersion = popart::core::versionString();
+  boost::hash_combine(seed, popartVersion);
+  const std::string packageHash = popart::core::packageHash();
+  boost::hash_combine(seed, packageHash);
 
   return seed;
 }
