@@ -6,6 +6,7 @@ PopXL User Guide and API (experimental)
     :numbered: 3
 
     introduction
+    setup_quick_start
     concepts
     simple_example
     datatype
