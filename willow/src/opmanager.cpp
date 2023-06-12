@@ -447,6 +447,38 @@ Op *OpManager::createOpInGraph(const Node &node, Graph &graph) {
 
         graph.connectInputs(node, op->id);
         graph.connectOutputs(node, op->id);
+
+        // Remove empty constant inputs
+        std::vector<int> emptyIndex;
+        const auto input_count = op->inTensorCount();
+        for (int i = 0, num = 0; num < input_count; i++) {
+          if (op->hasInput(i)) {
+            if (op->inInfo(i).nelms() == 0 &&
+                op->inTensor(i)->tensorType() == TensorType::Const) {
+              emptyIndex.push_back(i);
+            }
+            num++;
+          }
+        }
+        if (!emptyIndex.empty()) {
+          // Disconnect empty inputs and reconnect the rest
+          std::vector<TensorId> allInputs;
+          for (int i = 0, num = 0; num < input_count; i++) {
+            if (op->hasInput(i)) {
+              allInputs.push_back(op->inTensor(i)->id);
+              num++;
+            }
+          }
+          op->disconnectAllInputs();
+          int new_idx = 0;
+          for (int i = 0; i < input_count; i++) {
+            auto iter = std::find(emptyIndex.begin(), emptyIndex.end(), i);
+            if (iter == emptyIndex.end()) {
+              op->connectInTensor(new_idx, allInputs[i]);
+              new_idx++;
+            }
+          }
+        }
       }
     }
   }

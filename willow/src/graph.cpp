@@ -373,6 +373,14 @@ void Graph::constructFromOnnxGraph(
       }
     }
   }
+
+  // Remove empty constant tensors
+  auto &tensors = getTensors();
+  for (auto *t : tensors.getAll()) {
+    if (t->tensorType() == TensorType::Const && t->info.nelms() == 0) {
+      tensors.remove(t->id);
+    }
+  }
 }
 
 Op *Graph::growFromNode(const Node &node) {

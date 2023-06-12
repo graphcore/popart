@@ -122,3 +122,28 @@ def test_concat_3_inputs(op_tester):
         return [result]
 
     op_tester.run(init_builder, reference, "infer")
+
+
+def test_concat_with_empty_constant(op_tester):
+    d0 = np.array([[1, 1], [1, 1], [1, 1]]).astype(np.float32)
+    d1 = np.array([[], [], []]).astype(np.float32)
+    d2 = np.array([[1], [1], [1]]).astype(np.float32)
+
+    dummy = np.zeros(np.concatenate((d0, d1, d2), axis=1).shape, dtype=np.float32)
+
+    def init_builder(builder):
+        c0 = builder.addInputTensor(d0)
+        c1 = builder.addInitializedInputTensor(d1)
+        c2 = builder.addInitializedInputTensor(d2)
+        cc = builder.aiOnnx.concat([c0, c1, c2], 1)
+
+        i = builder.addInputTensor(dummy)
+        o = builder.aiOnnx.add([i, cc])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(_):  # ref_data is an unused argument
+        result = np.concatenate((d0, d1, d2), axis=1)
+        return [result]
+
+    op_tester.run(init_builder, reference, "infer")
