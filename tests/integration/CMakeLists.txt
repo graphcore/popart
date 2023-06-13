@@ -16,6 +16,7 @@ add_unit_test(executable_serialization_test executable_serialization_test.cpp VA
 add_unit_test(graphedgemaptest graph_edgemap_test.cpp SUPPORT_LIBS test-graphs-test-util)
 add_unit_test(exceptiontest exceptiontest.cpp)
 add_unit_test(inputshapeinfotest inputshapeinfotest.cpp)
+add_unit_test(iosubgraphcostmodel iosubgraphcostmodel_test.cpp)
 add_unit_test(irhashtest ir_hash_test.cpp VARIANTS "IpuModel2")
 add_unit_test(isnonlinearitytest is_nonlinearity_test.cpp)
 add_unit_test(isnormtest is_norm_test.cpp)
