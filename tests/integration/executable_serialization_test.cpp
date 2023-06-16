@@ -280,7 +280,7 @@ void checkCorrectionPopefMetadata(
   const std::string targetSystem =
       lowering.getDeviceInfo()->getTarget().getTargetSystemString();
   const bool isPOD = targetSystem.find("POD") != std::string::npos;
-  const size_t deviceIteration =
+  const size_t deviceIterations =
       ir.getDataFlow().batchesPerStep() *
       ((!metadata.isInference() && opts.enableGradientAccumulation)
            ? opts.getAccumulationFactor()
@@ -301,7 +301,7 @@ void checkCorrectionPopefMetadata(
   BOOST_CHECK(metadata.ipuVersion() == ipuVersion);
   BOOST_CHECK(metadata.isPOD() == isPOD);
   BOOST_CHECK(metadata.numIpus() == lowering.getDeviceInfo()->getNumIpus());
-  BOOST_CHECK(metadata.deviceIteration() == deviceIteration);
+  BOOST_CHECK(metadata.deviceIterations() == deviceIterations);
 }
 
 const popef::TensorReader *

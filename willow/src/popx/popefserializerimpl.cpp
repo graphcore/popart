@@ -170,9 +170,9 @@ void WriterImpl::serializePopefMetadata() {
   const int64_t numProcs =
       opts.enableDistributedReplicatedGraphs ? opts.globalReplicationFactor : 1;
 
-  auto deviceIteration = batchesPerStep;
+  auto deviceIterations = batchesPerStep;
   if (!isInference && opts.enableGradientAccumulation)
-    deviceIteration *= opts.getAccumulationFactor();
+    deviceIterations *= opts.getAccumulationFactor();
 
   popef::Metadata metadata;
   metadata.setReplicationFactor(ir_lowering.getReplicationFactor());
@@ -187,7 +187,7 @@ void WriterImpl::serializePopefMetadata() {
   metadata.setDeviceOptions(convertOptionFlagsToOptions(
       ir_lowering.getDeviceInfo()->getOptionFlags()));
   metadata.setSeedHandle(_seedHandle);
-  metadata.setDeviceIteration(deviceIteration);
+  metadata.setDeviceIterations(deviceIterations);
 
   std::vector<popef::Anchor> &metadataAnchors = metadata.anchors();
   metadataAnchors.insert(metadataAnchors.begin(),
