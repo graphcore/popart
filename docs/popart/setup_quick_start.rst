@@ -1,7 +1,7 @@
 .. _setup_quick_start:
 
 Setup quick start
-------------------
+=================
 
 This section describes how to set up your system to start using PopART.
 
