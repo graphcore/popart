@@ -6,6 +6,7 @@ PopART User Guide
     :numbered: 3
 
     intro
+    setup_quick_start
     importing
     builderonnx
     executing
