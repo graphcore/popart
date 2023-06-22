@@ -125,7 +125,7 @@ def test_host_calculate_pow2scale(dtype_from, dtype_to, shape):
     [np.array([250.], np.float16), popxl.float8_143,  0, False, np.array([0b01111111], popxl.dtypes.np_dtype_float8_143)],
     [np.array([250.], np.float16), popxl.float8_143,  0, True,  np.array([0b10000000], popxl.dtypes.np_dtype_float8_143)],
     # Test nan_on_overflow for float8_152 + float16.
-    [np.array([70000.], np.float16), popxl.float8_152,  0, False, np.array([0b01111111], popxl.dtypes.np_dtype_float8_152)],
+    [np.array([70000.], np.float16), popxl.float8_152,  0, False, np.array([0b10000000], popxl.dtypes.np_dtype_float8_152)],
     [np.array([70000.], np.float16), popxl.float8_152,  0, True,  np.array([0b10000000], popxl.dtypes.np_dtype_float8_152)],
     # Test nan_on_overflow for float8_143 + float32.
     [np.array([250.], np.float32), popxl.float8_143,  0, False, np.array([0b01111111], popxl.dtypes.np_dtype_float8_143)],
