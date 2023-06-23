@@ -74,6 +74,17 @@ void BatchNormOp::setup() {
     auto meanTensor = inTensor(getMeanInIndex());
     auto varTensor  = inTensor(getVarInIndex());
 
+    // input might be detached by PopTorch if it had flag requires_grad == False
+    if (meanTensor->hasProducer() &&
+        meanTensor->getProducer()->opid.type == "Detach") {
+      meanTensor = meanTensor->getProducer()->inTensor(0);
+    }
+
+    if (varTensor->hasProducer() &&
+        varTensor->getProducer()->opid.type == "Detach") {
+      varTensor = varTensor->getProducer()->inTensor(0);
+    }
+
     if (meanTensor->tensorType() == TensorType::Variable) {
       meanTensor->setVariableUpdateType(VariableUpdateType::Copy);
       meanTensor->setCopyFromTensor(outId(getMeanOutIndex()));

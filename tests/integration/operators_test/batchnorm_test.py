@@ -1324,3 +1324,61 @@ def test_batchnorm_train_fp32var_torch_version(op_tester):
 
     op_tester.atol = 1e-05
     op_tester.run(init_builder, reference, "infer")
+
+
+# PopTorch shall detach both mean and var input tensors to prevent gradient update
+# but batchnorm should still be able to update those when track_running_stats is True.
+def test_batchnorm_test_detached_mean_var(op_tester):
+    # create test data
+    d1 = np.array(
+        [[[[1, 1], [1, 1]], [[1, 1], [1, 1]]], [[[1, 0], [0, 1]], [[1, 0], [0, 1]]]],
+        dtype=np.float32,
+    )
+
+    scale = np.ones(2).astype(np.float32)
+    b = np.zeros(2).astype(np.float32)
+    mean = np.zeros(2).astype(np.float32)
+    var = np.ones(2).astype(np.float32)
+    epsilon = 1e-05
+    momentum = 0.1
+
+    def init_builder(builder):
+
+        i1 = builder.addInputTensor(d1)
+        iScale = builder.addInputTensor(scale)
+        iB = builder.addInputTensor(b)
+        iMean = builder.addInputTensor(mean)
+        dMean = builder.aiGraphcore.detach([iMean])
+        iVar = builder.addInputTensor(var)
+        dVar = builder.aiGraphcore.detach([iVar])
+        (o_y,) = builder.aiOnnx.batchnormalization(
+            [i1, iScale, iB, dMean, dVar], 1, epsilon, momentum
+        )
+        builder.addOutputTensor(o_y)
+        return [o_y]
+
+    def reference(_):  # ref_data is an unused argument
+        _input = torch.tensor(d1, requires_grad=False)
+        _weight = torch.tensor(scale, requires_grad=False)
+        _bias = torch.tensor(b, requires_grad=False)
+        _mean = torch.tensor(mean, requires_grad=False)
+        _var = torch.tensor(var, requires_grad=False)
+
+        m = torch.nn.BatchNorm2d(
+            2, eps=epsilon, momentum=momentum, track_running_stats=True
+        )
+        m.state_dict()["weight"].copy_(_weight)
+        m.state_dict()["bias"].copy_(_bias)
+        m.state_dict()["running_mean"].copy_(_mean)
+        m.state_dict()["running_var"].copy_(_var)
+
+        m.eval()
+
+        _y = m(_input)
+
+        return [_y]
+
+    op_tester.setPatterns(
+        ["PreUniRepl", "ReciprocalGradOp"], enableRuntimeAsserts=False
+    )
+    op_tester.run(init_builder, reference, "infer")
