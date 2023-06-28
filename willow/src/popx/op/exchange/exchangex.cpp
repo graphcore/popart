@@ -193,13 +193,37 @@ poplar::Tensor ExchangeDescriptorx::create(poplar::Graph &graph,
           ? descriptor.getHostStreamTensorId()
           : std::to_string(descriptor.getRemoteBufferId());
 
+  poplar::Tensor t;
+  auto &lowering = dv_p->lowering();
+  auto withOffset =
+      lowering.ir()
+          .getSessionOptions()
+          .experimentalSettings.createHostTransferableTensorWithOffset;
+
   // Note: ExchangeDirection::Store means isRead is true for the host side
-  return popops::createHostTransferableTensor(
-      graph,
-      popType(info.getDataTypeInfo()->type()),
-      info.shape_szt(),
-      descriptor.getDirection() == ExchangeDirection::Store,
-      {debugContext});
+  if (!withOffset) {
+    t = popops::createHostTransferableTensor(
+        graph,
+        popType(info.getDataTypeInfo()->type()),
+        info.shape_szt(),
+        descriptor.getDirection() == ExchangeDirection::Store,
+        {debugContext});
+  } else {
+    auto &offsetMap = lowering.getInitTensorOffsetMap();
+    auto offset     = offsetMap.getOffset(graph);
+    t               = popops::createHostTransferableTensor(
+        graph,
+        popType(info.getDataTypeInfo()->type()),
+        info.shape_szt(),
+        descriptor.getDirection() == ExchangeDirection::Store,
+        offset,
+        {debugContext});
+    auto dtype = popType(info.getDataTypeInfo()->type());
+    offset += graph.getTarget().getTypeSize(dtype) * t.numElements();
+    offsetMap.setOffset(graph, offset);
+  }
+
+  return t;
 }
 
 std::unique_ptr<ExchangeDescriptorx>

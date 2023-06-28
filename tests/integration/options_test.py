@@ -164,3 +164,9 @@ def test_updatableNamedBuffers_option():
     assert len(opts.updatableNamedBuffers) == 2
     assert opts.updatableNamedBuffers[0] == "t1"
     assert opts.updatableNamedBuffers[1] == "t2"
+
+
+def test_createHostTransferableTensorWithOffset():
+    opts = popart.SessionOptions()
+    opts.experimentalSettings.createHostTransferableTensorWithOffset = True
+    assert opts.experimentalSettings.createHostTransferableTensorWithOffset is True

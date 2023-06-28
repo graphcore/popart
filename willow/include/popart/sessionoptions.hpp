@@ -1388,6 +1388,16 @@ struct SessionOptions {
      */
     std::map<std::string, std::vector<std::string>>
         customTransformApplierSettings;
+
+    /**
+     * Accumulate the created tensors bytes, rotate the start
+     * tile of the next tensor to balance the tile mapping.
+     * Especially when there are a lot of small input tensors, enable it
+     * can avoid mapping on tile0 all the time.
+     *
+     * Default=`false`.
+     */
+    bool createHostTransferableTensorWithOffset = false;
   };
 
   /// Configuration setting for custom transform applier.

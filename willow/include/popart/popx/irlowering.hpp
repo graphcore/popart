@@ -25,6 +25,7 @@
 #include <popart/names.hpp>
 #include <popart/popx/exchangebundle.hpp>
 #include <popart/popx/inittensor.hpp>
+#include <popart/popx/inittensoroffsetmap.hpp>
 #include <popart/popx/linearmapper.hpp>
 #include <popart/popx/namesx.hpp>
 #include <popart/popx/popprograms.hpp>
@@ -228,6 +229,11 @@ private:
 
   // Map tensors evenly across all tiles
   LinearMapper linearMapper;
+
+  // Save the created tensor bytes which used to help rotate
+  // the next mapping start tile, create init tensors evenly
+  // across all tiles
+  InitTensorOffsetMap initTensorOffsetMap;
 
   poplar::Tensor randomSeedTensor;
 
@@ -631,6 +637,8 @@ public:
                                    const poplar::DebugContext &dc = {});
 
   LinearMapper &getLinearMapper() { return linearMapper; }
+
+  InitTensorOffsetMap &getInitTensorOffsetMap() { return initTensorOffsetMap; }
 
   const liveness::LivenessAnalyzer *getLivenessAnalyzer() const {
     return livenessAnalyzer.get();

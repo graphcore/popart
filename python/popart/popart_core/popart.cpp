@@ -1356,6 +1356,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite(
         "_customTransformApplierSettings",
         &SessionOptions::ExperimentalSettings::customTransformApplierSettings);
+    cls.def_readwrite("createHostTransferableTensorWithOffset",
+                      &SessionOptions::ExperimentalSettings::
+                          createHostTransferableTensorWithOffset);
   }
   {
     py::class_<SessionOptions> cls(m, "SessionOptions");

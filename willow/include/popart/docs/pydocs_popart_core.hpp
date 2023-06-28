@@ -14919,6 +14919,14 @@ static const char
 static const char *__doc_popart_SessionOptions_stashAllTensorsInferencePipeline =
     R"doc(Specify whether to enable stash all needed tensors when inference pipeline. Default :code:`false` (disabled).)doc";
 
+static const char *
+    __doc_popart_SessionOptions_ExperimentalSettings_createHostTransferableTensorWithOffset =
+        R"doc(Accumulate the created tensors bytes, rotate the start tile of the next tensor to balance the tile maapping. Especially when there are a lot of small input tensors, enable it can avoid mapping on tile0 all the time.)doc";
+
+static const char *
+    __singlelinedoc_popart_SessionOptions_ExperimentalSettings_createHostTransferableTensorWithOffset =
+        R"doc(Accumulate the created tensors bytes, rotate the start tile of the next tensor to balance the tile maapping.)doc";
+
 static const char *__doc_popart_SessionOptions_updatableNamedBuffers =
     R"doc(List of model named buffers that can be updated with call to
 buffersFromHost(). This allows to update just a subset of model weights
