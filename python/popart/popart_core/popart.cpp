@@ -129,6 +129,15 @@ getOptimizerValueDictionary(py::dict e) {
   return cpm;
 }
 
+template <typename T> std::vector<T> handlePythonList(py::list pylist) {
+  std::vector<T> vec(pylist.size());
+  std::transform(pylist.begin(),
+                 pylist.end(),
+                 vec.begin(),
+                 [](const py::handle &h) { return h.cast<T>(); });
+  return vec;
+}
+
 std::map<std::string, popart::any> getDictionaryVar(py::dict pydict) {
   // This attempts to convert the py::dict to a map of string, popart::any.
   // Since we do not know the python types given by the user until runtime, we
@@ -141,20 +150,33 @@ std::map<std::string, popart::any> getDictionaryVar(py::dict pydict) {
     auto val = element.second;
     if (py::isinstance<py::str>(val)) {
       // String
-      dictionary.insert(std::make_pair(key, val.cast<std::string>()));
+      dictionary.emplace(key, val.cast<std::string>());
     } else if (py::isinstance<py::int_>(val)) {
       // Int
-      dictionary.insert(std::make_pair(key, val.cast<int64_t>()));
+      dictionary.emplace(key, val.cast<std::int64_t>());
     } else if (py::isinstance<py::list>(val)) {
+      py::list py_list = val.cast<py::list>();
       // Ints
-      std::vector<int64_t> vec;
-      for (auto subval : val) {
-        vec.push_back(subval.cast<int64_t>());
+      if (std::all_of(val.begin(), val.end(), [](py::handle item) {
+            return py::isinstance<py::int_>(item);
+          })) {
+        std::vector<int64_t> vec = handlePythonList<int64_t>(py_list);
+        dictionary.emplace(key, vec);
       }
-      dictionary.insert(std::make_pair(key, vec));
+      // Floats
+      else if (std::all_of(val.begin(), val.end(), [](py::handle item) {
+                 return py::isinstance<py::float_>(item);
+               })) {
+        std::vector<float> vec = handlePythonList<float>(py_list);
+        dictionary.emplace(key, vec);
+      } else {
+        throw error("Invalid or mismatched python list type provided in custom "
+                    "op attribute '{}'",
+                    key);
+      }
     } else if (py::isinstance<py::float_>(val)) {
       // Float
-      dictionary.insert(std::make_pair(key, val.cast<float>()));
+      dictionary.emplace(key, val.cast<float>());
     } else {
       throw error("Invalid type provided in custom op attribute '{}'", key);
     }
