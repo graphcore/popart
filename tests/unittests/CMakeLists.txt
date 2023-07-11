@@ -98,6 +98,7 @@ add_unit_test(unittest_stepio_deonnxing_regression_tests stepio/deonnxing_regres
 
 add_unit_test(unittest_autodiff transforms/unittest_autodiff.cpp SUPPORT_LIBS ir-query-test-util test-graphs-test-util)
 add_unit_test(unittest_overlapio transforms/unittest_overlapio.cpp SUPPORT_LIBS ir-query-test-util test-graphs-test-util)
+add_unit_test(unittest_efficient_overlapio transforms/unittest_efficient_overlapio.cpp SUPPORT_LIBS ir-query-test-util test-graphs-test-util)
 add_unit_test(unittest_mainloops transforms/unittest_mainloops.cpp VARIANTS Cpu)
 add_unit_test(unittest_backwardsgraphcreator transforms/autodiff/unittest_backwardsgraphcreator.cpp)
 add_unit_test(unittest_calledgraphgradophelper transforms/autodiff/unittest_calledgraphgradophelper.cpp)

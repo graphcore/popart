@@ -14968,6 +14968,23 @@ Default: :code:`false` (not enabled).)doc";
 static const char *__singlelinedoc_popart_SessionOptions_useHostCopyOps =
     R"doc(Enable use of IR graph operations for data and anchor streams. Default: :code:`false` (not enabled).)doc";
 
+static const char
+    *__doc_popart_SessionOptions_enableEfficientOverlapIOTopoCons =
+        R"doc(Enable efficient overlap io topo constraints.
+
+Suppose we have the N bins in each of three stage(8 for before loop /7 for insdie loop /6 for after loop),
+and L ops for each bins, vallina implementaiton of overlapio creates topocons of complexity O(N*N*L*L).
+
+To make sure InitOps in each step are scheduled before HostLoadOps, we only need to keep topo constrains in each bin
+and let the last of op of each bin Bin0 is scheduled before the first op of Bin1 next to Bin0. Then total
+complexity O(N*N*L*L) is reduced to (N*L).
+
+Default: :code:`false` (not enabled).)doc";
+
+static const char
+    *__singlelinedoc_popart_SessionOptions_enableEfficientOverlapIOTopoCons =
+        R"doc(Enable efficient overlap io topo constrains. Suppose we have the N bins in each of three stage(8 for before loop /7 for insdie loop /6 for after loop), and L ops for each bins, vallina implementaiton of overlapio creates topocons of complexity O(N*N*L*L). To make sure InitOps in each step are scheduled before HostLoadOps, we only need to keep topo constrains in each bin and let the last of op of each bin Bin0 is scheduled before the first op of Bin1 next to Bin0. Then total complexity O(N*N*L*L) is reduced to (N*L). Default: :code:`false` (not enabled).)doc";
+
 static const char *__doc_popart_SessionOptions_virtualGraphMode =
     R"doc(Specify how to place ops on virtual graphs to achieve model
 parallelism, either manually using model annotations, or automatically.

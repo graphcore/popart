@@ -1669,6 +1669,10 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::useHostCopyOps,
                       DOC(popart, SessionOptions, useHostCopyOps));
     cls.def_readwrite(
+        "enableEfficientOverlapIOTopoCons",
+        &SessionOptions::enableEfficientOverlapIOTopoCons,
+        DOC(popart, SessionOptions, enableEfficientOverlapIOTopoCons));
+    cls.def_readwrite(
         "enableSupportedDataTypeCasting",
         &SessionOptions::enableSupportedDataTypeCasting,
         DOC(popart, SessionOptions, enableSupportedDataTypeCasting));

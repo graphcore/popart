@@ -1304,9 +1304,21 @@ private:
         const std::map<int, std::vector<Op *>> &beforeLoopBins);
 
     /**
+     * Constrain topo cons before the LoopOp.
+     */
+    void efficientFixTopoConsBeforeLoop(
+        const std::map<int, std::vector<Op *>> &beforeLoopBins);
+
+    /**
      * Constrain topo cons inside the LoopOp.
      */
     void fixTopoConsInsideLoop(
+        const std::map<int, std::vector<Op *>> &insideLoopBins);
+
+    /**
+     * Constrain topo cons inside the LoopOp.
+     */
+    void efficientFixTopoConsInsideLoop(
         const std::map<int, std::vector<Op *>> &insideLoopBins);
 
     /**
@@ -1314,6 +1326,12 @@ private:
      */
     void
     fixTopoConsAfterLoop(const std::map<int, std::vector<Op *>> &afterLoopBins);
+
+    /**
+     * Constrain topo cons after the LoopOp.
+     */
+    void efficientFixTopoConsAfterLoop(
+        const std::map<int, std::vector<Op *>> &afterLoopBins);
 
     /**
      * Promote the aliased (which inputs the loop aliases to it's outputs)

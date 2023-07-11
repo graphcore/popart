@@ -1825,6 +1825,44 @@ void DecomposeLoops::DecomposeLoopHelper::fixTopoConsBeforeLoop(
   }
 }
 
+void DecomposeLoops::DecomposeLoopHelper::efficientFixTopoConsBeforeLoop(
+    const std::map<int, std::vector<Op *>> &beforeLoopBins) {
+  // 1.) Constraints before the loop
+  auto binBeforeLoopOp = beforeLoopBins.rbegin();
+  if (binBeforeLoopOp->second.size() > 0) {
+    Op *before = binBeforeLoopOp->second[binBeforeLoopOp->second.size() - 1];
+    addTopoCon(graph, before, loopOp, false);
+  }
+
+  if (model.getTopoConLevelBefore() == DecomposeTopoConLevel::Full) {
+    for (auto bin0 : beforeLoopBins) {
+
+      for (int i = 1; i < bin0.second.size(); i++) {
+        Op *pre = bin0.second[i - 1];
+        Op *cur = bin0.second[i];
+        addTopoCon(graph, pre, cur, false);
+      }
+
+      for (auto bin1 : beforeLoopBins) {
+        if (bin0.first < bin1.first) {
+          auto lengthOfUpperBin = bin0.second.size();
+          auto lenghtOfLowerBin = bin1.second.size();
+          if (lengthOfUpperBin == 0 || lenghtOfLowerBin == 0) {
+            continue;
+          }
+
+          Op *lastOp  = bin0.second[lengthOfUpperBin - 1];
+          Op *firstOp = bin1.second[0];
+
+          addTopoCon(graph, lastOp, firstOp, false);
+
+          break;
+        }
+      }
+    }
+  }
+}
+
 void DecomposeLoops::DecomposeLoopHelper::fixTopoConsInsideLoop(
     const std::map<int, std::vector<Op *>> &insideLoopBins) {
   if (model.getTopoConLevelLoop() == DecomposeTopoConLevel::Full) {
@@ -1837,6 +1875,38 @@ void DecomposeLoops::DecomposeLoopHelper::fixTopoConsInsideLoop(
               addTopoCon(loopOp->getCalledGraph(), before, after, false);
             }
           }
+        }
+      }
+    }
+  }
+}
+
+void DecomposeLoops::DecomposeLoopHelper::efficientFixTopoConsInsideLoop(
+    const std::map<int, std::vector<Op *>> &insideLoopBins) {
+  if (model.getTopoConLevelLoop() == DecomposeTopoConLevel::Full) {
+    // 2.) Constraints inside the loop
+    for (auto bin0 : insideLoopBins) {
+
+      for (int i = 1; i < bin0.second.size(); i++) {
+        Op *pre = bin0.second[i - 1];
+        Op *cur = bin0.second[i];
+        addTopoCon(loopOp->getCalledGraph(), pre, cur, false);
+      }
+
+      for (auto bin1 : insideLoopBins) {
+        if (bin0.first < bin1.first) {
+          auto lengthOfUpperBin = bin0.second.size();
+          auto lenghtOfLowerBin = bin1.second.size();
+          if (lengthOfUpperBin == 0 || lenghtOfLowerBin == 0) {
+            continue;
+          }
+
+          Op *lastOp  = bin0.second[lengthOfUpperBin - 1];
+          Op *firstOp = bin1.second[0];
+
+          addTopoCon(loopOp->getCalledGraph(), lastOp, firstOp, false);
+
+          break;
         }
       }
     }
@@ -1858,6 +1928,44 @@ void DecomposeLoops::DecomposeLoopHelper::fixTopoConsAfterLoop(
               addTopoCon(graph, before, after, false);
             }
           }
+        }
+      }
+    }
+  }
+}
+
+void DecomposeLoops::DecomposeLoopHelper::efficientFixTopoConsAfterLoop(
+    const std::map<int, std::vector<Op *>> &afterLoopBins) {
+  if (model.getTopoConLevelAfter() == DecomposeTopoConLevel::Full) {
+    // 3.) Constraints after the loop
+    auto binAfterLoopOp = afterLoopBins.begin();
+    if (binAfterLoopOp->second.size() > 0) {
+      Op *after = binAfterLoopOp->second[0];
+      addTopoCon(graph, loopOp, after, false);
+    }
+
+    for (auto bin0 : afterLoopBins) {
+
+      for (int i = 1; i < bin0.second.size(); i++) {
+        Op *pre = bin0.second[i - 1];
+        Op *cur = bin0.second[i];
+        addTopoCon(graph, pre, cur, false);
+      }
+
+      for (auto bin1 : afterLoopBins) {
+        if (bin0.first < bin1.first) {
+          auto lengthOfUpperBin = bin0.second.size();
+          auto lenghtOfLowerBin = bin1.second.size();
+          if (lengthOfUpperBin == 0 || lenghtOfLowerBin == 0) {
+            continue;
+          }
+
+          Op *lastOp  = bin0.second[lengthOfUpperBin - 1];
+          Op *firstOp = bin1.second[0];
+
+          addTopoCon(graph, lastOp, firstOp, false);
+
+          break;
         }
       }
     }
@@ -1919,10 +2027,19 @@ void DecomposeLoops::DecomposeLoopHelper::fixTopoCons() {
     logBins("after loop", afterLoopBins);
   }
 
+  const SessionOptions &opts            = ir.getSessionOptions();
+  bool enableEfficientOverlapIOTopoCons = opts.enableEfficientOverlapIOTopoCons;
+
   removeTopoConsAcrossApparentIterations(apparentIterationMap);
-  fixTopoConsBeforeLoop(beforeLoopBins);
-  fixTopoConsInsideLoop(insideLoopBins);
-  fixTopoConsAfterLoop(afterLoopBins);
+  if (enableEfficientOverlapIOTopoCons) {
+    efficientFixTopoConsBeforeLoop(beforeLoopBins);
+    efficientFixTopoConsInsideLoop(insideLoopBins);
+    efficientFixTopoConsAfterLoop(afterLoopBins);
+  } else {
+    fixTopoConsBeforeLoop(beforeLoopBins);
+    fixTopoConsInsideLoop(insideLoopBins);
+    fixTopoConsAfterLoop(afterLoopBins);
+  }
 }
 
 void DecomposeLoops::DecomposeLoopHelper::promoteAliases(
