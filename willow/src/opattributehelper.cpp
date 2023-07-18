@@ -22,6 +22,7 @@
 
 #include "popart/alias/aliasmodel.hpp"
 #include "popart/basicoptionals.hpp"
+#include "popart/graphcoreoperators.hpp"
 #include "popart/graphid.hpp"
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
@@ -533,8 +534,12 @@ void InheritOpAttributeHelper::setAttributes() {
   //__|________________|______ phase 2, vgid 0
   //  `------------ VarUpdate <- will inherit wrong phase and vgid
   //
+  // CopyVarUpdate is en exception as PopTorch incorrectly sets the active_stage
+  // attribute for all detach parameter ops to 0 and it's not possible to fix it
+  // there. PopART must ignore requiredVgid for CopyVarUpdate op.
   if (requiredVgid &&
-      (!op->hasVirtualGraphId() || op->getVirtualGraphId() != *requiredVgid)) {
+      (!op->hasVirtualGraphId() || op->getVirtualGraphId() != *requiredVgid) &&
+      op->opid != Onnx::AiGraphcore::OpSet1::CopyVarUpdate) {
     logging::op::debug("[InheritOpAttributeHelper::setAttributes] Changing Op "
                        "{} placement to required VGID: {}",
                        op->debugName(),
