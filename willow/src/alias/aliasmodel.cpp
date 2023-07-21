@@ -1,8 +1,8 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <map>
 #include <ostream>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 #include <poprithms/common/multiout/ioindices.hpp>
@@ -12,6 +12,7 @@
 #include <poprithms/ndarray/shape.hpp>
 #include <poprithms/util/typedinteger.hpp>
 #include <popart/alias/aliasmodel.hpp>
+#include <popart/graph.hpp>
 #include <popart/ir.hpp>
 
 #include "popart/error.hpp"
@@ -22,12 +23,55 @@
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorinfo.hpp"
 
+// note this links to a static variables in an unnamed space
+namespace {
+/**
+ * max initial capacity of tensors
+ */
+constexpr int maxInitTensors = 1500;
+
+/**
+ * max initial capacity of ops
+ */
+constexpr int maxInitOps = 1000;
+
+/**
+ * hash containers of tensors growing factor
+ */
+constexpr int tGrowthFactor = 2;
+
+/**
+ * hash containers of ops growing factor
+ */
+constexpr int opGrowthFactor = 2;
+
+} // namespace
+
 namespace popart {
 
 using PoprithmsTensorId = poprithms::memory::inplace::TensorId;
 using PoprithmsOpId     = poprithms::memory::inplace::OpId;
 
+AliasModel::AliasModel() {
+  toTensor_.reserve(maxInitTensors);
+  fromTensor_.reserve(maxInitTensors);
+  toOp_.reserve(maxInitOps);
+  fromOp_.reserve(maxInitOps);
+}
+
+void AliasModel::setGraph(const popart::Graph *graph) {
+  thisGraph = const_cast<popart::Graph *>(graph);
+}
+
 void AliasModel::insertTensor(const PoprithmsTensorId &id, const Tensor &t) {
+  // as long as we predict memory used to avoid frequent malloc, hash map is
+  // always faster than std::map both in insertation and query. This should
+  // reduce the compilation time.
+  auto &allTensors = thisGraph->getTensors();
+
+  preAllocAndRehash<tGrowthFactor>(toTensor_, allTensors.n());
+  preAllocAndRehash<tGrowthFactor>(fromTensor_, allTensors.n());
+
   toTensor_[t.id] = id;
   fromTensor_[id] = t.id;
   if (t.hasProducer()) {
@@ -40,6 +84,7 @@ void AliasModel::update(OpId oldId, OpId newId) {
   if (found != toOp_.cend()) {
     auto oldTargets = found->second;
     toOp_.erase(found);
+    // found becomes invalidated immediately
     toOp_[newId] = oldTargets;
     for (auto t : oldTargets) {
       fromOp_[t] = newId;
@@ -55,6 +100,11 @@ void AliasModel::insertOp(PoprithmsOpId poprithmsId, OpId id) {
       throw error("reinserting, with different value");
     }
   }
+
+  auto &allOps = thisGraph->getOps();
+
+  preAllocAndRehash<opGrowthFactor>(fromOp_, allOps.size());
+  preAllocAndRehash<opGrowthFactor>(toOp_, allOps.size());
 
   fromOp_[poprithmsId] = id;
   auto found           = toOp_.find(id);

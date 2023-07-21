@@ -2,12 +2,14 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_ALIAS_ALIASMODEL_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_ALIAS_ALIASMODEL_HPP_
 
-#include <map>
+#include <string>
+#include <unordered_map>
 #include <vector>
 #include <poprithms/common/multiout/opid.hpp>
 #include <poprithms/common/multiout/tensorid.hpp>
 #include <poprithms/memory/inplace/graph.hpp>
 
+#include "popart/error.hpp"
 #include "popart/names.hpp"
 
 namespace popart {
@@ -25,6 +27,20 @@ class AliasModel {
 public:
   using PoprithmsTensorId = poprithms::memory::inplace::TensorId;
   using PoprithmsOpId     = poprithms::memory::inplace::OpId;
+
+  AliasModel();
+
+  ~AliasModel() = default;
+
+  /**
+   * load factor used for hash map containers
+   */
+  static constexpr int loadFactor = 0.5;
+
+  /**
+   * Set PopART graph
+   */
+  void setGraph(const popart::Graph *graph);
 
   /**
    * Register that a poprithms Tensor and a popart Tensor correspond to each
@@ -193,11 +209,66 @@ public:
    * */
   poprithms::memory::inplace::Graph g;
 
+  /**
+   * The PopART graph reference
+   */
+  popart::Graph *thisGraph = nullptr;
+
 private:
-  std::map<TensorId, PoprithmsTensorId> toTensor_;
-  std::map<PoprithmsTensorId, TensorId> fromTensor_;
-  std::map<OpId, std::vector<poprithms::memory::inplace::OpId>> toOp_;
-  std::map<poprithms::memory::inplace::OpId, OpId> fromOp_;
+  // using a simpler hasher which is faster than std::hash derivatives and that
+  // is safe enough in this case.
+  struct PoprithmsTensorIdSteadyHasher {
+    size_t operator()(const PoprithmsTensorId &id) const {
+      // cast poprithm typed integer (int64_t) to size_t
+      if (id.opId().get() < 0) {
+        throw error("Unexpected negative value!");
+      }
+      return static_cast<size_t>(id.opId().get());
+    }
+  };
+
+  struct PoprithmsOpIdHasher {
+    size_t operator()(const PoprithmsOpId &opid) const {
+      // cast poprithm typed integer (int64_t) to size_t
+      if (opid.get() < 0) {
+        throw error("Unexpected negative value!");
+      }
+      return static_cast<size_t>(opid.get());
+    }
+  };
+
+  // When dealing with medium size of or even more large models,
+  // the number of tensors and ops grow fast. By using std::unordered_map
+  // we can reduce of insertation, query complexities from O(logN)
+  // (N is the number of tensors of ops to deal with) to O(1). The
+  // problem of std::unordered_map is the capcity. The initial capacity of
+  // the container is 8, and once it is at capacity, the container will
+  // request almost doubled memory from kernel (very slow), and copy the old
+  // data into the new memory (slow again). Frequent request memory in a loop
+  // is time consuming. By predicting the memory to be used, we can achieve
+  // exact O(1) complexity for faster compilation.
+  template <size_t GROWTH_FACTOR, typename Key, typename Val, class Hasher>
+  void
+  preAllocAndRehash(typename std::unordered_map<Key, Val, Hasher> &hashTable,
+                    size_t max_slots) {
+    if (hashTable.bucket_count() < max_slots) {
+      hashTable.reserve((hashTable.size() + max_slots) * GROWTH_FACTOR);
+    }
+    {
+      float load_factor = hashTable.size() / hashTable.bucket_count();
+      if (load_factor > AliasModel::loadFactor) {
+        hashTable.rehash((hashTable.size() + max_slots) * GROWTH_FACTOR);
+      }
+    }
+  }
+
+  // Warning: do not iterate over these members as as iterating over unordered
+  // containers introduces non-determinism.
+  std::unordered_map<TensorId, PoprithmsTensorId> toTensor_;
+  std::unordered_map<PoprithmsTensorId, TensorId, PoprithmsTensorIdSteadyHasher>
+      fromTensor_;
+  std::unordered_map<OpId, std::vector<PoprithmsOpId>> toOp_;
+  std::unordered_map<PoprithmsOpId, OpId, PoprithmsOpIdHasher> fromOp_;
 };
 
 } // namespace popart

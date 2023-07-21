@@ -49,6 +49,9 @@ void AliasModelGrower::growFullGraph(const Graph &graph,
       graph.getIr().timePartitionLogger().scopedStopwatch(logging::format(
           "Growing full AliasModel for {}", graph.getGraphString()));
 
+  AliasModel &aliasModel = getAliasModelRef();
+  aliasModel.setGraph(&graph);
+
   // NOTE: This loop does not need a schedule that complies with topocons. It
   // may be possible to make this more efficient by getting an Op-order that is
   // only constrained by data order.
@@ -79,6 +82,9 @@ void AliasModelGrower::growPartialGraph(const Graph &graph,
 
   auto scopedStopwatch = graph.getIr().timePartitionLogger().scopedStopwatch(
       "Growing partial AliasModel");
+
+  AliasModel &aliasModel = getAliasModelRef();
+  aliasModel.setGraph(&graph);
 
   // When growing a AliasModel, by the nature of the Poprithms' API we
   // must grow ops in schedule order. However, we don't know which tensors
