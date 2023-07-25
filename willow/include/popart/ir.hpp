@@ -12,6 +12,8 @@
 #include <string>
 #include <typeindex>
 #include <vector>
+#include <popart/alias/aliasmodel.hpp>
+#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/bimap.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/inputshapeinfo.hpp>

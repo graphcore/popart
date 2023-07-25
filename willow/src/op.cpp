@@ -1352,12 +1352,26 @@ bool Op::producesGraphOutput() const {
 }
 
 bool Op::inputUnmodifiable(InIndex in) const {
+  return inputUnmodifiableFor(in, nullptr);
+}
+
+bool Op::inputUnmodifiableFor(InIndex in, const AliasModel *popMemPtr) const {
   auto t = input->tensor(in);
   // If the input tensor itself, or any of it's aliases, are unmodifiable
-  return t->anyAlias([](Tensor *tensor) { return tensor->isUnmodifiable(); });
+  if (popMemPtr == nullptr) {
+    return t->anyAlias([](Tensor *tensor) { return tensor->isUnmodifiable(); });
+  } else {
+    return t->anyAliasFor(
+        [](Tensor *tensor) { return tensor->isUnmodifiable(); }, *popMemPtr);
+  }
 }
 
 bool Op::hasAliasedModifiers(OutIndex out) const {
+  return hasAliasedModifiersFor(out, nullptr);
+}
+
+bool Op::hasAliasedModifiersFor(OutIndex out,
+                                const AliasModel *popMemPtr) const {
   auto t = output->tensor(out);
 
   auto checkConsumers = [](Tensor *t_in) {
@@ -1372,7 +1386,11 @@ bool Op::hasAliasedModifiers(OutIndex out) const {
     return false;
   };
 
-  return t->anyAlias(checkConsumers);
+  if (popMemPtr == nullptr) {
+    return t->anyAlias(checkConsumers);
+  } else {
+    return t->anyAliasFor(checkConsumers, *popMemPtr);
+  }
 }
 
 bool Op::isParentOf(const Op *op) const {

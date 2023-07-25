@@ -307,8 +307,14 @@ view::Regions Tensor::modifiedRegionsByOps(std::vector<Op *> ops,
 }
 
 std::set<Op *, POpCmp> Tensor::getInplaceModifiers() const {
+  return getInplaceModifiersFor(nullptr);
+}
+
+std::set<Op *, POpCmp>
+Tensor::getInplaceModifiersFor(const AliasModel *popMem) const {
   std::set<Op *, POpCmp> ops;
-  anyAlias([&ops](Tensor *t) {
+
+  auto cb = [&ops](Tensor *t) {
     auto consumers = t->consumers.getOps();
     for (auto c : consumers) {
       if (c->modifies()) {
@@ -317,7 +323,13 @@ std::set<Op *, POpCmp> Tensor::getInplaceModifiers() const {
     }
     // Continue until all aliases have been visited
     return false;
-  });
+  };
+
+  if (popMem == nullptr) {
+    anyAlias(cb);
+  } else {
+    anyAliasFor(cb, *popMem);
+  }
   return ops;
 }
 
@@ -1122,9 +1134,6 @@ bool Tensor::isRootAnchor() const { return graph.getIr().isRootAnchor(id); }
 bool Tensor::anyAlias(std::function<bool(Tensor *)> predicate) const {
 
   constexpr const char *const ctxt{"Tensor::anyAlias"};
-  logging::ir::trace("{} for Tensor {},", ctxt, str());
-
-  auto scopedStopwatch = getIr().timePartitionLogger().scopedStopwatch(ctxt);
 
   // First check if this tensor itself satisfies the predicate. If so, we need
   // not bother constructing a poprithms graph to check for alias tensors.
@@ -1137,6 +1146,34 @@ bool Tensor::anyAlias(std::function<bool(Tensor *)> predicate) const {
   AliasModel popMem;
   AliasModelGrower aliasModelGrower{popMem};
   aliasModelGrower.growPartialGraph(graph, id, DataDependenciesOnly::Yes);
+
+  return anyAliasImpl(predicate, popMem, ctxt);
+}
+
+bool Tensor::anyAliasFor(std::function<bool(Tensor *)> predicate,
+                         const AliasModel &popMem) const {
+
+  constexpr const char *const ctxt{
+      "Tensor::anyAlias with prebuild AliasModel and AliasModelGrower."};
+
+  return anyAliasImpl(predicate, popMem, ctxt);
+}
+
+bool Tensor::anyAliasImpl(std::function<bool(Tensor *)> predicate,
+                          const AliasModel &popMem,
+                          const char *scopeDesc) const {
+
+  logging::ir::trace("{} for Tensor {},", scopeDesc, str());
+
+  auto scopedStopwatch =
+      getIr().timePartitionLogger().scopedStopwatch(scopeDesc);
+
+  // First check if this tensor itself satisfies the predicate. If so, we need
+  // not bother constructing a poprithms graph to check for alias tensors.
+  Tensor *t = graph.getTensors().get(id);
+  if (predicate(t)) {
+    return true;
+  }
 
   // Get the identifier used to represent this tensor in poprithms.
   auto poprithmsTensorId = popMem.getPoprithmsTensorId(id);

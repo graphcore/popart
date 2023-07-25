@@ -11,6 +11,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/error.hpp>
 #include <popart/names.hpp>
@@ -221,6 +222,11 @@ public:
   // Returns true if the tensor or any of it's aliases fulfill the predicate
   bool anyAlias(std::function<bool(Tensor *)> predicate) const;
 
+  // Returns true if the tensor or any of it's aliases fulfill the predicate in
+  // the given poprithm memory graph
+  bool anyAliasFor(std::function<bool(Tensor *)> predicate,
+                   const AliasModel &popMem) const;
+
   void setTensorDataFromCopyOf(const void *src, std::size_t size);
   void setTensorDataFromViewOf(void *src, std::size_t size);
   void setTensorDataByEmplaceOf(std::vector<char> &&data);
@@ -291,6 +297,12 @@ public:
    */
   std::set<Op *, POpCmp> getInplaceModifiers() const;
 
+  /**
+   * Find operations that modify a tensor with the given poprithm graph
+   * \return All operations that (direct and indirectly) modify this tensor
+   */
+  std::set<Op *, POpCmp> getInplaceModifiersFor(const AliasModel *popMem) const;
+
   // Backtrack through input and parent graph tensors in order to get data from
   // initializer tensors (if they exist).
   // When ops are performed on initializers (e.g. slice), the
@@ -310,6 +322,10 @@ protected:
   std::unique_ptr<TensorData> data_;
 
   int getBatchAxisFromOp(Op *, bool, int) const;
+
+  bool anyAliasImpl(std::function<bool(Tensor *)> predicate,
+                    const AliasModel &popMem,
+                    const char *scopeDesc) const;
 
   const TensorDebugInfo di;
 

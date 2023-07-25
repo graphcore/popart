@@ -8,7 +8,6 @@
 #include <graphfromlosstolossupdater.hpp>
 #include <onnxutil.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
-#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/ces/constexpr.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
@@ -48,7 +47,6 @@
 #include <poprithms/memory/inplace/proposal.hpp>
 #include <poprithms/memory/inplace/result.hpp>
 #include <poprithms/util/typedinteger.hpp>
-#include <popart/alias/aliasmodel.hpp>
 #include <popart/dotvisualizer.hpp>
 #include <popart/op/copyvarupdate.hpp>
 #include <popart/op/ipucopy.hpp>
@@ -155,6 +153,55 @@ std::ostream &operator<<(std::ostream &ost, const OpsBeforeKey &o) {
     ost << " ).";
   }
   return ost;
+}
+
+struct PopMemGrower {
+  std::unique_ptr<AliasModel> popMem_;
+  std::unique_ptr<AliasModelGrower> aliasModelGrower_;
+
+  using Proposal      = poprithms::memory::inplace::Proposal;
+  using OpeningStatus = poprithms::memory::inplace::OpeningStatus;
+
+  PopMemGrower();
+
+  void init();
+
+  void growFullGraph(Graph &graph,
+                     DataDependenciesOnly dep = DataDependenciesOnly::No) {
+    aliasModelGrower_->growFullGraph(graph, dep);
+  }
+
+  AliasModel &getAliasModelRef() { return *(popMem_.get()); }
+
+  Proposal mapInplaceProposal(Op *op, OperatorIdentifier identifier) {
+    return op->mapInplaceProposal(*popMem_, identifier);
+  }
+
+  OpeningStatus tryOpening(Proposal &proposal) {
+    return popMem_->g.tryOpening(
+        proposal,
+        poprithms::memory::inplace::CheckParallelWriteable::No,
+        poprithms::memory::inplace::AllowMultiGateAlias::No);
+  }
+
+  void reset(Graph &graph) {
+    init();
+    growFullGraph(graph, DataDependenciesOnly::Yes);
+  }
+};
+
+PopMemGrower::PopMemGrower()
+    : popMem_(std::make_unique<AliasModel>()),
+      aliasModelGrower_(std::make_unique<AliasModelGrower>(*popMem_)) {}
+
+void PopMemGrower::init() {
+  if (popMem_ == nullptr) {
+    popMem_           = std::make_unique<AliasModel>();
+    aliasModelGrower_ = std::make_unique<AliasModelGrower>(*popMem_);
+  } else {
+    popMem_.reset(new AliasModel());
+    aliasModelGrower_.reset(new AliasModelGrower(*popMem_));
+  }
 }
 
 poprithms::logging::TimePartitionLogger &Ir::timePartitionLogger() const {
@@ -3466,12 +3513,16 @@ void Ir::applyUpdateInplacePrioritiesForIpu() {
 }
 
 void Ir::applyInplacePattern(Graph &graph) {
-
   // The decision of where topological constraints need to be inserted is made
   // by a poprithms Graph whose Ops mirror those in \a graph.
-  AliasModel popMem;
-  AliasModelGrower aliasModelGrower{popMem};
-  aliasModelGrower.growFullGraph(graph, DataDependenciesOnly::No);
+  // Create poprithm memroy graph growers for this graph
+  PopMemGrower popMemGrowerOfSubgraph;
+  PopMemGrower popMemGrowerOfTensor;
+
+  popMemGrowerOfSubgraph.growFullGraph(graph, DataDependenciesOnly::No);
+  popMemGrowerOfTensor.growFullGraph(graph, DataDependenciesOnly::Yes);
+
+  AliasModel &popMem = *(popMemGrowerOfSubgraph.popMem_.get());
 
   Inplace inplace;
 
@@ -3591,6 +3642,8 @@ void Ir::applyInplacePattern(Graph &graph) {
         continue;
       }
 
+      auto tProposal = popMemGrowerOfTensor.mapInplaceProposal(op, identifier);
+
       // Convert poprithms topological constraints into popart constraints
       OpsBeforeKey newTopoCons;
       for (auto from_to : result.constraints()) {
@@ -3695,14 +3748,22 @@ void Ir::applyInplacePattern(Graph &graph) {
           };
 
           bool restoreInplaceIn =
-              op->input->tensor(in_index.first)->anyAlias(restoreInplaceTensor);
-          bool restoreInplaceOut = op->output->tensor(out_index.first)
-                                       ->anyAlias(restoreInplaceTensor);
+              op->input->tensor(in_index.first)
+                  ->anyAliasFor(restoreInplaceTensor,
+                                popMemGrowerOfTensor.getAliasModelRef());
+          bool restoreInplaceOut =
+              op->output->tensor(out_index.first)
+                  ->anyAliasFor(restoreInplaceTensor,
+                                popMemGrowerOfTensor.getAliasModelRef());
 
           bool conflictIn =
-              op->input->tensor(in_index.first)->anyAlias(isConflictTensor);
+              op->input->tensor(in_index.first)
+                  ->anyAliasFor(isConflictTensor,
+                                popMemGrowerOfTensor.getAliasModelRef());
           bool conflictOut =
-              op->output->tensor(out_index.first)->anyAlias(isConflictTensor);
+              op->output->tensor(out_index.first)
+                  ->anyAliasFor(isConflictTensor,
+                                popMemGrowerOfTensor.getAliasModelRef());
 
           // Check that no conflict tensors, through aliasing, can be consumed
           // by a RestoreInplaceOp
@@ -3726,10 +3787,13 @@ void Ir::applyInplacePattern(Graph &graph) {
 
           // Unmodifiable
           // 1. Is the input unmodifiable?
-          bool unmodifiable = op->inputUnmodifiable(in_index.first);
+          bool unmodifiable = op->inputUnmodifiableFor(
+              in_index.first, popMemGrowerOfTensor.popMem_.get());
           // 2. Does it indirectly modify this tensor and alias it?
           bool indirectModify =
-              (op->hasAliasedModifiers(out_index.first) && opAliases);
+              (opAliases &&
+               op->hasAliasedModifiersFor(out_index.first,
+                                          popMemGrowerOfTensor.popMem_.get()));
           // 3. Does it directly modify a weight?
           bool directModify = inplaceOp->modifiesIndex(in_index.first);
           // If ((1 and 2) or 3) : do not inplace.
@@ -3748,7 +3812,8 @@ void Ir::applyInplacePattern(Graph &graph) {
 
           if ((indirectModify || directModify) &&
               op->input->tensor(in_index.first)
-                  ->anyAlias(isImplicitRecomputeTensor)) {
+                  ->anyAliasFor(isImplicitRecomputeTensor,
+                                popMemGrowerOfTensor.getAliasModelRef())) {
             logging::pattern::trace("[Inplacing] Not inplacing {} with {} as "
                                     "it would be modified by a recomputation "
                                     "{} -> {} ",
@@ -3881,7 +3946,8 @@ void Ir::applyInplacePattern(Graph &graph) {
         };
 
         for (auto tensor : currentInsOuts) {
-          tensor->anyAlias(populateConsumersInIndices);
+          tensor->anyAliasFor(populateConsumersInIndices,
+                              popMemGrowerOfTensor.getAliasModelRef());
         }
 
         for (const auto &consumerInIndices : consumersInIndices) {
@@ -3944,6 +4010,15 @@ void Ir::applyInplacePattern(Graph &graph) {
         // The Op in graph has changed, mirror the change in the poprithms
         // Graph
         popMem.update(id, opOutput->getProducer()->id);
+
+        const auto status = popMemGrowerOfTensor.tryOpening(tProposal);
+        if (status != PopMemGrower::OpeningStatus::Valid) {
+          popMemGrowerOfTensor.reset(graph);
+        } else {
+          // The Op in graph has changed, mirror the change in the poprithms
+          // Graph
+          popMemGrowerOfTensor.popMem_->update(id, opOutput->getProducer()->id);
+        }
       }
     }
   }

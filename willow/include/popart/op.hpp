@@ -16,6 +16,7 @@
 #include <utility>
 #include <vector>
 #include <poprithms/memory/inplace/proposal.hpp>
+#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/attributes.hpp>
 #include <popart/basicoptionals.hpp>
 #include <popart/bwdgraphinfo.hpp>
@@ -1679,6 +1680,16 @@ public:
   bool inputUnmodifiable(InIndex in) const;
 
   /**
+   * Check if the input index is unmodifiable or aliases an unmodifiable tensor
+   * with given poprithm graph.
+   *
+   * \param in The input index to check.
+   * \returns `true` if any connected variable tensor has a non-empty alias
+   *      chain and is unmodifiable, `false` otherwise.
+   */
+  bool inputUnmodifiableFor(InIndex in, const AliasModel *popMem) const;
+
+  /**
    * Check if output is modified by any consumer.
    *
    * \param out The output index to check.
@@ -1686,6 +1697,15 @@ public:
    *              a non-empty region, `false` otherwise.
    */
   bool hasAliasedModifiers(OutIndex out) const;
+
+  /**
+   * Check if output is modified by any consumer with the given poprithm graph.
+   *
+   * \param out The output index to check.
+   * \returns `true` if any consumer of any aliased tensor downstream modifies
+   *              a non-empty region, `false` otherwise.
+   */
+  bool hasAliasedModifiersFor(OutIndex out, const AliasModel *popMem) const;
 
   // Helper functions for probing graph structure.
   /**
