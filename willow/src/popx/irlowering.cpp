@@ -2927,11 +2927,10 @@ void IrLowering::prepareGraph() {
 
     if (numIOTiles > 0) {
 
-      if (numIOTiles < 32 || numIOTiles > 192 || (numIOTiles % 2 != 0)) {
-        throw error(
-            "{} is an invalid number of IO tiles. "
-            "Number of IO tiles must be an even number in range [32, 192]",
-            numIOTiles);
+      if (numIOTiles < 32 || (numIOTiles % 2 != 0)) {
+        throw error("{} is an invalid number of IO tiles. Number of IO tiles "
+                    "must be an even number and >= 32.",
+                    numIOTiles);
       }
       logging::devicex::info(
           "Reserving {} IO tiles for GCL collective operations on each IPU",
