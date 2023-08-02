@@ -5,4 +5,4 @@ Legal notices
 
 |LEGAL:EULA|
 
-Copyright © 2016-2022 Graphcore Ltd. All rights reserved.
+Copyright © 2022—|YEAR| Graphcore Ltd. All rights reserved.

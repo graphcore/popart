@@ -3,4 +3,4 @@ Trademarks & copyright
 
 |LEGAL:TRADEMARKS|
 
-© Copyright 2016-2022, Graphcore Ltd. All rights reserved.
+© Copyright 2018—|YEAR|, Graphcore Ltd. All rights reserved.
