@@ -1,170 +1,25 @@
-# Copyright (c) 2022 Graphcore Ltd. All rights reserved.
----
-exclude: |
-    (?x)^(
-        build_scripts/.*|
-        willow/include/popart/vendored/.*|
-        .arclint|
-        .arcconfig|
-        .buildignore|
-        .clang-format|
-        .*Doxyfile.in|
-        .*LICENSE|
-        .*.drawio|
-        .*.json|
-        .*.md|
-        .*.png|
-        .*.pdf|
-        .*.rst
-    )$
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
 repos:
-    - repo: local
-      hooks:
-          - id: version-checker
-            name: Version checker
-            description: Ensures that the correct version of the linters are used.
-            entry: python3 -m scripts.lint.linters.check_versions
-            language: python
-            exclude: ".*"  # Does not run on files
-            always_run: true
-            fail_fast: true
-            additional_dependencies:
-                - pyyaml
-          - id: copyright-linter
-            name: Copyright linter
-            description: Ensures that files have the proper copyright line.
-            entry: python3 -m scripts.lint.linters.copyright_linter
-            language: python
-            exclude: tests/integration/operators_test/rnn_helper.py
-            additional_dependencies:
-                # dataclasses was introduced in Python 3.7
-                # For python 3.6 it therefore needs to be added as a dependency
-                - dataclasses
-          - id: popart-test-linter
-            name: PopART test-linter
-            description: |
-              checks that pytest test files have a corresponding
-              `add_popart_py_unit_test` entry in a neighbouring CMakeLists.txt
-              file
-            entry: python3 -m scripts.lint.linters.check_python_test_has_cmake_entry
-            language: python
-            files: .*.py
-            exclude: |
-                (?x)^(
-                    tests/integration/operators_test/scatterreduce_test_basic.py |
-                    docs/popart/files/tests/test_popart_doc_examples_custom_op.py|
-                    docs/popart/files/tests/test_popart_doc_examples.py|
-                    docs/popxl/files/tests/test_popxl_doc_examples_custom_op.py|
-                    docs/popxl/files/tests/test_popxl_doc_examples.py|
-                    docs/popxl/files/mnist.py|
-                    docs/popxl/files/mnist_rts.py|
-                    tests/linters/.*
-                )$
-          # Note: pylint to be run locally:
-          # https://pylint.pycqa.org/en/latest/user_guide/pre-commit-integration.html
-          - id: pylint
-            name: pylint
-            entry: pylint
-            language: system
-            types: [python]
-            # -j 1 is needed for the linter not to hang
-            # https://github.com/PyCQA/pylint/issues/3899
-            args:
-              [
-                --rcfile=scripts/lint/linters/pylintrc,
-                -j 1
-              ]
-    -   repo: https://github.com/pre-commit/pre-commit-hooks
-        rev: v2.3.0
-        hooks:
-        -   id: check-yaml
-            # This file starts with @ which is a reserved yml character
-            exclude: popart.prodinfo.yml
-        -   id: check-json
-        -   id: check-merge-conflict
-        -   id: debug-statements
-        -   id: end-of-file-fixer
-        -   id: mixed-line-ending
-        -   id: trailing-whitespace
-    - repo: https://github.com/psf/black
-      rev: 21.12b0
-      hooks:
-        - id: black
-          additional_dependencies:
-          - click==8.0.4
-          # Prevent an error with the current version of black and Python version >3.6 (D73000).
-    - repo: https://github.com/asottile/blacken-docs
-      rev: v1.12.0
-      hooks:
-        - id: blacken-docs
-          additional_dependencies:
-              - black==21.12b0
-    -   repo: https://github.com/pycqa/pydocstyle
-        rev: 6.1.1
-        hooks:
-        -   id: pydocstyle
-            # Tests are currently emitting a lot of errors, will be fixed at a later stage
-            exclude: tests/
-            args:
-              # See explanation of error codes at http://www.pydocstyle.org/en/6.1.1/error_codes.html
-              # By using select, most checking is ignored
-              # This can be checked when enough errors has been fixed
-              - |-
-                --select=
-                D400,
-                D401
-    - repo: https://github.com/pocc/pre-commit-hooks
-      rev: v1.3.5
-      hooks:
-          # Install with pip3 install clang-format==9.0.0
-          - id: clang-format
-            args: [
-                -i,  # Fix inplace
-                --style=file  # Use .clang-tidy
-            ]
-    #      - id: clang-tidy
-    #      - id: oclint
-    #      - id: uncrustify
-          - id: cppcheck
-            args: [
-                --inline-suppr,
-                --suppressions-list=scripts/lint/linters/cppcheck-suppressions-list.txt
-            ]
-          - id: cpplint
-            # This check clashes with clang-format
-            args: [
-                '--filter=-,-build/header_guard'
-            ]
-            exclude: |
-                (?x)^(
-                    willow/include/popart/docs/pydocs_popart_core.hpp|
-                    willow/include/popart/builder.gen.hpp|
-                    willow/include/popart/onnxoperators.gen.hpp|
-                    willow/src/opsets.gen.hpp
-                  )$
-
-    - repo: local
-      hooks:
-          # The clone linter should run after the format linters so that it only works on formatted files
-          - id: clone-linter
-            name: Clone linter
-            description: Ensures that all Ops implements a clone().
-            entry: python3 -m scripts.lint.linters.clone_linter
-            language: python
-            files: "willow/include/popart/op/.*.hpp"
-          # - id: iwyu
-          #   language: script
-          #   name: Include what you use
-          #   types: [c++]
-          #   entry: scripts/lint/linters/iwyu/include_what_you_use_linter.sh
-          #   # verify_cxx_11_interface.cpp is excluded as it relies on files generated
-          #   #    during build
-          #   # opidentifier.hpp is deprecated and should be kept as is until removed
-          #   # willow/include/popart/vendored/ contains external files, should avoid
-          #   #    changing them
-          #   exclude: >
-          #     (?x)^(
-          #         tests/integration/verify_cxx_11_interface/verify_cxx_11_interface.cpp|
-          #         willow/include/popart/opidentifier.hpp|
-          #         willow/include/popart/vendored/
-          #     )$
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-json
+    -   id: check-added-large-files
+-   repo: https://github.com/pocc/pre-commit-hooks
+    rev: v1.3.5
+    hooks:
+    -   id: clang-format
+        additional_dependencies: [clang-format==16.0.6]
+        files: \.(c|cpp|h|hpp)$
+-   repo: https://github.com/pre-commit/mirrors-yapf
+    rev: v0.32.0
+    hooks:
+    -   id: yapf
+        types: [python]
+-   repo: ssh://git@github.com/Software-GCAI/precommit-scripts
+    rev: v1.0.1
+    hooks:
+    -   id: gc-copyright
