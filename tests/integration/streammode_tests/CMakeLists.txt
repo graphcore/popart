@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-add_popart_py_unit_test(tensor_replication VARIANTS "Hw")
-add_popart_py_unit_test(grouped_initialization_test VARIANTS "Hw" MATCHEXPR "test_onnx_checkpointing")
-add_popart_py_unit_test(grouped_initialization_test VARIANTS "Hw" MATCHEXPR "test_locations")
+add_popart_py_unit_test(tensor_replication VARIANTS "${HW_EXCLUDE_C600}")
+add_popart_py_unit_test(grouped_initialization_test VARIANTS "${HW_EXCLUDE_C600}" MATCHEXPR "test_onnx_checkpointing")
+add_popart_py_unit_test(grouped_initialization_test VARIANTS "${HW_EXCLUDE_C600}" MATCHEXPR "test_locations")
 add_popart_py_unit_test(test_broadcast_replication VARIANTS "Hw")
 
 # test_grouped_initialization test starts here
@@ -13,7 +13,7 @@ foreach(config ${config_options})
     foreach(location ${locations})
         foreach(session_type ${session_types})
 # linter complains if this is indented
-add_popart_py_unit_test(grouped_initialization_test VARIANTS Hw MATCHEXPR "[${session_type}-${location}-${config}]")
+add_popart_py_unit_test(grouped_initialization_test VARIANTS "${HW_EXCLUDE_C600}" MATCHEXPR "[${session_type}-${location}-${config}]")
         endforeach()
     endforeach()
 endforeach()

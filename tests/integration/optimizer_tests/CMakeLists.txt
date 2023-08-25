@@ -46,7 +46,7 @@ foreach(optimizer ${optimizers})
     foreach(batchserial ${batchserial_options})
       foreach(explicit_loops ${explicit_loops_options})
 # linter complains if this is indented
-add_popart_py_unit_test(global_batch_size_test VARIANTS Hw MATCHEXPR "[${optimizer}-${reduction_type}-${batchserial}-${explicit_loops}]")
+add_popart_py_unit_test(global_batch_size_test VARIANTS "${HW_EXCLUDE_C600}" MATCHEXPR "[${optimizer}-${reduction_type}-${batchserial}-${explicit_loops}]")
       endforeach()
     endforeach()
   endforeach()

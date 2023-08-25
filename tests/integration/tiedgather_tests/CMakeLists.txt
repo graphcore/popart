@@ -22,7 +22,7 @@ foreach(splits ${splits_params})
           "${transpose_on_gather}"
           "${splits}")
         set(matchexpr "test_tied_gather_pattern_correctness[${matchexpr}]")
-        add_popart_py_unit_test(testtiedgather VARIANTS Hw MATCHEXPR
+        add_popart_py_unit_test(testtiedgather VARIANTS "${HW_EXCLUDE_C600}" MATCHEXPR
                                 "${matchexpr}")
       endforeach()
     endforeach()

@@ -48,6 +48,13 @@ endif()
 message(STATUS "Popart default test variants: ${DEFAULT_TEST_VARIANTS}")
 message(STATUS "Popart enabled test variants: ${ENABLED_TEST_VARIANTS}")
 
+# C600 isn't supported in GCL library hence need to exclude some tests from
+# running on C600 Hw but still run them on M2000 Hw
+set(HW_EXCLUDE_C600 "")
+if(NOT "$ENV{GCCI_HW_TARGET_SYSTEM}" STREQUAL "C600")
+  set(HW_EXCLUDE_C600 "Hw")
+endif()
+
 # Use of the pytest tmpdir fixture leaves files in /tmp after running the tests.
 # By setting --basetemp when running pytest, we can set the temp directory to be
 # a subdirectory of the build directory, which will be cleared up with the build.

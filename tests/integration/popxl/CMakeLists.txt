@@ -77,7 +77,7 @@ foreach(retieval ${retieval_mode_options})
     foreach(rts ${rts_options})
         foreach(config ${config_options})
 # linter complains if this is indented
-add_popart_py_unit_test(test_grouped_initialization VARIANTS Hw MATCHEXPR "[${retieval}-${remote}-${rts}-${config}]")
+add_popart_py_unit_test(test_grouped_initialization VARIANTS "${HW_EXCLUDE_C600}" MATCHEXPR "[${retieval}-${remote}-${rts}-${config}]")
       endforeach()
     endforeach()
   endforeach()

@@ -34,7 +34,7 @@ add_popart_py_unit_test(pipeline_test MATCHEXPR "test_output_matches_train" VARI
 add_popart_py_unit_test(pipeline_test MATCHEXPR "test_output_matches_infer" VARIANTS IpuModel2)
 add_popart_py_unit_test(pipeline_test MATCHEXPR "not test_output_matches_train and not test_output_matches_infer" VARIANTS IpuModel2)
 add_popart_py_unit_test(pipeline_dropout_test VARIANTS Hw)
-add_popart_py_unit_test(replicated_pipeline_test VARIANTS Hw)
+add_popart_py_unit_test(replicated_pipeline_test VARIANTS "${HW_EXCLUDE_C600}")
 add_popart_py_unit_test(pipeline_boundary_test VARIANTS IpuModel2)
 add_popart_py_unit_test(pipeline_consecutive_stages_test VARIANTS IpuModel2)
 add_popart_py_unit_test(pipeline_multiple_restores_per_stash VARIANTS IpuModel2)
